@@ -1,0 +1,17 @@
+import React from 'react';
+import { BrowserRouter, Route, RouterProvider, Routes } from 'react-router-dom';
+import '../src/assets/css/resetcss.css'
+import MainLayout from './pages/MainLayout/MainLayout';
+import { router } from './router/Router';
+function App() {
+  return (
+    <>
+      <div>
+        <RouterProvider router={router} />
+      </div>
+
+    </>
+  );
+}
+
+export default App;
