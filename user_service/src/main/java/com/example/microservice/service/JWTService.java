@@ -41,7 +41,6 @@ public class JWTService {
             Claims claims = parseToken(token);
             String tokenUsername = claims.getSubject();
             Date expiration = claims.getExpiration();
-
             return tokenUsername.equals(username) && expiration.after(new Date());
         } catch (Exception e) {
             return false;
