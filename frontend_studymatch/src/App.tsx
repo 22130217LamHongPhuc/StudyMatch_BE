@@ -3,13 +3,14 @@ import { BrowserRouter, Route, RouterProvider, Routes } from 'react-router-dom';
 import '../src/assets/css/resetcss.css'
 import MainLayout from './pages/MainLayout/MainLayout';
 import { router } from './router/Router';
+import { Provider } from 'react-redux';
+import store from './redux/store';
 function App() {
   return (
     <>
-      <div>
+      <Provider store={store}>
         <RouterProvider router={router} />
-      </div>
-
+      </Provider>
     </>
   );
 }

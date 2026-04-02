@@ -75,7 +75,7 @@ export default function WelcomeSection() {
                         },
                     }}
                 >
-                    {/* Icon */}
+
                     <Box
                         sx={{
                             width: 20,
