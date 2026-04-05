@@ -8,6 +8,7 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import AccessTimeOutlinedIcon from "@mui/icons-material/AccessTimeOutlined";
+import TentativeSchedule from "../../components/schedule/TentativeSchedule";
 
 export default function SchedulePage() {
     const [anchorWeek, setAnchorWeek] = useState<null | HTMLElement>(null);
@@ -64,7 +65,8 @@ export default function SchedulePage() {
                     15/04 - 21/04
                 </Button>
             </Box>
-            <NoSchedule></NoSchedule>
+            {/* <NoSchedule></NoSchedule> */}
+            <TentativeSchedule></TentativeSchedule>
 
         </div >
     );

@@ -8,7 +8,7 @@ public enum ResponseStatus {
     FORBIDDEN(403, "For Bidden"),
     NOT_FOUND(404, "Not Found"),
     INTERNAL_SERVER_ERROR(500, "Internal Server Error"),
-    METHOD_ARGUMENT_ERROR(408, "Required argument");
+    METHOD_ARGUMENT_ERROR(400, "Required argument");
     final int code;
     final String message;
     ResponseStatus(int code, String message) {

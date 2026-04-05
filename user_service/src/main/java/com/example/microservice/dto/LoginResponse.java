@@ -4,13 +4,24 @@ public class LoginResponse {
 
     private String token;
     private String email;
+    private String username;
 
     public LoginResponse() {
     }
 
-    public LoginResponse(String token, String email) {
+    public LoginResponse(String username,String token, String email) {
+        this.username = username;
         this.token = token;
         this.email = email;
+    }
+
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     public String getToken() {

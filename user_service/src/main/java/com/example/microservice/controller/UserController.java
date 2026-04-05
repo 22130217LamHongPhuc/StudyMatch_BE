@@ -32,6 +32,7 @@ public class UserController {
             APIResponse<RegisterResponse> apiResponse = new APIResponse<>(ResponseStatus.CREATED, response);
             return ResponseEntity.status(HttpStatus.CREATED).body(apiResponse);
         } catch (IllegalArgumentException e) {
+            String data = "Invalid username or password";
             System.out.println("lỗi"+ e.getMessage());
             APIResponse<RegisterResponse> apiResponse = new APIResponse<>(ResponseStatus.BAD_REQUEST, null);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(apiResponse);
@@ -43,19 +44,9 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<APIResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {
-        try {
+    public  ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
             LoginResponse response = userService.login(request.getEmail(), request.getPassword());
             APIResponse<LoginResponse> apiResponse = new APIResponse<>(ResponseStatus.SUCCESS, response);
             return ResponseEntity.ok(apiResponse);
-        } catch (IllegalArgumentException e) {
-            System.out.println("lỗi đăng nhập: " + e.getMessage());
-            APIResponse<LoginResponse> apiResponse = new APIResponse<>(ResponseStatus.UNAUTHORIZED, null);
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(apiResponse);
-        } catch (Exception e) {
-            System.out.println("lỗi: " + e.getMessage());
-            APIResponse<LoginResponse> apiResponse = new APIResponse<>(ResponseStatus.INTERNAL_SERVER_ERROR, null);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(apiResponse);
-        }
     }
 }

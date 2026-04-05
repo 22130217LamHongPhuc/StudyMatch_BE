@@ -14,6 +14,12 @@ public class APIResponse<T> {
         this.data = data;
         this.timestamp = LocalDateTime.now();
     }
+    public APIResponse(int code, String message, T data) {
+        this.code = code;
+        this.message = message;
+        this.data = data;
+        this.timestamp = LocalDateTime.now();
+    }
     public int getCode() {
         return code;
     }

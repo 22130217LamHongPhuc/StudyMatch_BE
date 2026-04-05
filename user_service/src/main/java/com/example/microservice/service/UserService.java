@@ -90,21 +90,17 @@ public class UserService {
                 savedUser.getAvatarUrl()
         );
     }
-
     public LoginResponse login(String email, String password) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("Email hoặc mật khẩu không đúng"));
-
         if (!passwordEncoder.matches(password, user.getPassword())) {
             throw new IllegalArgumentException("Email hoặc mật khẩu không đúng");
         }
-
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", user.getId());
         claims.put("email", user.getEmail());
         claims.put("role", user.getRole());
-
         String token = jwtService.generateToken(claims, user.getEmail());
-        return new LoginResponse(token, user.getEmail());
+        return new LoginResponse(user.getFullName(), token, user.getEmail());
     }
 }

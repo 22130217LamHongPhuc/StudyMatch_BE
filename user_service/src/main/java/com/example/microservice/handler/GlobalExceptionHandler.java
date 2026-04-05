@@ -24,5 +24,11 @@ public class GlobalExceptionHandler {
         APIResponse<Map<String, String>> apiResponse = new APIResponse<>(ResponseStatus.METHOD_ARGUMENT_ERROR, errors);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(apiResponse);
     }
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<?> handle(IllegalArgumentException ex) {
+        return ResponseEntity
+                .status(401)
+                .body(new APIResponse<>(ResponseStatus.UNAUTHORIZED.getCode(), ex.getMessage(), null));
+    }
 
 }
