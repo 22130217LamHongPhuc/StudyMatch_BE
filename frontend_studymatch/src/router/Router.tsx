@@ -3,6 +3,7 @@ import MainLayout from "../pages/MainLayout/MainLayout";
 import HomePage from "../pages/HomePage";
 import FriendsPage from "../pages/FriendsLayout/FriendsPage";
 import SchedulePage from "../pages/SchedulePage/SchedulePage";
+import ProfilePage from "../pages/ProfilePage/ProfilePage";
 
 export const router = createBrowserRouter([
     {
@@ -10,7 +11,8 @@ export const router = createBrowserRouter([
         children: [
             { path: "/", element: <HomePage /> },
             { path: "/friends", element: <HomePage /> },
-            { path: "/schedule", element: <SchedulePage /> }
+            { path: "/schedule", element: <SchedulePage /> },
+            { path: '/profile', element: <ProfilePage></ProfilePage> }
 
         ],
     },
