@@ -47,7 +47,7 @@ export default function SignInModal({ open, setModal }: { open: boolean, setModa
             const responeWS: APIResponse = await loginRequest(user);
             if (responeWS.code === 200) {
                 let userRS: LoginSuccess = responeWS.data
-                dispatch(userAction({ username: userRS.username, email: userRS.email, token: userRS.token }))
+                dispatch(userAction({ username: userRS.username, email: userRS.email, token: userRS.token, avatar: userRS.avatar }))
                 setModal(false);
             }
             else {

@@ -1,16 +1,19 @@
-import { Avatar, Button, Typography } from '@mui/material'
+import { Avatar, Button, Tab, Tabs, Typography } from '@mui/material'
 import { Box } from '@mui/system'
-import React from 'react'
+import React, { useState } from 'react'
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import WorkIcon from "@mui/icons-material/Work";
 import Post from './Post';
+import EditIcon from '@mui/icons-material/Edit';
+import EditProfileModal from '../../components/modal/user/EditProfileModal';
 export default function ProfilePage() {
+    const [modalEdit, setModalEdit] = useState<boolean>(false)
+    console.warn(modalEdit, 'modal edit')
     return (
         <>
             <Box
                 component='div'
                 sx={{ display: 'flex', mt: '20px' }}
-
             >
                 <Box sx={{ position: 'relative', height: 'fit-content', width: '30%', padding: '20px', mr: '40px', borderRadius: '20px', boxShadow: '0 8px 24px rgba(0,0,0,0.15)', ml: '20px' }}>
                     <Box sx={{ backgroundImage: 'linear-gradient(90deg, rgb(225, 193, 169) 0%, rgba(225, 193, 169, 0.314) 100%);', height: '100px' }}>
@@ -76,6 +79,25 @@ export default function ProfilePage() {
                             sx={{
                                 borderRadius: "20px",
                                 py: 1.5,
+                                px: 6,
+                                textTransform: "none",
+                                fontWeight: "bold",
+                                background: "linear-gradient(90deg, #4f8dfd, #3b82f6)",
+                                color: "white", width: '100%',
+                                display: 'flex',
+                                justifyContent: 'space-around'
+                            }}
+                            onClick={() => setModalEdit(true)}
+                        >
+                            <EditIcon></EditIcon>
+                            Chỉnh sửa thông tin cá nhân
+                        </Button>
+
+                        {/* <Button
+
+                            sx={{
+                                borderRadius: "20px",
+                                py: 1.5,
                                 textTransform: "none",
                                 fontWeight: "bold",
                                 background: "linear-gradient(90deg, #4f8dfd, #3b82f6)",
@@ -96,22 +118,34 @@ export default function ProfilePage() {
                             }}
                         >
                             Nhắn tin
-                        </Button>
+                        </Button> */}
 
                     </Box>
 
 
                 </Box>
                 <Box width='70%' sx={{ px: '20px' }}>
+                    <Box sx={{
+                        backgroundColor: '#e9f0ff', fontSize: '10px', '& .MuiTab-root': {
+                            fontSize: '12px',
+                        },
+                    }}  >
+                        <Tabs aria-label="basic tabs example" centered>
+                            <Tab label="Bản tin" />
+                            <Tab label="Thành tích" />
+                            <Tab label="Thống kê" />
+                        </Tabs>
+                    </Box>
                     <Post></Post>
                     <Post></Post>
                 </Box>
 
 
             </Box >
+            <EditProfileModal stateModal={modalEdit}
+                setModalEdit={setModalEdit}
 
-
-
+            ></EditProfileModal>
         </>
     )
 }

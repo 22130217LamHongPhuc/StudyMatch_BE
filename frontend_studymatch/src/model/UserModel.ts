@@ -11,5 +11,6 @@ export type UserModel = {
 export interface LoginSuccess {
     email: string,
     token: string,
-    username: string
+    username: string,
+    avatar: string
 }

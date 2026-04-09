@@ -25,23 +25,6 @@ public class UserController {
     @Autowired
     private UserService userService;
 
-    @PostMapping("/register")
-    public ResponseEntity<APIResponse<RegisterResponse>> register(@Valid @RequestBody RegisterRequest request) {
-        try {
-            RegisterResponse response = userService.registerUser(request);
-            APIResponse<RegisterResponse> apiResponse = new APIResponse<>(ResponseStatus.CREATED, response);
-            return ResponseEntity.status(HttpStatus.CREATED).body(apiResponse);
-        } catch (IllegalArgumentException e) {
-            String data = "Invalid username or password";
-            System.out.println("lỗi"+ e.getMessage());
-            APIResponse<RegisterResponse> apiResponse = new APIResponse<>(ResponseStatus.BAD_REQUEST, null);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(apiResponse);
-        } catch (Exception e) {
-            System.out.println("lỗi"+ e.getMessage());
-            APIResponse<RegisterResponse> apiResponse = new APIResponse<>(ResponseStatus.INTERNAL_SERVER_ERROR, null);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(apiResponse);
-        }
-    }
 
     @PostMapping("/login")
     public  ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {

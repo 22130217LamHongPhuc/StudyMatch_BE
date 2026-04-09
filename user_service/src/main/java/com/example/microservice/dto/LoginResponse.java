@@ -5,17 +5,16 @@ public class LoginResponse {
     private String token;
     private String email;
     private String username;
+    private String avatar;
 
     public LoginResponse() {
     }
-
-    public LoginResponse(String username,String token, String email) {
+    public LoginResponse(String username,String token, String email, String avatar) {
         this.username = username;
         this.token = token;
         this.email = email;
+        this.avatar = avatar ;
     }
-
-
     public String getUsername() {
         return username;
     }
@@ -23,7 +22,12 @@ public class LoginResponse {
     public void setUsername(String username) {
         this.username = username;
     }
-
+    public String getAvatar() {
+        return avatar;
+    }
+    public void setAvatar(String avatar) {
+        this.avatar = avatar;
+    }
     public String getToken() {
         return token;
     }

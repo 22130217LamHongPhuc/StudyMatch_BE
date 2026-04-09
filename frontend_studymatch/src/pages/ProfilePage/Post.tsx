@@ -22,7 +22,7 @@ const Post = () => {
                 my: '20px',
                 bgcolor: 'white',
                 borderRadius: '8px',
-                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.2)',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
                 overflow: 'hidden',
 
             }}
