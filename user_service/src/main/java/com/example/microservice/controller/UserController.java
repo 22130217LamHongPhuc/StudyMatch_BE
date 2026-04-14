@@ -24,12 +24,18 @@ public class UserController {
 
     @Autowired
     private UserService userService;
-
-
     @PostMapping("/login")
     public  ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
             LoginResponse response = userService.login(request.getEmail(), request.getPassword());
             APIResponse<LoginResponse> apiResponse = new APIResponse<>(ResponseStatus.SUCCESS, response);
             return ResponseEntity.ok(apiResponse);
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getUser(@PathVariable Long id) {
+        HashMap<String, String> map = new HashMap<>();
+        map.put("id", "tai123");
+        return ResponseEntity.ok(map );
+    }
+
 }

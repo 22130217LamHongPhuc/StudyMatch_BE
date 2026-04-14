@@ -6,26 +6,25 @@ import org.hibernate.annotations.ColumnDefault;
 import java.time.Instant;
 
 @Entity
-@Table(name = "conversations")
-public class Conversation {
+@Table(name = "users")
+public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "conversation_id", nullable = false)
-    private Long conversationId;
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
 
-    @ColumnDefault("'private'")
-    @Column(name = "type", nullable = false, length = 50)
-    private String type;
+    @Column(name = "username", nullable = false, length = 100)
+    private String username;
 
-    @Column(name = "group_id")
-    private Long groupId;
-
-    @Column(name = "name", length = 200)
-    private String name;
+    @Column(name = "email", nullable = false)
+    private String email;
 
     @Column(name = "avatar_url")
     private String avatarUrl;
+
+    @ColumnDefault("1")
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive = true;
 
     @ColumnDefault("current_timestamp()")
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -44,20 +43,20 @@ public class Conversation {
 
     // ─── Getters & Setters ───────────────────────────────────────────────────
 
-    public Long getConversationId() { return conversationId; }
-    public void setConversationId(Long conversationId) { this.conversationId = conversationId; }
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
 
-    public String getType() { return type; }
-    public void setType(String type) { this.type = type; }
+    public String getUsername() { return username; }
+    public void setUsername(String username) { this.username = username; }
 
-    public Long getGroupId() { return groupId; }
-    public void setGroupId(Long groupId) { this.groupId = groupId; }
-
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
     public String getAvatarUrl() { return avatarUrl; }
     public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
+
+    public Boolean getIsActive() { return isActive; }
+    public void setIsActive(Boolean isActive) { this.isActive = isActive; }
 
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }

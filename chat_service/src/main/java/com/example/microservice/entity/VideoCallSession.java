@@ -2,6 +2,8 @@ package com.example.microservice.entity;
 
 import jakarta.persistence.*;
 import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.Instant;
 
@@ -10,10 +12,12 @@ import java.time.Instant;
 public class VideoCallSession {
     @Id
     @Column(name = "session_id", nullable = false)
-    private Integer id;
+    private Long id;
 
-    @Column(name = "conversation_id", nullable = false)
-    private Integer conversationId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    @JoinColumn(name = "conversation_id", nullable = false)
+    private Conversation conversation;
 
     @ColumnDefault("current_timestamp()")
     @Column(name = "started_at", nullable = false)
@@ -25,27 +29,23 @@ public class VideoCallSession {
     @Column(name = "duration_seconds")
     private Integer durationSeconds;
 
-    @Lob
-    @Column(name = "participants")
-    private String participants;
-
     @Column(name = "recording_url")
     private String recordingUrl;
 
-    public Integer getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
-    public Integer getConversationId() {
-        return conversationId;
+    public Conversation getConversation() {
+        return conversation;
     }
 
-    public void setConversationId(Integer conversationId) {
-        this.conversationId = conversationId;
+    public void setConversation(Conversation conversation) {
+        this.conversation = conversation;
     }
 
     public Instant getStartedAt() {
@@ -70,14 +70,6 @@ public class VideoCallSession {
 
     public void setDurationSeconds(Integer durationSeconds) {
         this.durationSeconds = durationSeconds;
-    }
-
-    public String getParticipants() {
-        return participants;
-    }
-
-    public void setParticipants(String participants) {
-        this.participants = participants;
     }
 
     public String getRecordingUrl() {

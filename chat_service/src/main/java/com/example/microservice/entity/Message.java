@@ -2,29 +2,36 @@ package com.example.microservice.entity;
 
 import jakarta.persistence.*;
 import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.Instant;
 
 @Entity
 @Table(name = "messages")
 public class Message {
+
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "message_id", nullable = false)
-    private Long id;
+    private Long messageId;
 
-    @Column(name = "conversation_id", nullable = false)
-    private Integer conversationId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    @JoinColumn(name = "conversation_id", nullable = false)
+    private Conversation conversation;
 
-    @Column(name = "sender_id")
-    private Integer senderId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @OnDelete(action = OnDeleteAction.SET_NULL)
+    @JoinColumn(name = "sender_id")
+    private User sender;
 
     @Lob
     @Column(name = "content")
     private String content;
 
     @ColumnDefault("'text'")
-    @Lob
-    @Column(name = "type")
+    @Column(name = "type", nullable = false, length = 50)
     private String type;
 
     @Column(name = "media_url", length = 500)
@@ -34,139 +41,79 @@ public class Message {
     private String fileName;
 
     @Column(name = "file_size")
-    private Integer fileSize;
+    private Long fileSize;
 
-    @Column(name = "reply_to_id")
-    private Long replyToId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @OnDelete(action = OnDeleteAction.SET_NULL)
+    @JoinColumn(name = "reply_to_id")
+    private Message replyTo;
 
     @ColumnDefault("0")
-    @Column(name = "is_edited")
-    private Boolean isEdited;
+    @Column(name = "is_edited", nullable = false)
+    private Boolean isEdited = false;
 
     @Column(name = "edited_at")
     private Instant editedAt;
 
     @ColumnDefault("0")
-    @Column(name = "is_deleted")
-    private Boolean isDeleted;
+    @Column(name = "is_deleted", nullable = false)
+    private Boolean isDeleted = false;
 
     @Column(name = "deleted_at")
     private Instant deletedAt;
 
     @ColumnDefault("current_timestamp()")
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
-    public Long getId() {
-        return id;
+    @PrePersist
+    protected void onCreate() {
+        if (createdAt == null) {
+            createdAt = Instant.now();
+        }
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    // ─── Getters & Setters ───────────────────────────────────────────────────
 
-    public Integer getConversationId() {
-        return conversationId;
-    }
+    public Long getMessageId() { return messageId; }
+    public void setMessageId(Long messageId) { this.messageId = messageId; }
 
-    public void setConversationId(Integer conversationId) {
-        this.conversationId = conversationId;
-    }
+    public Conversation getConversation() { return conversation; }
+    public void setConversation(Conversation conversation) { this.conversation = conversation; }
 
-    public Integer getSenderId() {
-        return senderId;
-    }
+    public User getSender() { return sender; }
+    public void setSender(User sender) { this.sender = sender; }
 
-    public void setSenderId(Integer senderId) {
-        this.senderId = senderId;
-    }
+    public String getContent() { return content; }
+    public void setContent(String content) { this.content = content; }
 
-    public String getContent() {
-        return content;
-    }
+    public String getType() { return type; }
+    public void setType(String type) { this.type = type; }
 
-    public void setContent(String content) {
-        this.content = content;
-    }
+    public String getMediaUrl() { return mediaUrl; }
+    public void setMediaUrl(String mediaUrl) { this.mediaUrl = mediaUrl; }
 
-    public String getType() {
-        return type;
-    }
+    public String getFileName() { return fileName; }
+    public void setFileName(String fileName) { this.fileName = fileName; }
 
-    public void setType(String type) {
-        this.type = type;
-    }
+    public Long getFileSize() { return fileSize; }
+    public void setFileSize(Long fileSize) { this.fileSize = fileSize; }
 
-    public String getMediaUrl() {
-        return mediaUrl;
-    }
+    public Message getReplyTo() { return replyTo; }
+    public void setReplyTo(Message replyTo) { this.replyTo = replyTo; }
 
-    public void setMediaUrl(String mediaUrl) {
-        this.mediaUrl = mediaUrl;
-    }
+    public Boolean getIsEdited() { return isEdited; }
+    public void setIsEdited(Boolean isEdited) { this.isEdited = isEdited; }
 
-    public String getFileName() {
-        return fileName;
-    }
+    public Instant getEditedAt() { return editedAt; }
+    public void setEditedAt(Instant editedAt) { this.editedAt = editedAt; }
 
-    public void setFileName(String fileName) {
-        this.fileName = fileName;
-    }
+    public Boolean getIsDeleted() { return isDeleted; }
+    public void setIsDeleted(Boolean isDeleted) { this.isDeleted = isDeleted; }
 
-    public Integer getFileSize() {
-        return fileSize;
-    }
+    public Instant getDeletedAt() { return deletedAt; }
+    public void setDeletedAt(Instant deletedAt) { this.deletedAt = deletedAt; }
 
-    public void setFileSize(Integer fileSize) {
-        this.fileSize = fileSize;
-    }
-
-    public Long getReplyToId() {
-        return replyToId;
-    }
-
-    public void setReplyToId(Long replyToId) {
-        this.replyToId = replyToId;
-    }
-
-    public Boolean getIsEdited() {
-        return isEdited;
-    }
-
-    public void setIsEdited(Boolean isEdited) {
-        this.isEdited = isEdited;
-    }
-
-    public Instant getEditedAt() {
-        return editedAt;
-    }
-
-    public void setEditedAt(Instant editedAt) {
-        this.editedAt = editedAt;
-    }
-
-    public Boolean getIsDeleted() {
-        return isDeleted;
-    }
-
-    public void setIsDeleted(Boolean isDeleted) {
-        this.isDeleted = isDeleted;
-    }
-
-    public Instant getDeletedAt() {
-        return deletedAt;
-    }
-
-    public void setDeletedAt(Instant deletedAt) {
-        this.deletedAt = deletedAt;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
-
+    public Instant getCreatedAt() { return createdAt; }
+    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 }

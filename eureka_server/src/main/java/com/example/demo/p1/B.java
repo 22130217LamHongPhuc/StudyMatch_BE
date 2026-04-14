@@ -1,16 +1,14 @@
 package com.example.demo.p1;
 
-public class B extends A  {
+public class B  extends A {
 
-    @Override
-    void show() {
-
-        System.out.println("B");
+    StringBuilder bd = new StringBuilder("hihi");
+    public void eat() {
+        System.out.println("B eat");
     }
-
-    public static void main(String[] args) {
+    public static  void main(String args) {
         B b = new B();
-//       b.eat();
-
+        System.out.println(b.bd);
+//        b.bd
     }
 }

@@ -5,6 +5,7 @@ import FriendsPage from "../pages/FriendsLayout/FriendsPage";
 import SchedulePage from "../pages/SchedulePage/SchedulePage";
 import ProfilePage from "../pages/ProfilePage/ProfilePage";
 import ConversationPage from "../pages/Conversation/ConversationPage";
+import TestSocket from "../pages/Conversation/TestSocket";
 
 export const router = createBrowserRouter([
     {
@@ -14,7 +15,8 @@ export const router = createBrowserRouter([
             { path: "/friends", element: <HomePage /> },
             { path: "/schedule", element: <SchedulePage /> },
             { path: '/profile', element: <ProfilePage></ProfilePage> },
-            { path: '/conversations', element: <ConversationPage /> }
+            { path: '/conversations', element: <ConversationPage /> },
+            { path: '/socket', element: <TestSocket /> },
         ],
     },
     // {
