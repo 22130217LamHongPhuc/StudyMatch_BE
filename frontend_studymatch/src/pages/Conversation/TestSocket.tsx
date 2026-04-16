@@ -16,8 +16,6 @@ export default function TestSocket() {
         }).catch((err) => {
             console.error("Lỗi connect:", err);
         });
-
-
     }, [])
 
     const sendMessage = () => {

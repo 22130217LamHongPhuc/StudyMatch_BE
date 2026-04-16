@@ -17,11 +17,12 @@ import {
 } from "@mui/material";
 import AddPhotoAlternateIcon from "@mui/icons-material/AddPhotoAlternate";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import SockJS from "sockjs-client";
 import { Client } from "@stomp/stompjs";
 import WebSocketManager from "../../socket/WebSocketManager";
 import { sendText } from "../../services/ChatService";
+import { South } from "@mui/icons-material";
 
 export default function ConversationPage() {
     const users = [
@@ -46,39 +47,24 @@ export default function ConversationPage() {
     const [messages, setMessages] = useState([]);
     const stompClient = useRef<Client | null>(null);
 
-    const connect = () => {
-        const client = new Client({
-            webSocketFactory: () => new SockJS("http://localhost:8089/ws"),
-            onConnect: (frame) => {
-                console.log("Connected: " + frame);
-                client.subscribe("/topic/user/2", (message) => {
-                    const body = JSON.parse(message.body);
-                    console.log("nhận nè:", body);
-                });
-                client.publish({
-                    destination: "/app/chat.sendPrivateMessage",
-                    body: JSON.stringify({
-                        event: "SEND_MESSAGE",
-                        data: {
-                            senderId: 1,
-                            to: 2,
-                            content: "Hello!",
-                            messageType: "text",
-                        },
-                    }),
-                });
-            },
-        });
-        client.activate();
-        stompClient.current = client;
-    };
+    useEffect(() => {
+        let ws = WebSocketManager.getInstance()
+        console.log("đây là userId", localStorage.getItem('userId'))
 
+        ws.connect().then(() => {
+            ws.onMessage("/queue/messages/" + localStorage.getItem('userId'), (msg: any) => {
+                console.log('nghe nè', msg)
+
+            })
+        }).catch((err) => {
+            console.error("Lỗi connect:", err);
+        });
+    }, [])
 
     const sendMessage = () => {
-        sendText("Hello", 1, 1)
+        console.log("gửi nè")
+        sendText("Hello bạn ời", 1, 1)
     }
-
-
 
     return (
         <Box
@@ -236,6 +222,7 @@ export default function ConversationPage() {
                     </Paper>
 
                     <IconButton
+                        onClick={sendMessage}
                         sx={{
                             bgcolor: "#a40000",
                             color: "#fff",

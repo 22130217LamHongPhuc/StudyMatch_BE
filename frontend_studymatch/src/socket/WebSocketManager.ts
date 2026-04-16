@@ -1,5 +1,6 @@
 import { Client, IMessage, StompSubscription } from '@stomp/stompjs';
 import { SOCKET_URL } from '../config/BaseConfig';
+import store from '../redux/store';
 
 class WebSocketManager {
     private static instance: WebSocketManager;
@@ -16,7 +17,9 @@ class WebSocketManager {
         return WebSocketManager.instance;
     }
 
+
     public connect(): Promise<void> {
+
         return new Promise((resolve, reject) => {
             if (this.client?.active || this.connected) {
                 resolve();
@@ -25,7 +28,11 @@ class WebSocketManager {
 
             this.client = new Client({
                 brokerURL: SOCKET_URL,
+                connectHeaders: {
+                    userId: String(localStorage.getItem('userId')),
+                },
                 reconnectDelay: 5000,
+
                 debug: (str) => console.log('[STOMP]', str),
 
                 onConnect: () => {
@@ -56,6 +63,7 @@ class WebSocketManager {
     public onMessage(destination: string, cb: (msg: string) => void) {
         if (!this.client || !this.connected) return;
         if (this.subscriptions.has(destination)) return;
+
         const subscription = this.client.subscribe(destination, (message: IMessage) => {
             cb(message.body);
         });

@@ -5,7 +5,7 @@ public class SendMessageRequest {
     int senderId;
     String type;
     String content;
-    int replyToId;
+    Integer replyToId;
 
     public int getConversationId() {
         return conversationId;
@@ -38,11 +38,22 @@ public class SendMessageRequest {
         this.content = content;
     }
 
-    public int getReplyToId() {
+    public Integer getReplyToId() {
         return replyToId;
     }
 
-    public void setReplyToId(int replyToId) {
+    public void setReplyToId(Integer replyToId) {
         this.replyToId = replyToId;
+    }
+
+    @Override
+    public String toString() {
+        return "SendMessageRequest{" +
+                "conversationId=" + conversationId +
+                ", senderId=" + senderId +
+                ", type='" + type + '\'' +
+                ", content='" + content + '\'' +
+                ", replyToId=" + replyToId +
+                '}';
     }
 }

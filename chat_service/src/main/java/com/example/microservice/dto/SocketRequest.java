@@ -17,4 +17,13 @@ public class SocketRequest<T> {
     public void setData(T data) {
         this.data = data;
     }
+
+    @Override
+    public String toString() {
+        return "SocketRequest{" +
+                "event='" + event + '\'' +
+                ", data=" + data +
+                '}';
+    }
+
 }

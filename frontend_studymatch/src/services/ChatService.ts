@@ -7,13 +7,18 @@ import { SOCKET_SEND_MESSAGE } from "../config/BaseConfig"
 
 export const sendText = (content: string, senderId: number, conversationId: number) => {
     let ws = WebSocketManager.getInstance()
-    ws.sendMessage(SOCKET_SEND_MESSAGE, {
-        event: SocketEvent.SEND_CHAT,
-        data: {
-            conversationId: conversationId,
-            senderId: senderId,
-            messageType: "text",
-            content: content,
-        }
-    })
+    ws.connect().then(() => {
+        ws.sendMessage(SOCKET_SEND_MESSAGE, {
+            event: SocketEvent.SEND_CHAT,
+            data: {
+                conversationId: 1,
+                senderId: 1,
+                type: "text",
+                content: content,
+            }
+        })
+    }).catch((err) => {
+        console.error("Lỗi connect:", err);
+    });
+
 }

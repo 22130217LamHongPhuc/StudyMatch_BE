@@ -9,6 +9,7 @@ export type UserModel = {
 }
 
 export interface LoginSuccess {
+    userId: number,
     email: string,
     token: string,
     username: string,

@@ -1,7 +1,7 @@
 package com.example.microservice.dto;
 
 public class LoginResponse {
-
+    private int userId;
     private String token;
     private String email;
     private String username;
@@ -9,12 +9,20 @@ public class LoginResponse {
 
     public LoginResponse() {
     }
-    public LoginResponse(String username,String token, String email, String avatar) {
+    public LoginResponse(int userId,String username,String token, String email, String avatar) {
+        this.userId = userId;
         this.username = username;
         this.token = token;
         this.email = email;
         this.avatar = avatar ;
     }
+    public int getUserId() {
+        return userId;
+    }
+    public void setUserId(int userId) {
+        this.userId = userId;
+    }
+
     public String getUsername() {
         return username;
     }

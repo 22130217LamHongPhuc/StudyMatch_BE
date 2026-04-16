@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
@@ -18,6 +19,7 @@ import java.time.Instant;
 public class Message {
     @Id
     @Column(name = "message_id", nullable = false)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @NotNull
@@ -73,7 +75,7 @@ public class Message {
 
     @NotNull
     @ColumnDefault("current_timestamp()")
+    @CreationTimestamp
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
-
 }

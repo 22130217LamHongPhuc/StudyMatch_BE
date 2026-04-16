@@ -87,6 +87,6 @@ public class UserService {
         claims.put("email", user.getEmail());
         claims.put("role", user.getRole());
         String token = jwtService.generateToken(claims, user.getEmail());
-        return new LoginResponse(user.getFullName(), token, user.getEmail(),user.getAvatarUrl());
+        return new LoginResponse(user.getId(),user.getFullName(), token, user.getEmail(),user.getAvatarUrl());
     }
 }
