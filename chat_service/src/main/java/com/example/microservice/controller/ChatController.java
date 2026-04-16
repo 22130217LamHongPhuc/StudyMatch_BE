@@ -9,10 +9,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import java.security.Principal;
 import java.util.Optional;
 
 @Slf4j
@@ -22,7 +24,15 @@ public class ChatController {
     private final ChatService chatService;
     private final SimpMessagingTemplate messagingTemplate;
     @MessageMapping("/send")
-    public void sendMessage(SocketRequest<SendMessageRequest> mess){
+    public void sendMessage(SocketRequest<SendMessageRequest> mess,    SimpMessageHeaderAccessor headerAccessor){
+        Object userIdObj = headerAccessor.getSessionAttributes().get("userId");
+        if (userIdObj == null) {
+            System.out.println("Không tìm thấy userId trong session");
+            return;
+        }
+        Long senderId = Long.valueOf(userIdObj.toString());
+        System.out.println("senderId = " + senderId);
+        System.out.println("đây là user gửi nè: " + senderId);
         boolean exist = chatService.checkPrivateExist(Long.valueOf(mess.getData().getConversationId()), Long.valueOf(mess.getData().getSenderId()));
         if(!exist) return;
         try{

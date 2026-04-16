@@ -3,6 +3,7 @@ package com.example.microservice.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
@@ -15,6 +16,7 @@ import java.time.Instant;
 @Getter
 @Setter
 @Entity
+@Data
 @Table(name = "messages")
 public class Message {
     @Id
@@ -23,7 +25,7 @@ public class Message {
     private Long id;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     @JoinColumn(name = "conversation_id", nullable = false)
     private Conversation conversation;
@@ -52,7 +54,7 @@ public class Message {
     @Column(name = "file_size")
     private Long fileSize;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @OnDelete(action = OnDeleteAction.SET_NULL)
     @JoinColumn(name = "reply_to_id")
     private Message replyTo;
