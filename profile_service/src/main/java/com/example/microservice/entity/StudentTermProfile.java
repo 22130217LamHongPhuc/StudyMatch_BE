@@ -10,6 +10,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import java.math.BigDecimal;
 
 @Entity
 @Table(name = "student_term_profiles", uniqueConstraints = {
@@ -34,6 +35,21 @@ public class StudentTermProfile {
 
     @Column(name = "semester_no", nullable = false)
     private Byte semesterNo;
+
+    @Column(name = "avg_score", precision = 4, scale = 2)
+    private BigDecimal avgScore;
+
+    @Column(name = "studied_credits")
+    private Integer studiedCredits;
+
+    @Column(name = "study_goal", length = 50)
+    private String studyGoal;
+
+    @Column(name = "study_mode", length = 50)
+    private String studyMode;
+
+    @Column(name = "main_subject_id")
+    private Long mainSubjectId;
 
     public StudentTermProfile() {
     }
@@ -76,6 +92,46 @@ public class StudentTermProfile {
 
     public void setSemesterNo(Byte semesterNo) {
         this.semesterNo = semesterNo;
+    }
+
+    public BigDecimal getAvgScore() {
+        return avgScore;
+    }
+
+    public void setAvgScore(BigDecimal avgScore) {
+        this.avgScore = avgScore;
+    }
+
+    public Integer getStudiedCredits() {
+        return studiedCredits;
+    }
+
+    public void setStudiedCredits(Integer studiedCredits) {
+        this.studiedCredits = studiedCredits;
+    }
+
+    public String getStudyGoal() {
+        return studyGoal;
+    }
+
+    public void setStudyGoal(String studyGoal) {
+        this.studyGoal = studyGoal;
+    }
+
+    public String getStudyMode() {
+        return studyMode;
+    }
+
+    public void setStudyMode(String studyMode) {
+        this.studyMode = studyMode;
+    }
+
+    public Long getMainSubjectId() {
+        return mainSubjectId;
+    }
+
+    public void setMainSubjectId(Long mainSubjectId) {
+        this.mainSubjectId = mainSubjectId;
     }
 }
 

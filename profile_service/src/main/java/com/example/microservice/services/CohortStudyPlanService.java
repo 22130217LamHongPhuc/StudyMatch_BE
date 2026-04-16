@@ -38,14 +38,17 @@ public class CohortStudyPlanService {
         AcademicTerm activeTerm = academicTermRepository.findFirstByStatus("active")
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy học kỳ đang active"));
 
-        int studyYearNo = activeTerm.getAcademicYearStart() - cohort.getStartYear() + 1;
+        int studyYearNo = activeTerm.getAcademicYearStart() - cohort.getStartAcademicYear() + 1;
         int semesterNo = activeTerm.getSemesterNo();
 
-        if (studyYearNo < 1 || studyYearNo > 4) {
+        if (studyYearNo < 1) {
             throw new RuntimeException(
                     "Khóa " + cohortCode + " không nằm trong phạm vi đào tạo ở học kỳ hiện tại"
             );
         }
+
+        studyYearNo = Math.min(studyYearNo, 4);
+
 
         List<CurriculumTermSubject> curriculumSubjects =
                 curriculumTermSubjectRepository
@@ -58,7 +61,7 @@ public class CohortStudyPlanService {
         CohortStudyPlanResponse response = new CohortStudyPlanResponse();
         response.setCohortId(cohort.getCohortId());
         response.setCohortCode(cohort.getCohortCode());
-        response.setStartAcademicYear(cohort.getStartYear());
+        response.setStartAcademicYear(cohort.getStartAcademicYear());
         response.setTotalStudyYears(4);
 
         response.setCurriculumId(cohort.getCurriculum().getCurriculumId());
@@ -90,4 +93,6 @@ public class CohortStudyPlanService {
 
         return response;
     }
+
+
 }

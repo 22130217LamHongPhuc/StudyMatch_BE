@@ -22,9 +22,12 @@ public class Cohort {
 
     @Column(name = "cohort_code", length = 20)
     private String cohortCode;
-    @Column(name = "start_academic_year")
-    private Integer startYear;
 
+    @Column(name = "start_academic_year")
+    private Integer startAcademicYear;
+
+    @Column(name = "total_study_years", nullable = false)
+    private Byte totalStudyYears = 4;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "curriculum_id")
@@ -58,8 +61,20 @@ public class Cohort {
         this.curriculum = curriculum;
     }
 
-    public Integer getStartYear() {
-        return startYear;
+    public Integer getStartAcademicYear() {
+        return startAcademicYear;
+    }
+
+    public void setStartAcademicYear(Integer startAcademicYear) {
+        this.startAcademicYear = startAcademicYear;
+    }
+
+    public Byte getTotalStudyYears() {
+        return totalStudyYears;
+    }
+
+    public void setTotalStudyYears(Byte totalStudyYears) {
+        this.totalStudyYears = totalStudyYears;
     }
 }
 

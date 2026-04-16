@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
 
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = "*")
 
 @RestController
 @RequestMapping("/api/cohorts")
@@ -46,6 +46,7 @@ public class CohortStudyPlanController {
     public ResponseEntity<CohortStudyPlanResponse> getCurrentStudyPlan(
             @PathVariable String cohortCode
     ) {
+        System.out.println("Received request for current study plan of cohort: " + cohortCode);
         CohortStudyPlanResponse response =
                 cohortStudyPlanService.getCurrentStudyPlanByCohortCode(cohortCode);
 
@@ -105,7 +106,7 @@ public class CohortStudyPlanController {
             studyYearMap.put("studyYearNo", studyYearNo);
             studyYearMap.put("displayName", "Năm " + studyYearNo);
 
-            Integer startYear = cohort.getStartYear();
+            Integer startYear = cohort.getStartAcademicYear();
             if (startYear != null) {
                 int academicYearStart = startYear + (studyYearNo - 1);
                 int academicYearEnd = academicYearStart + 1;
@@ -121,7 +122,7 @@ public class CohortStudyPlanController {
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("success", true);
         response.put("cohortCode", cohort.getCohortCode());
-        response.put("startYear", cohort.getStartYear());
+        response.put("startYear", cohort.getStartAcademicYear());
         response.put("curriculumId", curriculum.getCurriculumId());
         response.put("curriculumCode", curriculum.getCurriculumCode());
         response.put("curriculumName", curriculum.getCurriculumName());

@@ -35,6 +35,15 @@ public class StudentProfile {
     @Column(name = "full_name", length = 120)
     private String fullName;
 
+    @Column(name = "gender", length = 10)
+    private String gender;
+
+    @Column(name = "age_group", length = 20)
+    private String ageGroup;
+
+    @Column(name = "region", length = 100)
+    private String region;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cohort_id")
     private Cohort cohort;
@@ -82,6 +91,30 @@ public class StudentProfile {
 
     public void setFullName(String fullName) {
         this.fullName = fullName;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
+    public String getAgeGroup() {
+        return ageGroup;
+    }
+
+    public void setAgeGroup(String ageGroup) {
+        this.ageGroup = ageGroup;
+    }
+
+    public String getRegion() {
+        return region;
+    }
+
+    public void setRegion(String region) {
+        this.region = region;
     }
 
     public Cohort getCohort() {
