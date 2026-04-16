@@ -9,14 +9,12 @@ import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import AccessTimeOutlinedIcon from "@mui/icons-material/AccessTimeOutlined";
 import TentativeSchedule from "../../components/schedule/TentativeSchedule";
-
 export default function SchedulePage() {
     const [anchorWeek, setAnchorWeek] = useState<null | HTMLElement>(null);
     const [anchorSemester, setAnchorSemester] = useState<null | HTMLElement>(null);
     const styleCellOuter = { py: 1, textAlign: 'center', backgroundColor: 'rgb(142, 193, 252)', color: '#fff', mb: 0.1 }
     const styleTableHead = { textAlign: 'center' }
     const styleRowCell = { p: 0 }
-
     return (
         <div>
             <Box
@@ -65,7 +63,6 @@ export default function SchedulePage() {
                     15/04 - 21/04
                 </Button>
             </Box>
-            {/* <NoSchedule></NoSchedule> */}
             <TentativeSchedule></TentativeSchedule>
 
         </div >

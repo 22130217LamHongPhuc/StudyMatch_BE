@@ -9,17 +9,20 @@ export default function TestSocket() {
 
     useEffect(() => {
         let ws = WebSocketManager.getInstance()
-        ws.connect()
+        ws.connect().then(() => {
+            ws.onMessage("/queue/messages", (msg: any) => {
+                console.log('nghe nè', msg)
+            })
+        }).catch((err) => {
+            console.error("Lỗi connect:", err);
+        });
 
-    })
+
+    }, [])
 
     const sendMessage = () => {
-        if (!clientRef.current || !connected) return;
-
-        clientRef.current.publish({
-            destination: "/app/chat.echo",
-            body: "",
-        });
+        let ws = WebSocketManager.getInstance()
+        ws.sendMessage("/app/chat.echo")
     };
 
     return (

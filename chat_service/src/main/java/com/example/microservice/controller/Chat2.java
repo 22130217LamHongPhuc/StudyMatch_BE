@@ -12,10 +12,5 @@ import org.springframework.web.bind.annotation.RestController;
 public class Chat2 {
     @Autowired
     ChatService serivce;
-    @GetMapping("/1")
-
-    public ResponseEntity<?> re (){
-
-        return ResponseEntity.ok(serivce.sendMessage(1L));
-    }
+//    @GetMap
 }

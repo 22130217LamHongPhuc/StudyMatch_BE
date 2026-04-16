@@ -1,67 +1,34 @@
 package com.example.microservice.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 
 import java.time.Instant;
 
+@Getter
+@Setter
 @Entity
 @Table(name = "conversations")
 public class Conversation {
-
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "conversation_id", nullable = false)
-    private Long conversationId;
+    private Long id;
 
-    @ColumnDefault("'private'")
-    @Column(name = "type", nullable = false, length = 50)
-    private String type;
+    @Size(max = 20)
+    @NotNull
+    @Column(name = "conversation_type", nullable = false, length = 20)
+    private String conversationType;
 
-    @Column(name = "group_id")
-    private Long groupId;
-
-    @Column(name = "name", length = 200)
-    private String name;
-
-    @Column(name = "avatar_url")
-    private String avatarUrl;
-
+    @NotNull
     @ColumnDefault("current_timestamp()")
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    @ColumnDefault("current_timestamp()")
-    @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt;
-
-    @PrePersist
-    protected void onCreate() {
-        Instant now = Instant.now();
-        if (createdAt == null) createdAt = now;
-        if (updatedAt == null) updatedAt = now;
-    }
-
-    // ─── Getters & Setters ───────────────────────────────────────────────────
-
-    public Long getConversationId() { return conversationId; }
-    public void setConversationId(Long conversationId) { this.conversationId = conversationId; }
-
-    public String getType() { return type; }
-    public void setType(String type) { this.type = type; }
-
-    public Long getGroupId() { return groupId; }
-    public void setGroupId(Long groupId) { this.groupId = groupId; }
-
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-
-    public String getAvatarUrl() { return avatarUrl; }
-    public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
-
-    public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
-
-    public Instant getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
 }
