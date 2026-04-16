@@ -4,6 +4,8 @@ import {
   Cohort,
   FormData,
   StudyPlan,
+  StudyPlanOptions,
+  TermSelection,
   DAYS,
   STEPS_META,
   initFreeTime,
@@ -38,6 +40,29 @@ export default function OnboardingFlow() {
   const [studyPlan, setStudyPlan] = useState<StudyPlan | null>(null);
   const [studyPlanLoading, setStudyPlanLoading] = useState<boolean>(false);
   const [studyPlanError, setStudyPlanError] = useState<string>("");
+  const [studyPlanOptions, setStudyPlanOptions] =
+    useState<StudyPlanOptions | null>(null);
+  const [studyPlanOptionsLoading, setStudyPlanOptionsLoading] =
+    useState<boolean>(false);
+  const [studyPlanOptionsError, setStudyPlanOptionsError] =
+    useState<string>("");
+  const [mainTermSelection, setMainTermSelection] =
+    useState<TermSelection | null>(null);
+  const [enrolledTermSelection, setEnrolledTermSelection] =
+    useState<TermSelection | null>(null);
+  const [mainTermStudyPlan, setMainTermStudyPlan] = useState<StudyPlan | null>(
+    null,
+  );
+  const [mainTermStudyPlanLoading, setMainTermStudyPlanLoading] =
+    useState<boolean>(false);
+  const [mainTermStudyPlanError, setMainTermStudyPlanError] =
+    useState<string>("");
+  const [enrolledTermStudyPlan, setEnrolledTermStudyPlan] =
+    useState<StudyPlan | null>(null);
+  const [enrolledTermStudyPlanLoading, setEnrolledTermStudyPlanLoading] =
+    useState<boolean>(false);
+  const [enrolledTermStudyPlanError, setEnrolledTermStudyPlanError] =
+    useState<string>("");
 
   const [data, setData] = useState<FormData>({
     fullName: "",
@@ -139,6 +164,69 @@ export default function OnboardingFlow() {
     [],
   );
 
+  const loadStudyPlanOptions = useCallback(
+    async (cohortCode: string): Promise<void> => {
+      if (!cohortCode) {
+        setStudyPlanOptions(null);
+        setStudyPlanOptionsError("");
+        setStudyPlanOptionsLoading(false);
+        return;
+      }
+
+      setStudyPlanOptionsLoading(true);
+      setStudyPlanOptionsError("");
+      try {
+        const res = await fetch(
+          `${API_BASE_URL}/cohorts/${cohortCode}/study-plan-options`,
+        );
+        if (!res.ok) {
+          throw new Error(
+            `Không tải được danh sách học kỳ của khóa ${cohortCode} (${res.status})`,
+          );
+        }
+
+        const json: StudyPlanOptions = await res.json();
+        setStudyPlanOptions(json);
+      } catch (error) {
+        setStudyPlanOptions(null);
+        setStudyPlanOptionsError(
+          error instanceof Error
+            ? error.message
+            : "Không tải được danh sách học kỳ",
+        );
+      } finally {
+        setStudyPlanOptionsLoading(false);
+      }
+    },
+    [],
+  );
+
+  const loadStudyPlanByTerm = useCallback(
+    async (
+      cohortCode: string,
+      selection: TermSelection,
+    ): Promise<StudyPlan> => {
+      const params = new URLSearchParams({
+        studyYearNo: String(selection.studyYearNo),
+        semesterNo: String(selection.semesterNo),
+        startYearTerm: String(selection.startYearTerm),
+        endYearTerm: String(selection.endYearTerm),
+      });
+
+      const res = await fetch(
+        `${API_BASE_URL}/cohorts/${cohortCode}/study-plan-options/subject?${params.toString()}`,
+      );
+      if (!res.ok) {
+        throw new Error(
+          `Không tải được môn học theo học kỳ đã chọn (${res.status})`,
+        );
+      }
+      const json: StudyPlan = await res.json();
+      return json;
+    },
+    [],
+  );
+
   useEffect(() => {
     loadCohorts();
   }, [loadCohorts]);
@@ -147,10 +235,74 @@ export default function OnboardingFlow() {
     loadStudyPlan(data.cohortCode);
   }, [data.cohortCode, loadStudyPlan]);
 
+  useEffect(() => {
+    loadStudyPlanOptions(data.cohortCode);
+  }, [data.cohortCode, loadStudyPlanOptions]);
+
+  useEffect(() => {
+    if (!data.cohortCode || !mainTermSelection) {
+      setMainTermStudyPlan(null);
+      setMainTermStudyPlanLoading(false);
+      setMainTermStudyPlanError("");
+      return;
+    }
+
+    setMainTermStudyPlanLoading(true);
+    setMainTermStudyPlanError("");
+    loadStudyPlanByTerm(data.cohortCode, mainTermSelection)
+      .then((plan) => {
+        setMainTermStudyPlan(plan);
+      })
+      .catch((error) => {
+        setMainTermStudyPlan(null);
+        setMainTermStudyPlanError(
+          error instanceof Error
+            ? error.message
+            : "Không tải được môn chính theo học kỳ đã chọn",
+        );
+      })
+      .finally(() => {
+        setMainTermStudyPlanLoading(false);
+      });
+  }, [data.cohortCode, mainTermSelection, loadStudyPlanByTerm]);
+
+  useEffect(() => {
+    if (!data.cohortCode || !enrolledTermSelection) {
+      setEnrolledTermStudyPlan(null);
+      setEnrolledTermStudyPlanLoading(false);
+      setEnrolledTermStudyPlanError("");
+      return;
+    }
+
+    setEnrolledTermStudyPlanLoading(true);
+    setEnrolledTermStudyPlanError("");
+    loadStudyPlanByTerm(data.cohortCode, enrolledTermSelection)
+      .then((plan) => {
+        setEnrolledTermStudyPlan(plan);
+      })
+      .catch((error) => {
+        setEnrolledTermStudyPlan(null);
+        setEnrolledTermStudyPlanError(
+          error instanceof Error
+            ? error.message
+            : "Không tải được môn phụ theo học kỳ đã chọn",
+        );
+      })
+      .finally(() => {
+        setEnrolledTermStudyPlanLoading(false);
+      });
+  }, [data.cohortCode, enrolledTermSelection, loadStudyPlanByTerm]);
+
   const update = useCallback(
     (key: keyof FormData, value: FormData[keyof FormData]): void =>
       setData((p) => {
         if (key === "cohortCode") {
+          setMainTermSelection(null);
+          setEnrolledTermSelection(null);
+          setMainTermStudyPlan(null);
+          setMainTermStudyPlanError("");
+          setEnrolledTermStudyPlan(null);
+          setEnrolledTermStudyPlanError("");
           return {
             ...p,
             cohortCode: value as string,
@@ -252,7 +404,11 @@ export default function OnboardingFlow() {
       setSubmissionResult(null);
 
       try {
-        const subjectCodeToIdMap = createSubjectCodeToIdMap(studyPlan);
+        const subjectCodeToIdMap = createSubjectCodeToIdMap([
+          studyPlan,
+          mainTermStudyPlan,
+          enrolledTermStudyPlan,
+        ]);
         const payload = transformFormDataToPayload(
           data,
           cohorts,
@@ -302,7 +458,7 @@ export default function OnboardingFlow() {
     return (
       (
         {
-          1: "Xin chào! Hãy bắt đầu nào 👋",
+          1: "Xin chào! Hãy bắt đầu nào",
           2: "Thông tin cá nhân",
           4: "Khóa hiện tại và môn học của bạn",
           5: "Thời gian rảnh của bạn",
@@ -349,6 +505,19 @@ export default function OnboardingFlow() {
             studyPlan={studyPlan}
             studyPlanLoading={studyPlanLoading}
             studyPlanError={studyPlanError}
+            studyPlanOptions={studyPlanOptions}
+            studyPlanOptionsLoading={studyPlanOptionsLoading}
+            studyPlanOptionsError={studyPlanOptionsError}
+            mainTermSelection={mainTermSelection}
+            enrolledTermSelection={enrolledTermSelection}
+            setMainTermSelection={setMainTermSelection}
+            setEnrolledTermSelection={setEnrolledTermSelection}
+            mainTermStudyPlan={mainTermStudyPlan}
+            mainTermStudyPlanLoading={mainTermStudyPlanLoading}
+            mainTermStudyPlanError={mainTermStudyPlanError}
+            enrolledTermStudyPlan={enrolledTermStudyPlan}
+            enrolledTermStudyPlanLoading={enrolledTermStudyPlanLoading}
+            enrolledTermStudyPlanError={enrolledTermStudyPlanError}
           />
         );
       case 5:
@@ -371,7 +540,7 @@ export default function OnboardingFlow() {
         <div className="bg-white rounded-3xl p-10 max-w-sm w-full mx-4 text-center shadow-sm border border-blue-100">
           {submissionError ? (
             <>
-              <div className="text-5xl mb-4">⚠️</div>
+              <div className="text-5xl mb-4"></div>
               <h2 className="text-2xl font-bold text-red-600 mb-2">
                 Lỗi gửi dữ liệu
               </h2>
@@ -410,6 +579,12 @@ export default function OnboardingFlow() {
                       prevAttempts: 0,
                       studiedCredits: "",
                     });
+                    setMainTermSelection(null);
+                    setEnrolledTermSelection(null);
+                    setMainTermStudyPlan(null);
+                    setMainTermStudyPlanError("");
+                    setEnrolledTermStudyPlan(null);
+                    setEnrolledTermStudyPlanError("");
                     setSubmissionError("");
                   }}
                   className="flex-1 py-3 border border-gray-200 text-gray-600 rounded-xl font-semibold text-sm hover:bg-gray-50 transition-colors"
@@ -464,6 +639,12 @@ export default function OnboardingFlow() {
                     prevAttempts: 0,
                     studiedCredits: "",
                   });
+                  setMainTermSelection(null);
+                  setEnrolledTermSelection(null);
+                  setMainTermStudyPlan(null);
+                  setMainTermStudyPlanError("");
+                  setEnrolledTermStudyPlan(null);
+                  setEnrolledTermStudyPlanError("");
                   setSubmissionResult(null);
                 }}
                 className="w-full py-2.5 text-gray-400 border border-gray-200 rounded-xl text-sm hover:bg-gray-50 transition-colors"

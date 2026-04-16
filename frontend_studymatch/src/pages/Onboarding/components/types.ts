@@ -23,6 +23,36 @@ export interface StudyPlan {
   subjects?: Subject[];
 }
 
+export interface StudyYearSemesterOption {
+  semesterNo: number;
+  displayName: string;
+}
+
+export interface StudyYearOption {
+  studyYearNo: number;
+  displayName: string;
+  academicYearLabel: string;
+  semesters: StudyYearSemesterOption[];
+}
+
+export interface StudyPlanOptions {
+  success: boolean;
+  cohortCode: string;
+  startYear: number;
+  curriculumId: number;
+  curriculumCode: string;
+  curriculumName: string;
+  studyYears: StudyYearOption[];
+}
+
+export interface TermSelection {
+  studyYearNo: number;
+  semesterNo: number;
+  startYearTerm: number;
+  endYearTerm: number;
+  displayLabel: string;
+}
+
 export type DayId = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 export type SlotId = "ca1" | "ca2" | "ca3" | "ca4" | "ca5" | "ca6";
 export type FreeTime = Record<DayId, Record<SlotId, boolean>>;

@@ -6,6 +6,7 @@ import { router } from "./router/Router";
 import { Provider } from "react-redux";
 import store from "./redux/store";
 import OnboardingFlow from "./pages/Onboarding/Onboarding";
+import ProfilePage from "./pages/Profile";
 function App() {
   return (
     // <>
@@ -13,7 +14,7 @@ function App() {
     //     <RouterProvider router={router} />
     //   </Provider>
     // </>
-    <OnboardingFlow></OnboardingFlow>
+    <ProfilePage></ProfilePage>
   );
 }
 

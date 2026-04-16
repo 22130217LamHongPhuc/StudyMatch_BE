@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Check } from "lucide-react";
 import {
   FormData,
   StudyPlan,
+  StudyPlanOptions,
+  TermSelection,
+  Subject,
   DayConfig,
   SlotConfig,
   DayId,
@@ -23,6 +26,19 @@ interface Step4Props {
   studyPlan: StudyPlan | null;
   studyPlanLoading: boolean;
   studyPlanError: string;
+  studyPlanOptions: StudyPlanOptions | null;
+  studyPlanOptionsLoading: boolean;
+  studyPlanOptionsError: string;
+  mainTermSelection: TermSelection | null;
+  enrolledTermSelection: TermSelection | null;
+  setMainTermSelection: (value: TermSelection | null) => void;
+  setEnrolledTermSelection: (value: TermSelection | null) => void;
+  mainTermStudyPlan: StudyPlan | null;
+  mainTermStudyPlanLoading: boolean;
+  mainTermStudyPlanError: string;
+  enrolledTermStudyPlan: StudyPlan | null;
+  enrolledTermStudyPlanLoading: boolean;
+  enrolledTermStudyPlanError: string;
 }
 
 export function Step4CurrentPlan({
@@ -31,11 +47,43 @@ export function Step4CurrentPlan({
   studyPlan,
   studyPlanLoading,
   studyPlanError,
+  studyPlanOptions,
+  studyPlanOptionsLoading,
+  studyPlanOptionsError,
+  mainTermSelection,
+  enrolledTermSelection,
+  setMainTermSelection,
+  setEnrolledTermSelection,
+  mainTermStudyPlan,
+  mainTermStudyPlanLoading,
+  mainTermStudyPlanError,
+  enrolledTermStudyPlan,
+  enrolledTermStudyPlanLoading,
+  enrolledTermStudyPlanError,
 }: Step4Props) {
   const [editingModuleCode, setEditingModuleCode] = useState<string | null>(
     null,
   );
-  const subjects = getSortedSubjects(studyPlan?.subjects || []);
+  const defaultSubjects = getSortedSubjects(studyPlan?.subjects || []);
+  const mainSubjects = getSortedSubjects(
+    mainTermSelection
+      ? (mainTermStudyPlan?.subjects ?? [])
+      : (studyPlan?.subjects ?? []),
+  );
+  const enrolledSubjects = getSortedSubjects(
+    enrolledTermSelection
+      ? (enrolledTermStudyPlan?.subjects ?? [])
+      : (studyPlan?.subjects ?? []),
+  );
+  const allSubjects = useMemo(() => {
+    const merged = new Map<string, Subject>();
+    [...defaultSubjects, ...mainSubjects, ...enrolledSubjects].forEach(
+      (subject) => {
+        merged.set(String(subject.subjectCode), subject);
+      },
+    );
+    return Array.from(merged.values());
+  }, [defaultSubjects, enrolledSubjects, mainSubjects]);
   const selectedModules = [data.mainModule, ...data.enrolledModules].filter(
     Boolean,
   );
@@ -128,8 +176,103 @@ export function Step4CurrentPlan({
   };
 
   const editingModuleInfo = editingModuleCode
-    ? subjects.find((s) => s.subjectCode === editingModuleCode)
+    ? allSubjects.find((s) => s.subjectCode === editingModuleCode)
     : null;
+
+  const parseAcademicYearLabel = (
+    label: string,
+    fallbackStart: number,
+  ): { startYearTerm: number; endYearTerm: number } => {
+    const match = label.match(/(\d{4})\D+(\d{4})/);
+    if (match) {
+      return {
+        startYearTerm: Number(match[1]),
+        endYearTerm: Number(match[2]),
+      };
+    }
+
+    return {
+      startYearTerm: fallbackStart,
+      endYearTerm: fallbackStart + 1,
+    };
+  };
+
+  const termOptions = useMemo(() => {
+    const baseStartYear = studyPlanOptions?.startYear ?? 0;
+    return (studyPlanOptions?.studyYears ?? []).flatMap((year) =>
+      year.semesters.map((semester) => {
+        const fallbackStartYear = baseStartYear
+          ? baseStartYear + year.studyYearNo - 1
+          : 0;
+        const { startYearTerm, endYearTerm } = parseAcademicYearLabel(
+          year.academicYearLabel,
+          fallbackStartYear,
+        );
+
+        return {
+          studyYearNo: year.studyYearNo,
+          semesterNo: semester.semesterNo,
+          startYearTerm,
+          endYearTerm,
+          displayLabel: `${year.displayName} - ${semester.displayName} (${year.academicYearLabel})`,
+        };
+      }),
+    );
+  }, [studyPlanOptions]);
+
+  const getTermOptionKey = (option: TermSelection): string =>
+    `${option.studyYearNo}-${option.semesterNo}-${option.startYearTerm}-${option.endYearTerm}`;
+
+  const handleTermSelectionChange = (
+    selectedKey: string,
+    setter: (value: TermSelection | null) => void,
+  ): void => {
+    const selected = termOptions.find(
+      (option) => getTermOptionKey(option) === selectedKey,
+    );
+    setter(selected ?? null);
+  };
+
+  const mainTermKey = mainTermSelection
+    ? getTermOptionKey(mainTermSelection)
+    : "current";
+  const enrolledTermKey = enrolledTermSelection
+    ? getTermOptionKey(enrolledTermSelection)
+    : "current";
+
+  const handleMainUseCurrentTerm = (): void => {
+    setMainTermSelection(null);
+    update("mainModule", "");
+  };
+
+  const handleMainUseCustomTerm = (): void => {
+    if (!mainTermSelection && termOptions.length > 0) {
+      setMainTermSelection(termOptions[0]);
+      update("mainModule", "");
+    }
+  };
+
+  const handleMainTermChange = (selectedKey: string): void => {
+    handleTermSelectionChange(selectedKey, setMainTermSelection);
+    update("mainModule", "");
+  };
+
+  const handleEnrolledUseCurrentTerm = (): void => {
+    setEnrolledTermSelection(null);
+    update("enrolledModules", []);
+  };
+
+  const handleEnrolledUseCustomTerm = (): void => {
+    if (!enrolledTermSelection && termOptions.length > 0) {
+      setEnrolledTermSelection(termOptions[0]);
+      update("enrolledModules", []);
+    }
+  };
+
+  const handleEnrolledTermChange = (selectedKey: string): void => {
+    handleTermSelectionChange(selectedKey, setEnrolledTermSelection);
+    update("enrolledModules", []);
+  };
 
   return (
     <div className="space-y-4">
@@ -155,6 +298,110 @@ export function Step4CurrentPlan({
         Hệ thống tự tải chương trình học hiện tại của khóa bạn đã chọn. Chọn môn
         chính trước, sau đó có thể chọn thêm các môn khác đang học.
       </p>
+
+      {!studyPlanLoading && !studyPlanError && studyPlan && (
+        <div className="space-y-3 rounded-2xl border border-amber-100 bg-amber-50 p-4">
+          <div>
+            <p className="text-xs font-semibold text-amber-700 uppercase tracking-widest">
+              Tùy chọn học kỳ
+            </p>
+            <p className="text-xs text-amber-600 mt-1">
+              Bạn có thể chọn học kỳ riêng cho môn chính và môn phụ.
+            </p>
+          </div>
+
+          {studyPlanOptionsLoading ? (
+            <div className="rounded-xl border border-amber-200 bg-white px-3 py-2 text-xs text-amber-700">
+              Đang tải danh sách học kỳ...
+            </div>
+          ) : studyPlanOptionsError ? (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
+              {studyPlanOptionsError}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="rounded-xl border border-amber-200 bg-white p-3 space-y-2">
+                <p className="text-xs font-semibold text-gray-600">Môn chính</p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleMainUseCurrentTerm}
+                    className={`text-xs font-semibold px-3 py-1.5 rounded-lg border ${!mainTermSelection ? "border-amber-400 bg-amber-100 text-amber-800" : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"}`}
+                  >
+                    Học kỳ hiện tại
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleMainUseCustomTerm}
+                    className={`text-xs font-semibold px-3 py-1.5 rounded-lg border ${mainTermSelection ? "border-amber-400 bg-amber-100 text-amber-800" : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"}`}
+                  >
+                    Tùy chọn
+                  </button>
+                </div>
+                {mainTermSelection && (
+                  <select
+                    value={mainTermKey}
+                    onChange={(e) => handleMainTermChange(e.target.value)}
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-700"
+                  >
+                    {termOptions.map((option) => (
+                      <option
+                        key={getTermOptionKey(option)}
+                        value={getTermOptionKey(option)}
+                      >
+                        {option.displayLabel}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              <div className="rounded-xl border border-amber-200 bg-white p-3 space-y-2">
+                <p className="text-xs font-semibold text-gray-600">Môn phụ</p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleEnrolledUseCurrentTerm}
+                    className={`text-xs font-semibold px-3 py-1.5 rounded-lg border ${!enrolledTermSelection ? "border-amber-400 bg-amber-100 text-amber-800" : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"}`}
+                  >
+                    Học kỳ hiện tại
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleEnrolledUseCustomTerm}
+                    className={`text-xs font-semibold px-3 py-1.5 rounded-lg border ${enrolledTermSelection ? "border-amber-400 bg-amber-100 text-amber-800" : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"}`}
+                  >
+                    Tùy chọn
+                  </button>
+                </div>
+                {enrolledTermSelection && (
+                  <select
+                    value={enrolledTermKey}
+                    onChange={(e) => handleEnrolledTermChange(e.target.value)}
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-700"
+                  >
+                    {termOptions.map((option) => (
+                      <option
+                        key={getTermOptionKey(option)}
+                        value={getTermOptionKey(option)}
+                      >
+                        {option.displayLabel}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            </div>
+          )}
+
+          {(mainTermSelection || enrolledTermSelection) && (
+            <p className="text-[11px] text-amber-700">
+              Đã bật chế độ tùy chọn học kỳ. Danh sách môn phía dưới đang được
+              tải theo học kỳ bạn chọn.
+            </p>
+          )}
+        </div>
+      )}
 
       {studyPlanLoading ? (
         <div className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-500">
@@ -184,7 +431,17 @@ export function Step4CurrentPlan({
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
               Chọn môn chính
             </p>
-            {subjects.map((subject) => {
+            {mainTermStudyPlanLoading && mainTermSelection && (
+              <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-500">
+                Đang tải môn chính theo học kỳ đã chọn...
+              </div>
+            )}
+            {mainTermStudyPlanError && mainTermSelection && (
+              <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
+                {mainTermStudyPlanError}
+              </div>
+            )}
+            {mainSubjects.map((subject) => {
               const active = data.mainModule === subject.subjectCode;
               return (
                 <button
@@ -221,7 +478,17 @@ export function Step4CurrentPlan({
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
               Môn khác đang học
             </p>
-            {subjects
+            {enrolledTermStudyPlanLoading && enrolledTermSelection && (
+              <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-500">
+                Đang tải môn phụ theo học kỳ đã chọn...
+              </div>
+            )}
+            {enrolledTermStudyPlanError && enrolledTermSelection && (
+              <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
+                {enrolledTermStudyPlanError}
+              </div>
+            )}
+            {enrolledSubjects
               .filter((subject) => subject.subjectCode !== data.mainModule)
               .map((subject) => {
                 const active = data.enrolledModules.includes(
@@ -291,7 +558,7 @@ export function Step4CurrentPlan({
 
               <div className="space-y-2">
                 {selectedModules.map((moduleCode) => {
-                  const moduleInfo = subjects.find(
+                  const moduleInfo = allSubjects.find(
                     (s) => s.subjectCode === moduleCode,
                   );
                   const selectedCount = getModuleSelectedCount(moduleCode);
@@ -483,7 +750,7 @@ export function Step4CurrentPlan({
           )}
 
           <div className="text-xs text-gray-400">
-            Tổng số môn hiện tại: {subjects.length}
+            Tổng số môn khả dụng: {allSubjects.length}
           </div>
         </>
       )}

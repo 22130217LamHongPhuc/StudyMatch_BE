@@ -11,7 +11,6 @@ import {
 const API_BASE_URL = "http://localhost:8081/api";
 const API_BASE_URL2 = "http://localhost:8082/api";
 
-// API Payload Types
 export interface SubjectScheduleSlot {
   subjectId: number | string;
   dayOfWeek: DayId;
@@ -44,7 +43,6 @@ export interface OnboardingSubmissionPayload {
   subjectScheduleSlots: SubjectScheduleSlot[];
 }
 
-// Mapping helpers
 const genderMap: Record<string, "male" | "female" | ""> = {
   M: "male",
   F: "female",
@@ -65,30 +63,23 @@ const studyModeMap: Record<StudyMode, string> = {
   support: "support",
 };
 
-/**
- * Transform FormData into OnboardingSubmissionPayload format
- */
 export function transformFormDataToPayload(
   formData: FormData,
   cohorts: Cohort[],
   studyPlan: StudyPlan | null,
   subjectCodeToIdMap: Record<string, number | string>,
 ): OnboardingSubmissionPayload {
-  // Get cohort ID from cohort code
   const cohort = cohorts.find(
     (c) => String(c.cohortCode) === String(formData.cohortCode),
   );
   const cohortId = cohort?.cohortId || "";
 
-  // Get main subject ID
   const mainSubjectId = subjectCodeToIdMap[formData.mainModule] || "";
 
-  // Get enrolled subject IDs
   const currentSubjectIds = formData.enrolledModules
     .map((code) => subjectCodeToIdMap[code])
     .filter(Boolean);
 
-  // Transform free time slots
   const freeTimeSlots: FreeTimeSlot[] = [];
   Object.keys(formData.freeTime).forEach((dayStr) => {
     const dayId = parseInt(dayStr) as DayId;
@@ -103,10 +94,8 @@ export function transformFormDataToPayload(
     });
   });
 
-  // Transform subject schedule slots
   const subjectScheduleSlots: SubjectScheduleSlot[] = [];
 
-  // Main subject slots
   if (formData.moduleSlots[formData.mainModule]) {
     Object.keys(formData.moduleSlots[formData.mainModule]).forEach((dayStr) => {
       const dayId = parseInt(dayStr) as DayId;
@@ -124,7 +113,6 @@ export function transformFormDataToPayload(
     });
   }
 
-  // Enrolled module slots
   formData.enrolledModules.forEach((moduleCode) => {
     if (formData.moduleSlots[moduleCode]) {
       Object.keys(formData.moduleSlots[moduleCode]).forEach((dayStr) => {
@@ -207,17 +195,15 @@ export async function submitOnboardingForm(
   }
 }
 
-/**
- * Create a map of subject codes to subject IDs from the study plan
- */
 export function createSubjectCodeToIdMap(
-  studyPlan: StudyPlan | null,
+  studyPlans: Array<StudyPlan | null>,
 ): Record<string, number | string> {
   const map: Record<string, number | string> = {};
-  if (studyPlan?.subjects) {
+  studyPlans.forEach((studyPlan) => {
+    if (!studyPlan?.subjects) return;
     studyPlan.subjects.forEach((subject) => {
       map[subject.subjectCode] = subject.subjectId;
     });
-  }
+  });
   return map;
 }

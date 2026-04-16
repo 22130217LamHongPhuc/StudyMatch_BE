@@ -226,15 +226,6 @@ export function Step7({ data, studyPlan }: Step7Props) {
           )}
         </div>
       </div>
-
-      <details className="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
-        <summary className="px-4 py-3 text-xs font-semibold text-gray-500 cursor-pointer select-none hover:text-gray-700">
-          🔬 Xem vector đặc trưng gửi vào mô hình gợi ý
-        </summary>
-        <pre className="px-4 pb-4 pt-1 text-xs text-gray-400 overflow-x-auto whitespace-pre-wrap leading-relaxed">
-          {JSON.stringify(vector, null, 2)}
-        </pre>
-      </details>
     </div>
   );
 }
