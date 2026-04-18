@@ -31,7 +31,7 @@ export default function ProfilePage() {
   return (
     <Box
       sx={{
-        minHeight: "100%",
+        minHeight: "80%",
         py: { xs: 2, md: 4 },
         px: { xs: 1.5, md: 2 },
         background:
@@ -40,7 +40,7 @@ export default function ProfilePage() {
     >
       <Box
         sx={{
-          width: { xs: "100%", md: "78%", xl: "74%" },
+          width: { xs: "100%", md: "60%", xl: "74%" },
           mx: "auto",
         }}
       >
@@ -61,12 +61,12 @@ export default function ProfilePage() {
             </Typography>
           </Box>
 
-          {error && usingMockData && (
+          {/* {error && usingMockData && (
             <Alert severity="warning" sx={{ borderRadius: 2 }}>
               Không lấy được dữ liệu từ API ({error}). Đang hiển thị dữ liệu mẫu
               để bạn tiếp tục giao diện.
             </Alert>
-          )}
+          )} */}
 
           <ProfileHeaderCard profile={profileVm} />
 

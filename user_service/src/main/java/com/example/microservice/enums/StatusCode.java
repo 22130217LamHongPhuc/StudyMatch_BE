@@ -1,0 +1,12 @@
+package com.example.microservice.enums;
+
+public enum StatusCode {
+    INVALID_TOKEN ,
+    INVALID_REFRESH_TOKEN,
+    USER_NOT_FOUND,
+    INTERNAL_SERVER_ERROR,
+    UNAUTHORIZED,
+    ACCESS_DENIED,
+    EMAIL_ALREADY_IN_USE, INVALID_FILE, PASSWORD_INCORRECT, SUCCESS
+}
+

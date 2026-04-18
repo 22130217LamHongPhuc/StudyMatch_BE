@@ -82,17 +82,6 @@ export default function OnboardingFlow() {
     studiedCredits: "",
   });
 
-  useEffect(() => {
-    if (!document.getElementById("tw-cdn")) {
-      const link = document.createElement("link");
-      link.id = "tw-cdn";
-      link.rel = "stylesheet";
-      link.href =
-        "https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css";
-      document.head.appendChild(link);
-    }
-  }, []);
-
   const loadCohorts = useCallback(async (): Promise<void> => {
     setCohortsLoading(true);
     setCohortsError("");

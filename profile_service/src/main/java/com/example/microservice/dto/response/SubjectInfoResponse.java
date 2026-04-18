@@ -1,6 +1,12 @@
 package com.example.microservice.dto.response;
 
+import lombok.Getter;
+import lombok.Setter;
+
+@Setter
+@Getter
 public class SubjectInfoResponse {
+    // Getters and Setters
     private Long subjectId;
     private String subjectCode;
     private String subjectName;
@@ -14,29 +20,5 @@ public class SubjectInfoResponse {
         this.subjectName = subjectName;
     }
 
-    // Getters and Setters
-    public Long getSubjectId() {
-        return subjectId;
-    }
-
-    public void setSubjectId(Long subjectId) {
-        this.subjectId = subjectId;
-    }
-
-    public String getSubjectCode() {
-        return subjectCode;
-    }
-
-    public void setSubjectCode(String subjectCode) {
-        this.subjectCode = subjectCode;
-    }
-
-    public String getSubjectName() {
-        return subjectName;
-    }
-
-    public void setSubjectName(String subjectName) {
-        this.subjectName = subjectName;
-    }
 }
 

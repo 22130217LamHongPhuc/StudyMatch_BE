@@ -13,7 +13,9 @@ interface UseProfileDataResult {
 }
 
 export function useProfileData(userId: number): UseProfileDataResult {
-  const [profileData, setProfileData] = useState<ProfileApiResponse | null>(null);
+  const [profileData, setProfileData] = useState<ProfileApiResponse | null>(
+    null,
+  );
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [usingMockData, setUsingMockData] = useState<boolean>(false);
@@ -31,11 +33,11 @@ export function useProfileData(userId: number): UseProfileDataResult {
         if (!isMounted) return;
         setProfileData(data);
       } catch (err) {
-        if (!isMounted) return;
-        const message = err instanceof Error ? err.message : "Khong tai duoc du lieu profile";
-        setError(message);
-        setProfileData(mockProfileData);
-        setUsingMockData(true);
+        // if (!isMounted) return;
+        // const message = err instanceof Error ? err.message : "Khong tai duoc du lieu profile";
+        // setError(message);
+        // setProfileData(mockProfileData);
+        // setUsingMockData(true);
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -63,4 +65,3 @@ export function useProfileData(userId: number): UseProfileDataResult {
     usingMockData,
   };
 }
-

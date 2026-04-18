@@ -9,6 +9,11 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import lombok.Getter;
+import lombok.Setter;
+
+@Setter
+@Getter
 @Entity
 @Table(name = "student_subject_schedule_slots", uniqueConstraints = {
         @UniqueConstraint(name = "uk_user_term_subject_day_slot",
@@ -39,58 +44,5 @@ public class StudentSubjectScheduleSlot {
     private String note;
     public StudentSubjectScheduleSlot() {
     }
-    public Long getId() {
-        return id;
-    }
-    public void setId(Long id) {
-        this.id = id;
-    }
-    public Long getUserId() {
-        return userId;
-    }
-    public void setUserId(Long userId) {
-        this.userId = userId;
-    }
-    public AcademicTerm getTerm() {
-        return term;
-    }
-    public void setTerm(AcademicTerm term) {
-        this.term = term;
-    }
-    public Subject getSubject() {
-        return subject;
-    }
-    public void setSubject(Subject subject) {
-        this.subject = subject;
-    }
-    public Byte getDayOfWeek() {
-        return dayOfWeek;
-    }
-    public void setDayOfWeek(Byte dayOfWeek) {
-        this.dayOfWeek = dayOfWeek;
-    }
-    public String getSlotCode() {
-        return slotCode;
-    }
-    public void setSlotCode(String slotCode) {
-        this.slotCode = slotCode;
-    }
-    public String getScheduleType() {
-        return scheduleType;
-    }
-    public void setScheduleType(String scheduleType) {
-        this.scheduleType = scheduleType;
-    }
-    public String getLocation() {
-        return location;
-    }
-    public void setLocation(String location) {
-        this.location = location;
-    }
-    public String getNote() {
-        return note;
-    }
-    public void setNote(String note) {
-        this.note = note;
-    }
+
 }

@@ -1,8 +1,13 @@
 package com.example.microservice.dto.response;
 
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.util.List;
 
+@Setter
+@Getter
 public class CohortStudyPlanResponse {
     private Long cohortId;
     private String cohortCode;
@@ -82,115 +87,4 @@ public class CohortStudyPlanResponse {
         }
     }
 
-    public Long getCohortId() {
-        return cohortId;
-    }
-
-    public void setCohortId(Long cohortId) {
-        this.cohortId = cohortId;
-    }
-
-    public String getCohortCode() {
-        return cohortCode;
-    }
-
-    public void setCohortCode(String cohortCode) {
-        this.cohortCode = cohortCode;
-    }
-
-    public Integer getStartAcademicYear() {
-        return startAcademicYear;
-    }
-
-    public void setStartAcademicYear(Integer startAcademicYear) {
-        this.startAcademicYear = startAcademicYear;
-    }
-
-    public Integer getTotalStudyYears() {
-        return totalStudyYears;
-    }
-
-    public void setTotalStudyYears(Integer totalStudyYears) {
-        this.totalStudyYears = totalStudyYears;
-    }
-
-    public Long getCurriculumId() {
-        return curriculumId;
-    }
-
-    public void setCurriculumId(Long curriculumId) {
-        this.curriculumId = curriculumId;
-    }
-
-    public String getCurriculumCode() {
-        return curriculumCode;
-    }
-
-    public void setCurriculumCode(String curriculumCode) {
-        this.curriculumCode = curriculumCode;
-    }
-
-    public String getCurriculumName() {
-        return curriculumName;
-    }
-
-    public void setCurriculumName(String curriculumName) {
-        this.curriculumName = curriculumName;
-    }
-
-    public Long getTermId() {
-        return termId;
-    }
-
-    public void setTermId(Long termId) {
-        this.termId = termId;
-    }
-
-    public Integer getAcademicYearStart() {
-        return academicYearStart;
-    }
-
-    public void setAcademicYearStart(Integer academicYearStart) {
-        this.academicYearStart = academicYearStart;
-    }
-
-    public Integer getAcademicYearEnd() {
-        return academicYearEnd;
-    }
-
-    public void setAcademicYearEnd(Integer academicYearEnd) {
-        this.academicYearEnd = academicYearEnd;
-    }
-
-    public Integer getSemesterNo() {
-        return semesterNo;
-    }
-
-    public void setSemesterNo(Integer semesterNo) {
-        this.semesterNo = semesterNo;
-    }
-
-    public String getTermFullName() {
-        return termFullName;
-    }
-
-    public void setTermFullName(String termFullName) {
-        this.termFullName = termFullName;
-    }
-
-    public Integer getStudyYearNo() {
-        return studyYearNo;
-    }
-
-    public void setStudyYearNo(Integer studyYearNo) {
-        this.studyYearNo = studyYearNo;
-    }
-
-    public List<SubjectItem> getSubjects() {
-        return subjects;
-    }
-
-    public void setSubjects(List<SubjectItem> subjects) {
-        this.subjects = subjects;
-    }
 }

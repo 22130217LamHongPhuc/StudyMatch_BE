@@ -1,6 +1,12 @@
 package com.example.microservice.dto.response;
 
+import lombok.Getter;
+import lombok.Setter;
+
+@Setter
+@Getter
 public class FreeTimeSlotResponse {
+    // Getters and Setters
     private Long id;
     private Byte dayOfWeek;
     private String slotCode;
@@ -16,37 +22,5 @@ public class FreeTimeSlotResponse {
         this.isAvailable = isAvailable;
     }
 
-    // Getters and Setters
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Byte getDayOfWeek() {
-        return dayOfWeek;
-    }
-
-    public void setDayOfWeek(Byte dayOfWeek) {
-        this.dayOfWeek = dayOfWeek;
-    }
-
-    public String getSlotCode() {
-        return slotCode;
-    }
-
-    public void setSlotCode(String slotCode) {
-        this.slotCode = slotCode;
-    }
-
-    public Boolean getIsAvailable() {
-        return isAvailable;
-    }
-
-    public void setIsAvailable(Boolean isAvailable) {
-        this.isAvailable = isAvailable;
-    }
 }
 

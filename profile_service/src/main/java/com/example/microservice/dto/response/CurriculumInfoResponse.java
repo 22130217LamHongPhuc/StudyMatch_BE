@@ -1,5 +1,10 @@
 package com.example.microservice.dto.response;
 
+import lombok.Getter;
+import lombok.Setter;
+
+@Setter
+@Getter
 public class CurriculumInfoResponse {
     private Long curriculumId;
     private String curriculumCode;
@@ -14,29 +19,5 @@ public class CurriculumInfoResponse {
         this.curriculumName = curriculumName;
     }
 
-    // Getters and Setters
-    public Long getCurriculumId() {
-        return curriculumId;
-    }
-
-    public void setCurriculumId(Long curriculumId) {
-        this.curriculumId = curriculumId;
-    }
-
-    public String getCurriculumCode() {
-        return curriculumCode;
-    }
-
-    public void setCurriculumCode(String curriculumCode) {
-        this.curriculumCode = curriculumCode;
-    }
-
-    public String getCurriculumName() {
-        return curriculumName;
-    }
-
-    public void setCurriculumName(String curriculumName) {
-        this.curriculumName = curriculumName;
-    }
 }
 

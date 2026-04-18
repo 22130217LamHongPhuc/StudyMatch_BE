@@ -1,5 +1,8 @@
 package com.example.microservice.dto.response;
 
+import lombok.Getter;
+
+@Getter
 public class CohortInfoResponse {
     private Long cohortId;
     private String cohortCode;
@@ -17,41 +20,20 @@ public class CohortInfoResponse {
         this.totalStudyYears = totalStudyYears;
     }
 
-    // Getters and Setters
-    public Long getCohortId() {
-        return cohortId;
-    }
-
     public void setCohortId(Long cohortId) {
         this.cohortId = cohortId;
-    }
-
-    public String getCohortCode() {
-        return cohortCode;
     }
 
     public void setCohortCode(String cohortCode) {
         this.cohortCode = cohortCode;
     }
 
-    public Integer getStartAcademicYear() {
-        return startAcademicYear;
-    }
-
     public void setStartAcademicYear(Integer startAcademicYear) {
         this.startAcademicYear = startAcademicYear;
     }
 
-    public Byte getTotalStudyYears() {
-        return totalStudyYears;
-    }
-
     public void setTotalStudyYears(Byte totalStudyYears) {
         this.totalStudyYears = totalStudyYears;
-    }
-
-    public CurriculumInfoResponse getCurriculum() {
-        return curriculum;
     }
 
     public void setCurriculum(CurriculumInfoResponse curriculum) {

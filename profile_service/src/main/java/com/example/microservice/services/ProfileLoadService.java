@@ -32,16 +32,13 @@ public class ProfileLoadService {
     @Autowired
     private SubjectRepository subjectRepository;
 
-    /**
-     * Load profile đầy đủ của user, bao gồm thông tin cá nhân, học kỳ, môn học, khoảng rảnh, lịch học
-     */
+
     public UserProfileFullResponse loadUserProfile(Long userId) {
         UserProfileFullResponse response = new UserProfileFullResponse();
 
         try {
-            // 1. Lấy thông tin profile cơ bản
             Optional<StudentProfile> profileOptional = studentProfileRepository.findByUserId(userId);
-            if (!profileOptional.isPresent()) {
+            if (profileOptional.isEmpty()) {
                 response.setSuccess(false);
                 response.setMessage("User profile not found");
                 return response;
@@ -51,28 +48,24 @@ public class ProfileLoadService {
             StudentProfileDetailResponse profileDetail = convertToProfileDetailResponse(studentProfile);
             response.setProfile(profileDetail);
 
-            // 2. Lấy các term profiles
             List<StudentTermProfile> termProfiles = studentTermProfileRepository.findByUserId(userId);
             List<StudentTermProfileDetailResponse> termProfileResponses = termProfiles.stream()
                     .map(this::convertToTermProfileDetailResponse)
                     .collect(Collectors.toList());
             response.setTermProfiles(termProfileResponses);
 
-            // 3. Lấy tất cả enrollments
             List<StudentSubjectEnrollment> enrollments = studentSubjectEnrollmentRepository.findByUserId(userId);
             List<StudentSubjectEnrollmentResponse> enrollmentResponses = enrollments.stream()
                     .map(this::convertToEnrollmentResponse)
                     .collect(Collectors.toList());
             response.setEnrollments(enrollmentResponses);
 
-            // 4. Lấy tất cả free time slots
             List<StudentFreeTimeSlot> freeTimeSlots = studentFreeTimeSlotRepository.findByUserId(userId);
             List<FreeTimeSlotResponse> freeTimeSlotResponses = freeTimeSlots.stream()
                     .map(this::convertToFreeTimeSlotResponse)
                     .collect(Collectors.toList());
             response.setFreeTimeSlots(freeTimeSlotResponses);
 
-            // 5. Lấy tất cả schedule slots
             List<StudentSubjectScheduleSlot> scheduleSlots = studentSubjectScheduleSlotRepository.findByUserId(userId);
             List<ScheduleSlotResponse> scheduleSlotResponses = scheduleSlots.stream()
                     .map(this::convertToScheduleSlotResponse)
@@ -90,9 +83,7 @@ public class ProfileLoadService {
         return response;
     }
 
-    /**
-     * Convert StudentProfile entity to StudentProfileDetailResponse
-     */
+
     private StudentProfileDetailResponse convertToProfileDetailResponse(StudentProfile studentProfile) {
         StudentProfileDetailResponse response = new StudentProfileDetailResponse(
                 studentProfile.getProfileId(),
@@ -105,7 +96,6 @@ public class ProfileLoadService {
                 studentProfile.getCreatedAt()
         );
 
-        // Convert cohort if exists
         if (studentProfile.getCohort() != null) {
             Cohort cohort = studentProfile.getCohort();
             CohortInfoResponse cohortResponse = new CohortInfoResponse(
@@ -115,7 +105,6 @@ public class ProfileLoadService {
                     cohort.getTotalStudyYears()
             );
 
-            // Convert curriculum if exists
             if (cohort.getCurriculum() != null) {
                 Curriculum curriculum = cohort.getCurriculum();
                 CurriculumInfoResponse curriculumResponse = new CurriculumInfoResponse(
@@ -132,9 +121,7 @@ public class ProfileLoadService {
         return response;
     }
 
-    /**
-     * Convert StudentTermProfile entity to StudentTermProfileDetailResponse
-     */
+
     private StudentTermProfileDetailResponse convertToTermProfileDetailResponse(StudentTermProfile termProfile) {
         String mainSubjectName = null;
         if (termProfile.getMainSubjectId() != null) {
@@ -157,7 +144,6 @@ public class ProfileLoadService {
                 mainSubjectName
         );
 
-        // Convert term if exists
         if (termProfile.getTerm() != null) {
             AcademicTerm term = termProfile.getTerm();
             AcademicTermResponse termResponse = new AcademicTermResponse(
@@ -174,13 +160,10 @@ public class ProfileLoadService {
         return response;
     }
 
-    /**
-     * Convert StudentSubjectEnrollment entity to StudentSubjectEnrollmentResponse
-     */
+
     private StudentSubjectEnrollmentResponse convertToEnrollmentResponse(StudentSubjectEnrollment enrollment) {
         StudentSubjectEnrollmentResponse response = new StudentSubjectEnrollmentResponse(enrollment.getId());
 
-        // Convert subject if exists
         if (enrollment.getSubject() != null) {
             Subject subject = enrollment.getSubject();
             SubjectInfoResponse subjectResponse = new SubjectInfoResponse(
@@ -191,7 +174,6 @@ public class ProfileLoadService {
             response.setSubject(subjectResponse);
         }
 
-        // Convert term if exists
         if (enrollment.getTerm() != null) {
             AcademicTerm term = enrollment.getTerm();
             AcademicTermResponse termResponse = new AcademicTermResponse(
@@ -208,9 +190,7 @@ public class ProfileLoadService {
         return response;
     }
 
-    /**
-     * Convert StudentFreeTimeSlot entity to FreeTimeSlotResponse
-     */
+
     private FreeTimeSlotResponse convertToFreeTimeSlotResponse(StudentFreeTimeSlot freeTimeSlot) {
         return new FreeTimeSlotResponse(
                 freeTimeSlot.getId(),
@@ -220,9 +200,7 @@ public class ProfileLoadService {
         );
     }
 
-    /**
-     * Convert StudentSubjectScheduleSlot entity to ScheduleSlotResponse
-     */
+
     private ScheduleSlotResponse convertToScheduleSlotResponse(StudentSubjectScheduleSlot scheduleSlot) {
         ScheduleSlotResponse response = new ScheduleSlotResponse(
                 scheduleSlot.getId(),
@@ -233,7 +211,6 @@ public class ProfileLoadService {
                 scheduleSlot.getNote()
         );
 
-        // Convert subject if exists
         if (scheduleSlot.getSubject() != null) {
             Subject subject = scheduleSlot.getSubject();
             SubjectInfoResponse subjectResponse = new SubjectInfoResponse(

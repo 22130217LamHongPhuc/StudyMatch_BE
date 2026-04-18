@@ -1,6 +1,7 @@
 package com.example.microservice.controller;
 
 
+import com.example.microservice.dto.request.SubjectByCohortAndCurriculumRequest;
 import com.example.microservice.dto.response.CohortStudyPlanResponse;
 import com.example.microservice.entity.Cohort;
 import com.example.microservice.entity.Curriculum;
@@ -8,6 +9,7 @@ import com.example.microservice.repositories.CohortRepository;
 import com.example.microservice.repositories.CurriculumTermSubjectRepository;
 import com.example.microservice.repositories.StudyYearSemesterProjection;
 import com.example.microservice.services.CohortStudyPlanService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -52,6 +54,18 @@ public class CohortStudyPlanController {
 
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/{cohortCode}/study-plan-options/subject")
+    public ResponseEntity<CohortStudyPlanResponse> getOptionStudyPlan(
+            @PathVariable String cohortCode,
+            @Valid  @ModelAttribute SubjectByCohortAndCurriculumRequest request
+            ) {
+        System.out.println("Received request for option plan of cohort: " + cohortCode);
+        CohortStudyPlanResponse response = cohortStudyPlanService.getSubjectByCohortCodeAndCurriculum(cohortCode,request);
+
+        return ResponseEntity.ok(response);
+    }
+
 
 
     @GetMapping("/{cohortCode}/study-plan-options")

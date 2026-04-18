@@ -21,10 +21,10 @@ const navItems: NavItem[] = [
   { label: "Trang chu", icon: <HomeIcon />, path: "/" },
   { label: "Ho so", icon: <BadgeIcon />, path: "/profile" },
   { label: "Lich hoc", icon: <CalendarMonthIcon />, path: "/schedule" },
+  { label: "Goi y ban hoc", icon: <BarChartIcon />, path: "/recommendation" },
   { label: "Ban be", icon: <PersonIcon />, path: "/friends" },
   { label: "Cuoc hoi thoai", icon: <QuestionAnswerIcon /> },
   { label: "Nhom", icon: <Diversity2Icon /> },
-  { label: "Thong ke", icon: <BarChartIcon /> },
   { label: "Phan hoi", icon: <FeedbackIcon /> },
 ];
 
@@ -43,7 +43,8 @@ export default function SideBar() {
 
       <List sx={{ borderRight: "1px solid #E8EEF8", pr: 1 }}>
         {navItems.map((item) => {
-          const isActive = Boolean(item.path) && location.pathname === item.path;
+          const isActive =
+            Boolean(item.path) && location.pathname === item.path;
           return (
             <ListItemButton
               key={item.label}

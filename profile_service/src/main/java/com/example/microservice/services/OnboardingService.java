@@ -38,17 +38,14 @@ public class OnboardingService {
     @Transactional
     public OnboardingSubmitResponse submitOnboarding(Long userId, OnboardingSubmitRequest request) {
         try {
-            // 1. Validate data
             validateRequest(request);
 
-            // 2. Get references
             Cohort cohort = cohortRepository.findById(request.getCohortId())
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy khóa học với ID: " + request.getCohortId()));
 
             AcademicTerm term = academicTermRepository.findById(request.getTermId())
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy học kỳ với ID: " + request.getTermId()));
 
-            // 3. Create or update StudentProfile
             StudentProfile studentProfile = studentProfileRepository.findByUserId(userId)
                     .orElse(new StudentProfile());
 
@@ -62,9 +59,8 @@ public class OnboardingService {
 
             studentProfile = studentProfileRepository.save(studentProfile);
 
-            // 4. Create or update StudentTermProfile
             StudentTermProfile studentTermProfile = studentTermProfileRepository
-                    .findByUserIdAndTermId(userId, request.getTermId())
+                    .findByUserIdAndTerm_TermId(userId, request.getTermId())
                     .orElse(new StudentTermProfile());
 
             studentTermProfile.setUserId(userId);
@@ -79,14 +75,12 @@ public class OnboardingService {
 
             studentTermProfile = studentTermProfileRepository.save(studentTermProfile);
 
-            // 5. Save current subject enrollments
             if (request.getCurrentSubjectIds() != null && !request.getCurrentSubjectIds().isEmpty()) {
                 // Delete existing enrollments
 //                List<StudentSubjectEnrollment> existingEnrollments = studentSubjectEnrollmentRepository
 //                        .findByUserIdAndTermId(userId, request.getTermId());
 //                studentSubjectEnrollmentRepository.deleteAll(existingEnrollments);
 
-                // Create new enrollments
                 for (Long subjectId : request.getCurrentSubjectIds()) {
                     Subject subject = subjectRepository.findById(subjectId)
                             .orElseThrow(() -> new RuntimeException("Không tìm thấy môn học với ID: " + subjectId));
@@ -99,7 +93,6 @@ public class OnboardingService {
                 }
             }
 
-            // 6. Save free time slots
             if (request.getFreeTimeSlots() != null && !request.getFreeTimeSlots().isEmpty()) {
                 // Delete existing slots
 //                List<StudentFreeTimeSlot> existingSlots = studentFreeTimeSlotRepository

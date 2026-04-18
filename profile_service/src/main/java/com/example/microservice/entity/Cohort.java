@@ -10,7 +10,11 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
 
+@Setter
+@Getter
 @Entity
 @Table(name = "cohorts")
 public class Cohort {
@@ -37,44 +41,5 @@ public class Cohort {
     public Cohort() {
     }
 
-    public Long getCohortId() {
-        return cohortId;
-    }
-
-    public void setCohortId(Long cohortId) {
-        this.cohortId = cohortId;
-    }
-
-    public String getCohortCode() {
-        return cohortCode;
-    }
-
-    public void setCohortCode(String cohortCode) {
-        this.cohortCode = cohortCode;
-    }
-
-    public Curriculum getCurriculum() {
-        return curriculum;
-    }
-
-    public void setCurriculum(Curriculum curriculum) {
-        this.curriculum = curriculum;
-    }
-
-    public Integer getStartAcademicYear() {
-        return startAcademicYear;
-    }
-
-    public void setStartAcademicYear(Integer startAcademicYear) {
-        this.startAcademicYear = startAcademicYear;
-    }
-
-    public Byte getTotalStudyYears() {
-        return totalStudyYears;
-    }
-
-    public void setTotalStudyYears(Byte totalStudyYears) {
-        this.totalStudyYears = totalStudyYears;
-    }
 }
 

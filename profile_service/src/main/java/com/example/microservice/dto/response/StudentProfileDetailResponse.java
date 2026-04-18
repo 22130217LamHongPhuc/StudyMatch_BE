@@ -1,8 +1,14 @@
 package com.example.microservice.dto.response;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.time.LocalDateTime;
 
+@Setter
+@Getter
 public class StudentProfileDetailResponse {
+    // Getters and Setters
     private Long profileId;
     private Long userId;
     private String studentCode;
@@ -28,77 +34,5 @@ public class StudentProfileDetailResponse {
         this.createdAt = createdAt;
     }
 
-    // Getters and Setters
-    public Long getProfileId() {
-        return profileId;
-    }
-
-    public void setProfileId(Long profileId) {
-        this.profileId = profileId;
-    }
-
-    public Long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
-    }
-
-    public String getStudentCode() {
-        return studentCode;
-    }
-
-    public void setStudentCode(String studentCode) {
-        this.studentCode = studentCode;
-    }
-
-    public String getFullName() {
-        return fullName;
-    }
-
-    public void setFullName(String fullName) {
-        this.fullName = fullName;
-    }
-
-    public String getGender() {
-        return gender;
-    }
-
-    public void setGender(String gender) {
-        this.gender = gender;
-    }
-
-    public String getAgeGroup() {
-        return ageGroup;
-    }
-
-    public void setAgeGroup(String ageGroup) {
-        this.ageGroup = ageGroup;
-    }
-
-    public String getRegion() {
-        return region;
-    }
-
-    public void setRegion(String region) {
-        this.region = region;
-    }
-
-    public CohortInfoResponse getCohort() {
-        return cohort;
-    }
-
-    public void setCohort(CohortInfoResponse cohort) {
-        this.cohort = cohort;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
 }
 

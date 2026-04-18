@@ -1,5 +1,10 @@
 package com.example.microservice.dto.response;
 
+import lombok.Getter;
+import lombok.Setter;
+
+@Setter
+@Getter
 public class AcademicTermResponse {
     private Long termId;
     private Short academicYearStart;
@@ -11,63 +16,15 @@ public class AcademicTermResponse {
     public AcademicTermResponse() {
     }
 
-    public AcademicTermResponse(Long termId, Short academicYearStart, Short academicYearEnd,
+    public AcademicTermResponse(Long termId, int academicYearStart, int academicYearEnd,
                                Byte semesterNo, String fullName, String status) {
         this.termId = termId;
-        this.academicYearStart = academicYearStart;
-        this.academicYearEnd = academicYearEnd;
+        this.academicYearStart = (short) academicYearStart;
+        this.academicYearEnd = (short) academicYearEnd;
         this.semesterNo = semesterNo;
         this.fullName = fullName;
         this.status = status;
     }
 
-    // Getters and Setters
-    public Long getTermId() {
-        return termId;
-    }
-
-    public void setTermId(Long termId) {
-        this.termId = termId;
-    }
-
-    public Short getAcademicYearStart() {
-        return academicYearStart;
-    }
-
-    public void setAcademicYearStart(Short academicYearStart) {
-        this.academicYearStart = academicYearStart;
-    }
-
-    public Short getAcademicYearEnd() {
-        return academicYearEnd;
-    }
-
-    public void setAcademicYearEnd(Short academicYearEnd) {
-        this.academicYearEnd = academicYearEnd;
-    }
-
-    public Byte getSemesterNo() {
-        return semesterNo;
-    }
-
-    public void setSemesterNo(Byte semesterNo) {
-        this.semesterNo = semesterNo;
-    }
-
-    public String getFullName() {
-        return fullName;
-    }
-
-    public void setFullName(String fullName) {
-        this.fullName = fullName;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
 }
 

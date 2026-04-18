@@ -56,7 +56,7 @@ export default function AcademicInfoCard({ profile }: AcademicInfoCardProps) {
             <MetricItem label="Tín chỉ đã học" value={profile.studiedCredits} />
           </Stack>
 
-          <MetricItem label="Mục tiêu" value={profile.studyGoal} />
+          <MetricItem label="Trình độ" value={profile.studyGoal} />
           <MetricItem label="Chế độ học" value={profile.studyModeLabel} />
         </Stack>
       </CardContent>
