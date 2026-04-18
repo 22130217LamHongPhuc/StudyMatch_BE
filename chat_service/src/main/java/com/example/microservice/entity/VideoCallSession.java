@@ -1,20 +1,32 @@
 package com.example.microservice.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.Instant;
 
+@Getter
+@Setter
 @Entity
 @Table(name = "video_call_sessions")
 public class VideoCallSession {
     @Id
     @Column(name = "session_id", nullable = false)
-    private Integer id;
+    private Long id;
 
-    @Column(name = "conversation_id", nullable = false)
-    private Integer conversationId;
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    @JoinColumn(name = "conversation_id", nullable = false)
+    private Conversation conversation;
 
+    @NotNull
     @ColumnDefault("current_timestamp()")
     @Column(name = "started_at", nullable = false)
     private Instant startedAt;
@@ -25,67 +37,8 @@ public class VideoCallSession {
     @Column(name = "duration_seconds")
     private Integer durationSeconds;
 
-    @Lob
-    @Column(name = "participants")
-    private String participants;
-
+    @Size(max = 255)
     @Column(name = "recording_url")
     private String recordingUrl;
-
-    public Integer getId() {
-        return id;
-    }
-
-    public void setId(Integer id) {
-        this.id = id;
-    }
-
-    public Integer getConversationId() {
-        return conversationId;
-    }
-
-    public void setConversationId(Integer conversationId) {
-        this.conversationId = conversationId;
-    }
-
-    public Instant getStartedAt() {
-        return startedAt;
-    }
-
-    public void setStartedAt(Instant startedAt) {
-        this.startedAt = startedAt;
-    }
-
-    public Instant getEndedAt() {
-        return endedAt;
-    }
-
-    public void setEndedAt(Instant endedAt) {
-        this.endedAt = endedAt;
-    }
-
-    public Integer getDurationSeconds() {
-        return durationSeconds;
-    }
-
-    public void setDurationSeconds(Integer durationSeconds) {
-        this.durationSeconds = durationSeconds;
-    }
-
-    public String getParticipants() {
-        return participants;
-    }
-
-    public void setParticipants(String participants) {
-        this.participants = participants;
-    }
-
-    public String getRecordingUrl() {
-        return recordingUrl;
-    }
-
-    public void setRecordingUrl(String recordingUrl) {
-        this.recordingUrl = recordingUrl;
-    }
 
 }
