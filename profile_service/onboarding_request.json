@@ -1,0 +1,70 @@
+{
+  "studentCode": "21130524",
+  "fullName": "Nguyen Van A",
+  "gender": "male",
+  "ageGroup": "18_22",
+  "region": "TP.HCM",
+  "cohortId": 2,
+  "termId": 5,
+  "studyYearNo": 3,
+  "semesterNo": 2,
+  "avgScore": 7.8,
+  "studiedCredits": 78,
+  "studyGoal": "IMPROVE",
+  "studyMode": "GROUP",
+  "mainSubjectId": 11,
+  "currentSubjectIds": [
+    21,
+    22,
+    23
+  ],
+  "freeTimeSlots": [
+    {
+      "dayOfWeek": 0,
+      "slotCode": "ca4"
+    },
+    {
+      "dayOfWeek": 2,
+      "slotCode": "ca5"
+    }
+  ],
+  "subjectScheduleSlots": [
+    {
+      "subjectId": 11,
+      "dayOfWeek": 0,
+      "slotCode": "ca1",
+      "scheduleType": "MAIN_SUBJECT"
+    },
+    {
+      "subjectId": 11,
+      "dayOfWeek": 3,
+      "slotCode": "ca3",
+      "scheduleType": "MAIN_SUBJECT"
+    },
+    {
+      "subjectId": 21,
+      "dayOfWeek": 1,
+      "slotCode": "ca2",
+      "scheduleType": "CURRENT_TERM"
+    },
+    {
+      "subjectId": 22,
+      "dayOfWeek": 2,
+      "slotCode": "ca1",
+      "scheduleType": "CURRENT_TERM"
+    },
+    {
+      "subjectId": 22,
+      "dayOfWeek": 4,
+      "slotCode": "ca1",
+      "scheduleType": "CURRENT_TERM"
+    },
+    {
+      "subjectId": 23,
+      "dayOfWeek": 5,
+      "slotCode": "ca4",
+      "scheduleType": "CURRENT_TERM"
+    }
+  ]
+}
+

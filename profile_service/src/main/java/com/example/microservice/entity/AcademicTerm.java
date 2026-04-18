@@ -6,7 +6,9 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.Setter;
 
+@Setter
 @Entity
 @Table(name = "academic_terms")
 public class AcademicTerm {
@@ -38,48 +40,25 @@ public class AcademicTerm {
         return termId;
     }
 
-    public void setTermId(Long termId) {
-        this.termId = termId;
-    }
-
     public int getAcademicYearStart() {
-        return academicYearStart;
-    }
-
-    public void setAcademicYearStart(Short academicYearStart) {
-        this.academicYearStart = academicYearStart;
+        return academicYearStart != null ? academicYearStart : 0;
     }
 
     public int getAcademicYearEnd() {
-        return academicYearEnd;
+        return academicYearEnd != null ? academicYearEnd : 0;
     }
 
-    public void setAcademicYearEnd(Short academicYearEnd) {
-        this.academicYearEnd = academicYearEnd;
-    }
-
-    public int getSemesterNo() {
+    public Byte getSemesterNo() {
         return semesterNo;
-    }
-
-    public void setSemesterNo(Byte semesterNo) {
-        this.semesterNo = semesterNo;
     }
 
     public String getFullName() {
         return fullName;
     }
 
-    public void setFullName(String fullName) {
-        this.fullName = fullName;
-    }
-
     public String getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
-        this.status = status;
-    }
 }
 
