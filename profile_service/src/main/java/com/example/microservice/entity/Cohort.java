@@ -10,7 +10,11 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
 
+@Setter
+@Getter
 @Entity
 @Table(name = "cohorts")
 public class Cohort {
@@ -22,9 +26,12 @@ public class Cohort {
 
     @Column(name = "cohort_code", length = 20)
     private String cohortCode;
-    @Column(name = "start_academic_year")
-    private Integer startYear;
 
+    @Column(name = "start_academic_year")
+    private Integer startAcademicYear;
+
+    @Column(name = "total_study_years", nullable = false)
+    private Byte totalStudyYears = 4;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "curriculum_id")
@@ -34,32 +41,5 @@ public class Cohort {
     public Cohort() {
     }
 
-    public Long getCohortId() {
-        return cohortId;
-    }
-
-    public void setCohortId(Long cohortId) {
-        this.cohortId = cohortId;
-    }
-
-    public String getCohortCode() {
-        return cohortCode;
-    }
-
-    public void setCohortCode(String cohortCode) {
-        this.cohortCode = cohortCode;
-    }
-
-    public Curriculum getCurriculum() {
-        return curriculum;
-    }
-
-    public void setCurriculum(Curriculum curriculum) {
-        this.curriculum = curriculum;
-    }
-
-    public Integer getStartYear() {
-        return startYear;
-    }
 }
 

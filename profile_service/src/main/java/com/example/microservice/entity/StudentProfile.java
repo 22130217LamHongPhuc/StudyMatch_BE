@@ -13,7 +13,11 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import lombok.Getter;
+import lombok.Setter;
 
+@Setter
+@Getter
 @Entity
 @Table(name = "student_profiles", uniqueConstraints = {
         @UniqueConstraint(name = "uk_user_id", columnNames = {"user_id"}),
@@ -35,6 +39,15 @@ public class StudentProfile {
     @Column(name = "full_name", length = 120)
     private String fullName;
 
+    @Column(name = "gender", length = 10)
+    private String gender;
+
+    @Column(name = "age_group", length = 20)
+    private String ageGroup;
+
+    @Column(name = "region", length = 100)
+    private String region;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cohort_id")
     private Cohort cohort;
@@ -52,52 +65,5 @@ public class StudentProfile {
         }
     }
 
-    public Long getProfileId() {
-        return profileId;
-    }
-
-    public void setProfileId(Long profileId) {
-        this.profileId = profileId;
-    }
-
-    public Long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
-    }
-
-    public String getStudentCode() {
-        return studentCode;
-    }
-
-    public void setStudentCode(String studentCode) {
-        this.studentCode = studentCode;
-    }
-
-    public String getFullName() {
-        return fullName;
-    }
-
-    public void setFullName(String fullName) {
-        this.fullName = fullName;
-    }
-
-    public Cohort getCohort() {
-        return cohort;
-    }
-
-    public void setCohort(Cohort cohort) {
-        this.cohort = cohort;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
 }
 

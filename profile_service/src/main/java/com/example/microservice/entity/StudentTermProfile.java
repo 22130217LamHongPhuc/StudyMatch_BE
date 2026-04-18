@@ -10,7 +10,13 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import lombok.Getter;
+import lombok.Setter;
 
+import java.math.BigDecimal;
+
+@Setter
+@Getter
 @Entity
 @Table(name = "student_term_profiles", uniqueConstraints = {
         @UniqueConstraint(name = "uk_user_term", columnNames = {"user_id", "term_id"})
@@ -35,47 +41,23 @@ public class StudentTermProfile {
     @Column(name = "semester_no", nullable = false)
     private Byte semesterNo;
 
+    @Column(name = "avg_score", precision = 4, scale = 2)
+    private BigDecimal avgScore;
+
+    @Column(name = "studied_credits")
+    private Integer studiedCredits;
+
+    @Column(name = "study_goal", length = 50)
+    private String studyGoal;
+
+    @Column(name = "study_mode", length = 50)
+    private String studyMode;
+
+    @Column(name = "main_subject_id")
+    private Long mainSubjectId;
+
     public StudentTermProfile() {
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
-    }
-
-    public AcademicTerm getTerm() {
-        return term;
-    }
-
-    public void setTerm(AcademicTerm term) {
-        this.term = term;
-    }
-
-    public Byte getStudyYearNo() {
-        return studyYearNo;
-    }
-
-    public void setStudyYearNo(Byte studyYearNo) {
-        this.studyYearNo = studyYearNo;
-    }
-
-    public Byte getSemesterNo() {
-        return semesterNo;
-    }
-
-    public void setSemesterNo(Byte semesterNo) {
-        this.semesterNo = semesterNo;
-    }
 }
 

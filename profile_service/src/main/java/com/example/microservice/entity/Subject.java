@@ -7,7 +7,9 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import lombok.Getter;
 
+@Getter
 @Entity
 @Table(name = "subjects", uniqueConstraints = {
         @UniqueConstraint(name = "uk_subject_code", columnNames = {"subject_code"})
@@ -28,24 +30,12 @@ public class Subject {
     public Subject() {
     }
 
-    public Long getSubjectId() {
-        return subjectId;
-    }
-
     public void setSubjectId(Long subjectId) {
         this.subjectId = subjectId;
     }
 
-    public String getSubjectCode() {
-        return subjectCode;
-    }
-
     public void setSubjectCode(String subjectCode) {
         this.subjectCode = subjectCode;
-    }
-
-    public String getSubjectName() {
-        return subjectName;
     }
 
     public void setSubjectName(String subjectName) {

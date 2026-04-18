@@ -6,7 +6,11 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
 
+@Setter
+@Getter
 @Entity
 @Table(name = "curriculums")
 public class Curriculum {
@@ -25,28 +29,5 @@ public class Curriculum {
     public Curriculum() {
     }
 
-    public Long getCurriculumId() {
-        return curriculumId;
-    }
-
-    public void setCurriculumId(Long curriculumId) {
-        this.curriculumId = curriculumId;
-    }
-
-    public String getCurriculumCode() {
-        return curriculumCode;
-    }
-
-    public void setCurriculumCode(String curriculumCode) {
-        this.curriculumCode = curriculumCode;
-    }
-
-    public String getCurriculumName() {
-        return curriculumName;
-    }
-
-    public void setCurriculumName(String curriculumName) {
-        this.curriculumName = curriculumName;
-    }
 }
 
