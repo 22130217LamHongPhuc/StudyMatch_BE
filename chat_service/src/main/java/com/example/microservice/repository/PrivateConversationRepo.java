@@ -33,4 +33,15 @@ public interface PrivateConversationRepo extends JpaRepository<PrivateConversati
     """, nativeQuery = true)
     Optional<Long> findOtherUserId(@Param("conversationId") Long conversationId,
                                    @Param("currentUserId") Long currentUserId);
+
+
+    @Query("""
+    select p from PrivateConversation p
+    where (p.user1Id = :user1Id and p.user2Id = :user2Id)
+       or (p.user1Id = :user2Id and p.user2Id = :user1Id)
+""")
+    Optional<PrivateConversation> findPrivateBetweenTwoUsers(
+            @Param("user1Id") Long user1Id,
+            @Param("user2Id") Long user2Id
+    );
 }

@@ -24,17 +24,17 @@ public class ChatServiceApplication {
 	private  PrivateConversationRepo conversationRepo;
 
 	public static void main(String[] args) {
-//		SpringApplication.run(ChatServiceApplication.class, args);
-
-		ApplicationContext context = SpringApplication.run(ChatServiceApplication.class, args);
-		MessageService service = context.getBean(MessageService.class);
-		Pageable pageable = (Pageable) PageRequest.of(0, 10);
-		Page<Message> messagePage = service.getConversation(1L, pageable);
-		System.out.println("Trang hiện tại: " + messagePage.getNumber());
-		System.out.println("Kích thước trang: " + messagePage.getSize());
-		System.out.println("Tổng số phần tử: " + messagePage.getTotalElements());
-		System.out.println("Tổng số trang: " + messagePage.getTotalPages());
-		System.out.println("Danh sách tin nhắn: " + messagePage.getContent());
+		SpringApplication.run(ChatServiceApplication.class, args);
+//
+//		ApplicationContext context = SpringApplication.run(ChatServiceApplication.class, args);
+//		MessageService service = context.getBean(MessageService.class);
+//		Pageable pageable = (Pageable) PageRequest.of(0, 10);
+//		Page<Message> messagePage = service.getConversation(1L, pageable);
+//		System.out.println("Trang hiện tại: " + messagePage.getNumber());
+//		System.out.println("Kích thước trang: " + messagePage.getSize());
+//		System.out.println("Tổng số phần tử: " + messagePage.getTotalElements());
+//		System.out.println("Tổng số trang: " + messagePage.getTotalPages());
+//		System.out.println("Danh sách tin nhắn: " + messagePage.getContent());
 //		System.out.println(service.getConversation(1L, pageable));
 
 //		SendMessageRequest sendMessageRequest= new SendMessageRequest();

@@ -15,7 +15,6 @@ public class PrivateConversation {
     @Id
     @Column(name = "conversation_id", nullable = false)
     private Long id;
-
     @MapsId
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @OnDelete(action = OnDeleteAction.CASCADE)

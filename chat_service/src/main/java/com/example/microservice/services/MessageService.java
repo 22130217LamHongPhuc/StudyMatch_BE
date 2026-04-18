@@ -22,6 +22,7 @@ public class MessageService {
     public Page<Message> getConversation(Long conversationId, Pageable pageable){
         return messageRepo.findByConversationIdOrderByCreatedAtDesc(conversationId, pageable);
     }
+
     public   List<MessDTO> getListMess(Long conversationId, Long page){
         Pageable pageable = (Pageable) PageRequest.of(0, 25);
         Page<Message> messages = getConversation(conversationId, pageable);

@@ -30,7 +30,6 @@ public class UserController {
             APIResponse<LoginResponse> apiResponse = new APIResponse<>(ResponseStatus.SUCCESS, response);
             return ResponseEntity.ok(apiResponse);
     }
-
     @GetMapping("/{id}")
     public ResponseEntity<?> getUser(@PathVariable Long id) {
         HashMap<String, String> map = new HashMap<>();
