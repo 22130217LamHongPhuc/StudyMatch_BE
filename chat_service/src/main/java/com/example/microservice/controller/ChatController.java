@@ -56,10 +56,6 @@ public class ChatController {
     public void firstMess(FirstPrivateMess mess){
         Conversation conversation = new Conversation();
         conversation.setConversationType("private");
-
-
-
-
     }
 
     public void sendChat(SendMessageRequest mess){

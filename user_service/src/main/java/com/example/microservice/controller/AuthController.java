@@ -42,7 +42,7 @@ public class AuthController {
         return "Hello";
     }
 
-    @PostMapping("register")
+    @PostMapping("/register")
     public ResponseEntity<ApiResponse<AuthResponse>> register(@RequestBody RegisterRequest request) {
 
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -109,13 +109,9 @@ public class AuthController {
                 new AuthResponse(token, rt.getToken())
         ));
     }
-
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<String>> logout(@RequestBody RefreshTokenRequest tokenRequest) {
         refreshTokenService.revokeRefreshToken(tokenRequest.getRefreshToken());
         return  ResponseEntity.ok(new ApiResponse<>(true, StatusCode.SUCCESS, "Logout successful", null));
     }
-
-
-
 }
