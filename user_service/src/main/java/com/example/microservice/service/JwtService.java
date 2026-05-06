@@ -19,10 +19,12 @@ public class JwtService {
         return Jwts.builder()
                 .setSubject(user.getUsername())
                 .setIssuedAt(new Date())
-                .setExpiration(new Date((System.currentTimeMillis() + 1000 * 60 * 24))) // 15 phút
+                .setExpiration(new Date((System.currentTimeMillis() + 1000 * 60 * 24))) // 1 phút
                 .signWith(getSignKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
+
+
     public String extractUsername(String token) {
         return extractAllClaims(token).getSubject();
     }

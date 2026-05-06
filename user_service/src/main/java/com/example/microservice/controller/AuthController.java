@@ -2,6 +2,7 @@ package com.example.microservice.controller;
 
 
 import com.example.microservice.dto.request.AuthRequest;
+import com.example.microservice.dto.request.GoogleLoginRequest;
 import com.example.microservice.dto.request.RefreshTokenRequest;
 import com.example.microservice.dto.request.RegisterRequest;
 import com.example.microservice.dto.respone.ApiResponse;
@@ -12,8 +13,10 @@ import com.example.microservice.enums.StatusCode;
 import com.example.microservice.exception.AppException;
 import com.example.microservice.repository.UserRepository;
 import com.example.microservice.service.CustomUserDetails;
+import com.example.microservice.service.GoogleAuthService;
 import com.example.microservice.service.JwtService;
 import com.example.microservice.service.RefreshTokenService;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -30,6 +33,9 @@ public class AuthController {
 
     @Autowired
     UserRepository userRepository;
+
+    @Autowired
+    GoogleAuthService googleAuthService;
 
     @Autowired
     RefreshTokenService refreshTokenService;
@@ -50,7 +56,6 @@ public class AuthController {
         }
 
         User user = new User();
-        user.setFullName(request.getFullname());
         user.setEmail(request.getEmail());
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         user.setRole("student");
@@ -67,7 +72,7 @@ public class AuthController {
                 true,
                 StatusCode.SUCCESS,
                 "Registration successful",
-                new AuthResponse(token, refreshToken.getToken())
+                new AuthResponse(token, refreshToken.getToken(),user.isOnboardingCompleted(),user.getUserId())
         ));
     }
 
@@ -92,8 +97,37 @@ public class AuthController {
                 true,
                 StatusCode.SUCCESS,
                 "Login successful",
-                new AuthResponse(token, refreshToken.getToken())
+                new AuthResponse(token, refreshToken.getToken(),user.isOnboardingCompleted(),user.getUserId())
         ));
+    }
+
+    @PostMapping("/google")
+    public ApiResponse<AuthResponse> loginGoogle(
+            @RequestBody GoogleLoginRequest request
+    ) {
+        GoogleIdToken.Payload payload =
+                googleAuthService.verifyIdToken(request.getIdToken());
+
+        String googleId = payload.getSubject();
+        String email = payload.getEmail();
+        String name = (String) payload.get("name");
+        String picture = (String) payload.get("picture");
+
+        User user = googleAuthService.findOrCreateGoogleUser(
+                email,
+                name,
+                picture
+        );
+
+        String accessToken = jwtService.generateToken(new CustomUserDetails(user));
+        String refreshToken = refreshTokenService.createRefreshToken(user).getToken();
+
+        return new ApiResponse<>(
+                true,
+                StatusCode.SUCCESS,
+                "Google login successful",
+                new AuthResponse(accessToken, refreshToken,user.isOnboardingCompleted(),user.getUserId())
+        );
     }
 
     @PostMapping("/refresh")
@@ -102,11 +136,12 @@ public class AuthController {
         RefreshToken rt = refreshTokenService.verifyRefreshToken(request.getRefreshToken());
         User user = rt.getUser();
         String token = jwtService.generateToken(new CustomUserDetails(user));
+
         return ResponseEntity.ok(new ApiResponse<>(
                 true,
                 StatusCode.SUCCESS,
                 "Refresh token successful",
-                new AuthResponse(token, rt.getToken())
+                new AuthResponse(token, rt.getToken(),user.isOnboardingCompleted(),user.getUserId())
         ));
     }
 
@@ -115,6 +150,17 @@ public class AuthController {
         refreshTokenService.revokeRefreshToken(tokenRequest.getRefreshToken());
         return  ResponseEntity.ok(new ApiResponse<>(true, StatusCode.SUCCESS, "Logout successful", null));
     }
+
+    @PostMapping("/complete-onboarding/{userId}")
+    public ResponseEntity<ApiResponse<String>> completeOnboarding(@PathVariable Long userId) {
+        User user = userRepository.findById(userId).orElseThrow(
+                () -> new AppException("User not found with id: " + userId, StatusCode.USER_NOT_FOUND)
+        );
+        user.setOnboardingCompleted(true);
+        userRepository.save(user);
+        return  ResponseEntity.ok(new ApiResponse<>(true, StatusCode.SUCCESS, "Onboarding completed", null));
+    }
+
 
 
 

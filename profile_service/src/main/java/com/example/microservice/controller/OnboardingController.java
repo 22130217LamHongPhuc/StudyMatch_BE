@@ -24,6 +24,7 @@ public class OnboardingController {
     public ResponseEntity<OnboardingSubmitResponse> submitOnboarding(
             @RequestHeader(value = "X-User-Id", required = false) Long userId,
             @RequestBody OnboardingSubmitRequest request) {
+        System.out.println("Received onboarding submission for userId: " + userId);
 
         if (userId == null) {
             userId = 100L;
@@ -36,6 +37,9 @@ public class OnboardingController {
         } else {
             return ResponseEntity.badRequest().body(response);
         }
+
+
+
     }
 
     @GetMapping("/profile/{userId}")

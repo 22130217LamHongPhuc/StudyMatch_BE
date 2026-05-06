@@ -33,3 +33,6 @@ app:
   security:
     jwt:
       secret-key: nlu_echo_by_phuc_lam_2004_this_is_be_for_applicati
+
+google:
+  client-id: 714586252342-f47e1oar4i153si4gp61i15v7lg625ft.apps.googleusercontent.com
