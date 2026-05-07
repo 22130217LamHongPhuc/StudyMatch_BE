@@ -2,6 +2,8 @@ package com.example.microservice.dto;
 
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 
 @Data
 public class MessDTO {
@@ -11,4 +13,5 @@ public class MessDTO {
     private String content;
     private String mediaURL;
     private String fileName;
+    private LocalDateTime createdAt;
 }

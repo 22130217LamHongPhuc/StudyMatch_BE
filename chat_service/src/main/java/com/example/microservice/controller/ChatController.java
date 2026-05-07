@@ -47,8 +47,6 @@ public class ChatController {
         if(mess.getEvent().equals("FIRST_PRIVATE_MESS")){
             FirstPrivateMess firstPrivateMess = objectMapper.convertValue(
                     mess.getData(), FirstPrivateMess.class);
-
-
             firstMess(firstPrivateMess);
         }
     }

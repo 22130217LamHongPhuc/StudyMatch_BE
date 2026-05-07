@@ -48,14 +48,13 @@ public class AuthController {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new AppException("Email already in use", StatusCode.EMAIL_ALREADY_IN_USE);
         }
-
         User user = new User();
         user.setFullName(request.getFullname());
         user.setEmail(request.getEmail());
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         user.setRole("student");
         user.setStatus("active");
-        user.setOnboardingCompleted(false);
+        user.setIsOnboardingCompleted(false);
 
 
         userRepository.save(user);

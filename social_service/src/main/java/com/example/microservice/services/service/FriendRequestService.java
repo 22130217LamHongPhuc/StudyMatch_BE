@@ -34,4 +34,8 @@ public class FriendRequestService {
                 ZoneId.of("Asia/Ho_Chi_Minh")
         );
     }
+
+    public String statusFriend(Long id, Long targetId){
+        return repo.statusFriends(id, targetId);
+    }
 }
