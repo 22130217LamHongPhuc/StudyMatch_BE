@@ -72,19 +72,7 @@ export default function CreateGroupPage() {
               onFreeTimeChange={setFreeTime}
             />
           </div>
-
-          <GroupPreviewSidebar
-            draft={{
-              groupName,
-              goalDescription,
-              mainSubject,
-              studyGoal,
-              studyMode,
-              maxMembers,
-              visibility,
-              freeTime,
-            }}
-          />
+          <GroupPreviewSidebar />
         </div>
       </main>
 
