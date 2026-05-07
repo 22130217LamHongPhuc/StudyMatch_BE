@@ -5,48 +5,53 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import lombok.Data;
 
-public record CreateStudyGroupRequest(
+import java.util.List;
+
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import lombok.Data;
+
+import java.util.List;
+
+@Data
+public class CreateStudyGroupRequest {
+
         @NotBlank
         @Size(max = 150)
-        String name,
+        private String name;
 
-        String description,
-
-        @NotNull
-        Long ownerUserId,
+        private String description;
 
         @NotNull
-        Long termId,
+        private Long ownerUserId;
+
+        private Long termId;
+
 
         @NotNull
-        @Min(1)
-        @Max(127)
-        Integer studyYearNo,
-
-        @NotNull
-        @Min(1)
-        @Max(127)
-        Integer semesterNo,
-
-        @NotNull
-        Long mainSubjectId,
+        private Long mainSubjectId;
 
         @Size(max = 150)
-        String subjectName,
+        private String subjectName;
 
         @Size(max = 50)
-        String studyGoal,
+        private String studyGoal;
 
         @Size(max = 50)
-        String studyMode,
+        private String studyMode;
 
         @NotNull
         @Min(1)
-        Integer maxMembers,
+        private Integer maxMembers;
 
         @Size(max = 30)
-        String visibility
-) {
+        private String visibility;
+
+        private List<FreeTimeSlotRequest> freeTimeSlots;
 }
 

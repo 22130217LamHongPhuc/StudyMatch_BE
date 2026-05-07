@@ -1,24 +1,40 @@
 package com.group_service.dto;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+
 import java.time.LocalDateTime;
 
-public record StudyGroupResponse(
-        Long id,
-        String name,
-        String description,
-        Long ownerUserId,
-        Long termId,
-        Byte studyYearNo,
-        Byte semesterNo,
-        Long mainSubjectId,
-        String subjectName,
-        String studyGoal,
-        String studyMode,
-        Integer maxMembers,
-        String visibility,
-        String status,
-        LocalDateTime createdAt,
-        LocalDateTime updatedAt
-) {
-}
+@Data
+@AllArgsConstructor
+public class StudyGroupResponse {
 
+    private Long id;
+
+    private String name;
+
+    private String description;
+
+    private Long ownerUserId;
+
+    private Long termId;
+
+
+    private Long mainSubjectId;
+
+    private String subjectName;
+
+    private String studyGoal;
+
+    private String studyMode;
+
+    private Integer maxMembers;
+
+    private String visibility;
+
+    private String status;
+
+    private LocalDateTime createdAt;
+
+    private LocalDateTime updatedAt;
+}

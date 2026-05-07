@@ -42,12 +42,6 @@ public class StudyGroup {
     @Column(name = "term_id", nullable = false)
     private Long termId;
 
-    @Column(name = "study_year_no", nullable = false)
-    private Byte studyYearNo;
-
-    @Column(name = "semester_no", nullable = false)
-    private Byte semesterNo;
-
     @Column(name = "main_subject_id", nullable = false)
     private Long mainSubjectId;
 
