@@ -10,6 +10,6 @@ public class AuthResponse {
     private String refreshToken;
     private boolean onboardingCompleted;
     private Long userId;
-
+    private boolean emailVerified;
 
 }

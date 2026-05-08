@@ -1,13 +1,11 @@
 package com.example.microservice.controller;
 
 
-import com.example.microservice.dto.request.AuthRequest;
-import com.example.microservice.dto.request.GoogleLoginRequest;
-import com.example.microservice.dto.request.RefreshTokenRequest;
-import com.example.microservice.dto.request.RegisterRequest;
+import com.example.microservice.dto.request.*;
 import com.example.microservice.dto.respone.ApiResponse;
 import com.example.microservice.dto.respone.AuthResponse;
 import com.example.microservice.entity.EmailVerificationToken;
+import com.example.microservice.entity.PasswordResetToken;
 import com.example.microservice.entity.RefreshToken;
 import com.example.microservice.entity.User;
 import com.example.microservice.enums.StatusCode;
@@ -46,6 +44,7 @@ public class AuthController {
     private MailService mailService;
 
     @Autowired EmailVerificationTokenService verificationTokenService;
+    @Autowired AuthService authService;
 
     @GetMapping("/test")
     public String test() {
@@ -68,8 +67,8 @@ public class AuthController {
         user.setOnboardingCompleted(false);
         userRepository.save(user);
 
-        String token = jwtService.generateToken(new CustomUserDetails(user));
-        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
+//        String token = jwtService.generateToken(new CustomUserDetails(user));
+//        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
 
 
         EmailVerificationToken verificationToken = verificationTokenService.saveVerificationToken(user);
@@ -78,15 +77,15 @@ public class AuthController {
 
 
         mailService.sendMailTo(user.getEmail(), "Chào mừng đến với StudyMatch",
-                "Cảm ơn bạn đã đăng ký tài khoản tại StudyMatch! Chúng tôi rất vui được chào đón bạn trong cộng đồng học tập của chúng tôi. Hãy bắt đầu khám phá và kết nối với những người bạn học mới ngay hôm nay!",
-                "Bấm vào link để xác thực email: " + link
+                "verify-email",
+                 link
         );
 
         return ResponseEntity.ok(new ApiResponse<>(
                 true,
                 StatusCode.SUCCESS,
                 "Registration successful",
-                new AuthResponse(token, refreshToken.getToken(),user.isOnboardingCompleted(),user.getUserId())
+                new AuthResponse("token", "",user.isOnboardingCompleted(),user.getUserId(),false)
         ));
     }
 
@@ -111,7 +110,7 @@ public class AuthController {
                 true,
                 StatusCode.SUCCESS,
                 "Login successful",
-                new AuthResponse(token, refreshToken.getToken(),user.isOnboardingCompleted(),user.getUserId())
+                new AuthResponse(token, refreshToken.getToken(),user.isOnboardingCompleted(),user.getUserId(),user.isEmailVerified())
         ));
     }
 
@@ -140,7 +139,7 @@ public class AuthController {
                 true,
                 StatusCode.SUCCESS,
                 "Google login successful",
-                new AuthResponse(accessToken, refreshToken,user.isOnboardingCompleted(),user.getUserId())
+                new AuthResponse(accessToken, refreshToken,user.isOnboardingCompleted(),user.getUserId(),true)
         );
     }
 
@@ -155,7 +154,7 @@ public class AuthController {
                 true,
                 StatusCode.SUCCESS,
                 "Refresh token successful",
-                new AuthResponse(token, rt.getToken(),user.isOnboardingCompleted(),user.getUserId())
+                new AuthResponse(token, rt.getToken(),user.isOnboardingCompleted(),user.getUserId(),true)
         ));
     }
 
@@ -174,4 +173,67 @@ public class AuthController {
         userRepository.save(user);
         return  ResponseEntity.ok(new ApiResponse<>(true, StatusCode.SUCCESS, "Onboarding completed", null));
     }
+
+    @PostMapping("/forget-password")
+    public ResponseEntity<ApiResponse<String>> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+
+        User user = userRepository.findByEmail(request.getEmail()).orElseThrow(
+                () -> new AppException("User not found with email: " + request.getEmail(), StatusCode.USER_NOT_FOUND)
+        );
+
+        PasswordResetToken resetToken = authService.saveForgetPasswordToken(user);
+
+        String link = "http://localhost:3000/reset-password?token=" + resetToken.getToken();
+
+        mailService.sendMailTo(user.getEmail(), "Yêu cầu đặt lại mật khẩu",
+                "reset-password",
+                 link
+        );
+
+        return ResponseEntity.ok(new ApiResponse<>(
+                true,
+                StatusCode.SUCCESS,
+                "Password reset email sent",
+                null
+        ));
+
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<String>> resetPassword(@RequestBody ResetPasswordRequest request){
+        authService.resetPassword(request.getNewPassword(), request.getToken());
+        return ResponseEntity.ok(new ApiResponse<>(
+                true,
+                StatusCode.SUCCESS,
+                "Password reset successful",
+                null
+        ));
+    }
+
+    @PostMapping("/reset-verify-email")
+    public ResponseEntity<ApiResponse<String>> resetVerifyEmail(@RequestBody ForgotPasswordRequest request){
+        User user = userRepository.findByEmail(request.getEmail()).orElseThrow(
+                () -> new AppException("User not found with email: " + request.getEmail(), StatusCode.USER_NOT_FOUND)
+        );
+        EmailVerificationToken verificationToken = verificationTokenService.saveVerificationToken(user);
+
+        String link = "http://localhost:8085/api/verify-email/confirm?token=" + verificationToken.getToken();
+
+
+        mailService.sendMailTo(user.getEmail(), "Chào mừng đến với StudyMatch",
+                "verify-email",
+                link
+        );
+
+        return ResponseEntity.ok(new ApiResponse<>(
+                true,
+                StatusCode.SUCCESS,
+                "Verification email sent",
+                null
+        ));
+    }
+
+
+
+
 }

@@ -12,8 +12,8 @@ public class MailService {
 
 
 
-    public void sendMailTo(String to, String subject, String body, String link) {
-        javaMail.sendEmail(to, subject, body,link);
+    public void sendMailTo(String to, String subject, String type, String link) {
+        javaMail.sendEmail(to, subject, type,link);
     }
 
 }
