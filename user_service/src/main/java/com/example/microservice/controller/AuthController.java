@@ -7,15 +7,13 @@ import com.example.microservice.dto.request.RefreshTokenRequest;
 import com.example.microservice.dto.request.RegisterRequest;
 import com.example.microservice.dto.respone.ApiResponse;
 import com.example.microservice.dto.respone.AuthResponse;
+import com.example.microservice.entity.EmailVerificationToken;
 import com.example.microservice.entity.RefreshToken;
 import com.example.microservice.entity.User;
 import com.example.microservice.enums.StatusCode;
 import com.example.microservice.exception.AppException;
 import com.example.microservice.repository.UserRepository;
-import com.example.microservice.service.CustomUserDetails;
-import com.example.microservice.service.GoogleAuthService;
-import com.example.microservice.service.JwtService;
-import com.example.microservice.service.RefreshTokenService;
+import com.example.microservice.service.*;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +21,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -43,6 +42,11 @@ public class AuthController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private MailService mailService;
+
+    @Autowired EmailVerificationTokenService verificationTokenService;
+
     @GetMapping("/test")
     public String test() {
         return "Hello";
@@ -59,14 +63,24 @@ public class AuthController {
         user.setEmail(request.getEmail());
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         user.setRole("student");
-        user.setStatus("active");
+        user.setStatus("pending");
+        user.setEmailVerified(false);
         user.setOnboardingCompleted(false);
-
-
         userRepository.save(user);
 
         String token = jwtService.generateToken(new CustomUserDetails(user));
         RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
+
+
+        EmailVerificationToken verificationToken = verificationTokenService.saveVerificationToken(user);
+
+        String link = "http://localhost:8085/api/verify-email/confirm?token=" + verificationToken.getToken();
+
+
+        mailService.sendMailTo(user.getEmail(), "Chào mừng đến với StudyMatch",
+                "Cảm ơn bạn đã đăng ký tài khoản tại StudyMatch! Chúng tôi rất vui được chào đón bạn trong cộng đồng học tập của chúng tôi. Hãy bắt đầu khám phá và kết nối với những người bạn học mới ngay hôm nay!",
+                "Bấm vào link để xác thực email: " + link
+        );
 
         return ResponseEntity.ok(new ApiResponse<>(
                 true,
@@ -160,8 +174,4 @@ public class AuthController {
         userRepository.save(user);
         return  ResponseEntity.ok(new ApiResponse<>(true, StatusCode.SUCCESS, "Onboarding completed", null));
     }
-
-
-
-
 }

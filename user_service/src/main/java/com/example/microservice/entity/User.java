@@ -44,10 +44,13 @@ public class User {
     private String role = "student";
 
     @Column(nullable = false, length = 30)
-    private String status = "active";
+    private String status = "pending";
 
     @Column(name = "is_onboarding_completed", nullable = false)
     private boolean onboardingCompleted;
+
+    @Column(name = "email_verified")
+    private boolean emailVerified = false;
 
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
