@@ -22,6 +22,4 @@ public class MessageController {
     MessageReaction reaction= reactionService.insertReaction(req.getMessageID(),req.getEmoji(), req.getCurrentUser() );
     return ResponseEntity.ok(new APIResponse<>(ResponseStatus.SUCCESS, reaction));
     }
-
-
 }
