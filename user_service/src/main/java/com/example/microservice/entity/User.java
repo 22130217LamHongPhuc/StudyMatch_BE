@@ -1,77 +1,75 @@
 package com.example.microservice.entity;
 
-import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
-import lombok.Data;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.ColumnDefault;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
+@Entity
+@Table(name = "users")
 @Getter
 @Setter
-@Entity
-@Data
-@Table(name = "users")
+@NoArgsConstructor
 public class User {
+
     @Id
-    @Column(name = "user_id", nullable = false)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "user_id")
     private Long userId;
 
-    @Size(max = 150)
-    @NotNull
-    @Column(name = "email", nullable = false, length = 150)
+    @Column(nullable = false, unique = true, length = 150)
     private String email;
 
-    @Size(max = 255)
-    @NotNull
-    @Column(name = "password_hash", nullable = false)
+    @Column(name = "password_hash", nullable = false, length = 255)
     private String passwordHash;
 
-    @Size(max = 120)
-    @NotNull
-    @Column(name = "full_name", nullable = false, length = 120)
+    @Column(name = "full_name", length = 120)
     private String fullName;
 
-    @Size(max = 500)
     @Column(name = "avatar_url", length = 500)
     private String avatarUrl;
 
-    @Size(max = 30)
-    @NotNull
-    @ColumnDefault("'student'")
-    @Column(name = "role", nullable = false, length = 30)
-    private String role;
+    @Column(nullable = false, length = 30)
+    private String role = "student";
 
-    @Size(max = 30)
-    @NotNull
-    @ColumnDefault("'active'")
-    @Column(name = "status", nullable = false, length = 30)
-    private String status;
+    @Column(nullable = false, length = 30)
+    private String status = "pending";
 
-    @NotNull
-    @ColumnDefault("0")
     @Column(name = "is_onboarding_completed", nullable = false)
-    private Boolean isOnboardingCompleted = false;
+    private boolean onboardingCompleted;
+
+    @Column(name = "email_verified")
+    private boolean emailVerified = false;
 
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
 
-    @NotNull
-    @ColumnDefault("current_timestamp()")
-    @Column(name = "created_at", nullable = false)
-    private Instant createdAt;
+    @Column(name = "created_at", insertable = false, updatable = false)
+    private LocalDateTime createdAt;
 
-    @NotNull
-    @ColumnDefault("current_timestamp()")
-    @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt;
+    @Column(name = "updated_at", insertable = false, updatable = false)
+    private LocalDateTime updatedAt;
 
-    @Lob
-    @Column(name = "bio")
-    private String bio;
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    private List<RefreshToken> refreshTokens = new ArrayList<>();
 
+    public Long getId() {
+        return userId;
+    }
+
+    public void setId(Long id) {
+        this.userId = id;
+    }
 }
+

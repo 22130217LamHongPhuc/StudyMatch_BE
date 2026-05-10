@@ -7,6 +7,7 @@ import com.example.microservice.repositories.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
 @Service
 public class OnboardingService {
@@ -34,6 +35,10 @@ public class OnboardingService {
 
     @Autowired
     private SubjectRepository subjectRepository;
+
+    @Autowired
+    private  RestTemplate restTemplate;
+
 
     @Transactional
     public OnboardingSubmitResponse submitOnboarding(Long userId, OnboardingSubmitRequest request) {
@@ -134,6 +139,9 @@ public class OnboardingService {
                 }
             }
 
+            reloadAiRecommender();
+
+
             // 8. Return success response
             OnboardingSubmitResponse response = new OnboardingSubmitResponse(
                     studentProfile.getProfileId(),
@@ -170,6 +178,20 @@ public class OnboardingService {
         }
         if (request.getSemesterNo() == null) {
             throw new RuntimeException("Học kỳ không được để trống");
+        }
+    }
+
+    private void reloadAiRecommender() {
+        try {
+            String response = restTemplate.postForObject(
+                    "http://localhost:8000/api/reload-recommender",
+                    null,
+                    String.class
+            );
+
+            System.out.println("AI reload response: " + response);
+        } catch (Exception e) {
+            System.err.println("Không thể reload AI recommender: " + e.getMessage());
         }
     }
 }

@@ -31,37 +31,24 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-//    @Bean
-//    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-//        return http
-//                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-//                .csrf(
-//                //CSRF = Cross-Site Request Forgery (tấn công giả mạo request)
-//                //Tắt bảo vệ CSRF vì chúng ta sẽ sử dụng JWT cho xác thực, không cần bảo vệ CSRF
-//                AbstractHttpConfigurer::disable)
-//                .sessionManagement(
-//                          session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-//                .authorizeHttpRequests(
-//                request ->
-//                        request.requestMatchers("/api/auth/**","/swagger-ui/**","/v3/api-docs/**","/api/echo/**","/api/campus-locations/**", "**").permitAll()
-//                                .anyRequest().authenticated())
-//
-//                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
-//                .build();
-//    }
-@Bean
-public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-    return http
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .csrf(AbstractHttpConfigurer::disable)
-            .sessionManagement(session ->
-                    session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            )
-            .authorizeHttpRequests(request ->
-                    request.anyRequest().permitAll()
-            )
-            .build();
-}
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        return http
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(
+                //CSRF = Cross-Site Request Forgery (tấn công giả mạo request)
+                //Tắt bảo vệ CSRF vì chúng ta sẽ sử dụng JWT cho xác thực, không cần bảo vệ CSRF
+                AbstractHttpConfigurer::disable)
+                .sessionManagement(
+                          session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(
+                request ->
+                        request.requestMatchers("/api/auth/**","/swagger-ui/**","/v3/api-docs/**","/api/echo/**","/api/campus-locations/**","/api/verify-email/**").permitAll()
+                                .anyRequest().authenticated())
+
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+                .build();
+    }
 
 
     @Bean
