@@ -1,71 +1,43 @@
 package com.example.microservice.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.Instant;
 
+@Getter
+@Setter
 @Entity
 @Table(name = "message_reactions")
 public class MessageReaction {
     @Id
     @Column(name = "reaction_id", nullable = false)
-    private Integer id;
+    private Long id;
 
-    @Column(name = "message_id", nullable = false)
-    private Long messageId;
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    @JoinColumn(name = "message_id", nullable = false)
+    private Message message;
 
+    @NotNull
     @Column(name = "user_id", nullable = false)
-    private Integer userId;
+    private Long userId;
 
-    @Column(name = "emoji", nullable = false, length = 10)
+    @Size(max = 20)
+    @NotNull
+    @Column(name = "emoji", nullable = false, length = 20)
     private String emoji;
 
+    @NotNull
     @ColumnDefault("current_timestamp()")
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
-
-    public Integer getId() {
-        return id;
-    }
-
-    public void setId(Integer id) {
-        this.id = id;
-    }
-
-    public Long getMessageId() {
-        return messageId;
-    }
-
-    public void setMessageId(Long messageId) {
-        this.messageId = messageId;
-    }
-
-    public Integer getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Integer userId) {
-        this.userId = userId;
-    }
-
-    public String getEmoji() {
-        return emoji;
-    }
-
-    public void setEmoji(String emoji) {
-        this.emoji = emoji;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
 
 }

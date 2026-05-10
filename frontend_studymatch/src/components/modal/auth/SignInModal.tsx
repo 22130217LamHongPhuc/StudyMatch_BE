@@ -5,6 +5,8 @@ import React, { useState } from 'react'
 import { loginRequest } from '../../../services/UserService'
 import { useDispatch } from 'react-redux'
 import { userAction } from '../../../redux/UserReducer'
+import { APIResponse } from '../../../model/APIResponse'
+import { LoginSuccess } from '../../../model/UserModel'
 
 type UserForm = {
     email: string,
@@ -16,7 +18,8 @@ export default function SignInModal({ open, setModal }: { open: boolean, setModa
         email: '',
         password: ''
     })
-    const [error, setError] = useState<{ email: string; password: string }>({ email: '', password: '' });
+    const dispatch = useDispatch()
+    const [error, setError] = useState<{ email: string; password: string, message?: string }>({ email: '', password: '' });
     const [loading, setLoading] = useState<boolean>(false);
     const [responseLogin, setResponseLogin] = useState<string>('');
     const handleForm = (): boolean => {
@@ -24,41 +27,41 @@ export default function SignInModal({ open, setModal }: { open: boolean, setModa
         let isValid = true;
         if (user.email.trim() === '') {
             console.log('err name');
-            error.email = 'Email không được bỏ trống';
-            setError((err) => ({ ...err, username: 'Tên đăng nhập không được bỏ trống' }));
+            setError((err) => ({ ...err, email: 'Email không được bỏ trống' }));
             isValid = false;
         }
         if (user.password.trim() === '') {
             console.log('err pass');
-            error.password = 'Mật khẩu không được bỏ trống';
             setError((err) => ({ ...err, password: 'Mật khẩu không được bỏ trống' }));
             isValid = false;
         }
         return isValid;
     };
-    const dispatch = useDispatch()
 
     const submitForm = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (handleForm()) {
+        if (!handleForm()) return;
+        try {
             setLoading(true);
             // await loginRequest(user)
-            // const responeWS = await loginWS(user);
-            setLoading(false);
-            // if (responeWS.status === 'error') {
-            //     setResponseLogin(responeWS.message);
-            //     return;
-            // }
-            // if (responeWS.username && responeWS.reCode) {
-            //     dispatch(userAction({ username: responeWS.username, reCode: responeWS.reCode }));
-            //     navigate('/');
-            // }
-            // const user = { username: 'tai', email: '124@gmail.com', token: '12131211' }
-            console.log('user: ', user)
-            dispatch(userAction({ username: user.email, email: user.password, token: '123' }))
-            setModal(false)
+            const responeWS: APIResponse = await loginRequest(user);
+            if (responeWS.code === 200) {
+                localStorage.setItem('userId', responeWS.data.userId.toString());
+                let userRS: LoginSuccess = responeWS.data
+                dispatch(userAction({ username: userRS.username, email: userRS.email, token: userRS.token, avatar: userRS.avatar }))
+                setModal(false);
+            }
+            else {
+                setError((err) => ({ ...err, message: responeWS.message }))
+            }
+            console.log('đây là response', responeWS)
 
+            console.warn(responeWS)
+
+        } finally {
+            setLoading(false);
         }
+
     };
 
     return (
@@ -97,9 +100,12 @@ export default function SignInModal({ open, setModal }: { open: boolean, setModa
                                 <Close />
                             </IconButton>
                         </Box>
+                        {error.message && <Typography>{error.message} </Typography>}
                         <Typography fontSize={15} mb={1} mt={'20px'} fontWeight={'400'}>
                             Email:
                         </Typography>
+                        {error.email && <>  <Typography> Vui lòng nhập email</Typography></>}
+
                         <TextField
                             fullWidth
                             placeholder="Nhập Email"
@@ -120,6 +126,7 @@ export default function SignInModal({ open, setModal }: { open: boolean, setModa
                         <Typography fontSize={15} mb={1} fontWeight={'400'}>
                             Mật khẩu:
                         </Typography>
+                        {error.password && <>  <Typography> Vui lòng nhập mật khẩu</Typography></>}
                         <TextField
                             fullWidth
                             placeholder="Mật khẩu"
@@ -158,8 +165,7 @@ export default function SignInModal({ open, setModal }: { open: boolean, setModa
                                 color: '#fff'
                             }}
                             type='submit'
-                        >
-                            Đăng nhập
+                        >Đăng nhập
                         </Button>
                         <Button
                             fullWidth

@@ -14,14 +14,16 @@ import { Image } from '@mui/icons-material'
 import SearchIcon from '@mui/icons-material/Search';
 export default function Header() {
     const [modalSignIn, setModalSignIn] = useState<boolean>(false)
+    const user = useSelector((state: RootState) => state.user)
+
     // const user = useSelector((state: RootState) => state.user)
     const color = '#76b5ff'
     const sizeFont = '24px'
 
-    const user: UserModel = {
-        username: 'tai',
-        email: '12@gmail.com'
-    }
+    // const user: UserModel = {
+    //     username: 'tai',
+    //     email: '12@gmail.com'
+    // }
 
     return (
         <>
