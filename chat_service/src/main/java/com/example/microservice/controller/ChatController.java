@@ -34,6 +34,7 @@ public class ChatController {
             System.out.println("Không tìm thấy userId trong session");
             return;
         }
+
         Long senderId = Long.valueOf(userIdObj.toString());
         System.out.println("senderId = " + senderId);
         System.out.println("đây là user gửi nè: " + senderId);
@@ -47,8 +48,6 @@ public class ChatController {
         if(mess.getEvent().equals("FIRST_PRIVATE_MESS")){
             FirstPrivateMess firstPrivateMess = objectMapper.convertValue(
                     mess.getData(), FirstPrivateMess.class);
-
-
             firstMess(firstPrivateMess);
         }
     }
@@ -56,10 +55,6 @@ public class ChatController {
     public void firstMess(FirstPrivateMess mess){
         Conversation conversation = new Conversation();
         conversation.setConversationType("private");
-
-
-
-
     }
 
     public void sendChat(SendMessageRequest mess){
@@ -72,14 +67,24 @@ public class ChatController {
             if (otherUser.isEmpty()) {
                 return;
             }
+            MessDTO messDTO = new MessDTO();
+            messDTO.setSenderId(message.getSenderId());
+            messDTO.setType(message.getConversation().getConversationType());
+            messDTO.setContent(message.getContent());
+            messDTO.setMessageId(message.getId());
+            messDTO.setFileName(message.getFileName());
+            messDTO.setMediaURL(message.getMediaUrl());
+            messDTO.setCreatedAt(message.getCreatedAt());
             System.out.println("user can chuyen di"+String.valueOf(otherUser.get()));
-            NewMessageData newMess = new NewMessageData(Long.valueOf(mess.getConversationId()), message);
+            NewMessageData newMess = new NewMessageData(Long.valueOf(mess.getConversationId()), messDTO);
             SocketEnvelope<NewMessageData> response = new SocketEnvelope<NewMessageData>(EnumEvent.NEW_MESSAGE.toString(), newMess);
             System.out.println("response nè" + response);
             messagingTemplate.convertAndSend(   "/queue/messages/"+otherUser.get(),response);
             System.out.println("lưu thành công nè");
         } catch(Exception ex){
             System.out.println("co loi roi");
+
+
         }
     }
 }

@@ -23,8 +23,13 @@ public class MessageService {
         return messageRepo.findByConversationIdOrderByCreatedAtDesc(conversationId, pageable);
     }
 
+
+    public Message getMessById(int id){
+        return messageRepo.findMessageById((long) id);
+    }
+
     public   List<MessDTO> getListMess(Long conversationId, Long page){
-        Pageable pageable = (Pageable) PageRequest.of(0, 25);
+        Pageable pageable = (Pageable) PageRequest.of( page.intValue() , 25);
         Page<Message> messages = getConversation(conversationId, pageable);
         List<MessDTO> list = new ArrayList<>();
         for (Message mess : messages){
@@ -32,6 +37,7 @@ public class MessageService {
             dto.setMessageId(mess.getId());
             dto.setContent(mess.getContent());
             dto.setType(mess.getType());
+            dto.setCreatedAt(mess.getCreatedAt());
             dto.setFileName(mess.getFileName());
             dto.setMediaURL(mess.getMediaUrl());
             dto.setSenderId(mess.getSenderId());

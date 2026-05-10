@@ -44,4 +44,16 @@ public interface PrivateConversationRepo extends JpaRepository<PrivateConversati
             @Param("user1Id") Long user1Id,
             @Param("user2Id") Long user2Id
     );
+
+
+
+    @Query("""
+    select p.id from PrivateConversation p
+    where (p.user1Id = :user1Id and p.user2Id = :user2Id)
+       or (p.user1Id = :user2Id and p.user2Id = :user1Id)
+""")
+    Long findConverIdByUsers(
+            @Param("user1Id") Long user1Id,
+            @Param("user2Id") Long user2Id
+    );
 }

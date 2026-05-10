@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
@@ -41,6 +42,10 @@ public class ChatService {
         return !conversation.isEmpty();
     }
 
+    public Long findConvIdByUser(Long user1, Long user2){
+        return privateConversationRepo.findConverIdByUsers(user1,user2 );
+    }
+
     public Message saveMess (SendMessageRequest mess){
         Conversation conver = checkConversation(Long.valueOf(mess.getConversationId()))
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy conversation"));
@@ -49,7 +54,7 @@ public class ChatService {
         message.setConversation(conver);
         message.setSenderId(Long.valueOf(mess.getSenderId()) );
         message.setType(mess.getType());
-        message.setCreatedAt(Instant.now());
+        message.setCreatedAt(LocalDateTime.now());
         System.out.println(message);
       return  messageRepo.save(message);
     }
@@ -58,10 +63,12 @@ public class ChatService {
     }
 
 
-
-
     public Optional<Long> findUserOther(Long conversationId, Long userCurrent){
         return  privateConversationRepo.findOtherUserId(conversationId, userCurrent);
+    }
+    public boolean checkExistConver2User (Long user1, Long user2){
+        Optional<PrivateConversation> op = privateConversationRepo.findPrivateBetweenTwoUsers(user1, user2);
+        return !op.isEmpty();
     }
 
     @Transactional
@@ -78,21 +85,17 @@ public class ChatService {
                         req.getUser1Id(),
                         req.getUser2Id()
                 );
-
         if (existed.isPresent()) {
             return existed.get();
         }
         Conversation conversation = new Conversation();
         conversation.setConversationType("private");
         conversation.setCreatedAt(Instant.now());
-
         Conversation savedConversation = conversationRepo.save(conversation);
-
         PrivateConversation privateConversation = new PrivateConversation();
         privateConversation.setConversations(savedConversation);
         privateConversation.setUser1Id(req.getUser1Id());
         privateConversation.setUser2Id(req.getUser2Id());
-
         return privateConversationRepo.save(privateConversation);
     }
 }

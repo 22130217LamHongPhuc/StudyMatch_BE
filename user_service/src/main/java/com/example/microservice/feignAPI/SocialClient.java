@@ -1,0 +1,17 @@
+package com.example.microservice.feignAPI;
+
+import com.example.microservice.dto.respone.MutualFriendsDto;
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
+@FeignClient(name = "SOCIAL-SERVICE")
+public interface SocialClient {
+    @GetMapping("/social/friends/{id}/count")
+    public Long getTotalFriends(@PathVariable Long id);
+
+    @GetMapping("/social/friends/{id}/mutual")
+    public MutualFriendsDto getMutualFriends(@PathVariable Long id, @RequestParam Long targetUserId);
+}

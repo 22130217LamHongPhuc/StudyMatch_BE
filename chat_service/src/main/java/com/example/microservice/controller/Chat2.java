@@ -8,25 +8,42 @@ import com.example.microservice.services.MessageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.Message;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/conversation")
+@CrossOrigin(origins = "*")
 public class Chat2 {
     @Autowired
     ChatService serivce;
     @Autowired
     MessageService messService;
     @GetMapping
-    public ResponseEntity<?> getMess(@RequestParam Long conversationId, @RequestParam Long page){
+    public ResponseEntity<?> getMess(@RequestParam Long currentUser, @RequestParam Long targetUser, @RequestParam Long page){
+        boolean exist = serivce.checkExistConver2User(currentUser, targetUser);
+        APIResponse<  Map> apiResponse;
+        if(!exist){
+            apiResponse = new APIResponse<>(ResponseStatus.SUCCESS, null);
+            return ResponseEntity.ok(apiResponse);
+        }
+
+        Map<String, Object> map = new HashMap<>();
+        Long conversationId = serivce.findConvIdByUser(currentUser, targetUser);
+        map.put("conversationId", conversationId);
         List<MessDTO> list = messService.getListMess(conversationId, page);
-        APIResponse<  List<MessDTO>> apiResponse = new APIResponse<>(ResponseStatus.SUCCESS, list);
+        map.put("listMess", list);
+        apiResponse = new APIResponse<>(ResponseStatus.SUCCESS, map);
         return ResponseEntity.ok(apiResponse);
     }
+
+
+
+
+
+
 
 }

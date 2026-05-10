@@ -4,7 +4,6 @@ package com.example.microservice.config;
 import com.example.microservice.handle.ResponseStatus;
 
 import java.time.LocalDateTime;
-
 public class APIResponse<T> {
     final int code;
     final String message;
@@ -43,4 +42,6 @@ public class APIResponse<T> {
                 ", timestamp=" + timestamp +
                 '}';
     }
+
+
 }
