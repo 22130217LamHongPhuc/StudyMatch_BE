@@ -1,0 +1,13 @@
+package com.group_service.enums;
+
+public enum StatusCode {
+    INVALID_TOKEN ,
+    INVALID_REFRESH_TOKEN,
+    USER_NOT_FOUND,
+    INTERNAL_SERVER_ERROR,
+    UNAUTHORIZED,
+    ACCESS_DENIED,
+    NOT_FOUND,
+    EMAIL_ALREADY_IN_USE, INVALID_FILE, PASSWORD_INCORRECT, SUCCESS
+}
+

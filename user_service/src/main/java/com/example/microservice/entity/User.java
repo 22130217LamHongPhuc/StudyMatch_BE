@@ -34,7 +34,7 @@ public class User {
     @Column(name = "password_hash", nullable = false, length = 255)
     private String passwordHash;
 
-    @Column(name = "full_name", nullable = false, length = 120)
+    @Column(name = "full_name", length = 120)
     private String fullName;
 
     @Column(name = "avatar_url", length = 500)
@@ -44,10 +44,13 @@ public class User {
     private String role = "student";
 
     @Column(nullable = false, length = 30)
-    private String status = "active";
+    private String status = "pending";
 
     @Column(name = "is_onboarding_completed", nullable = false)
     private boolean onboardingCompleted;
+
+    @Column(name = "email_verified")
+    private boolean emailVerified = false;
 
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;

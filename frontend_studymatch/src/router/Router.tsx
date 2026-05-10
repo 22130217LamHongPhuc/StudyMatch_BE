@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, Outlet } from "react-router-dom";
 import MainLayout from "../pages/MainLayout/MainLayout";
 import HomePage from "../pages/HomePage";
 import FriendsPage from "../pages/FriendsLayout/FriendsPage";
@@ -10,6 +10,7 @@ import { AuthLayout } from "../pages/MainLayout/AuthLayout";
 import LoginPage from "../pages/Auth/LoginPage";
 import RegisterPage from "../pages/Auth/RegisterPage";
 import OnboardingFlow from "../pages/Onboarding/Onboarding";
+import CreateGroupPage from "../pages/Group/CreateGroupPage";
 export const router = createBrowserRouter([
   // Auth routes
   {
@@ -30,5 +31,10 @@ export const router = createBrowserRouter([
       { path: "/profile", element: <ProfilePage /> },
       { path: "/recommendation", element: <RecommendationPage /> },
     ],
+  },
+
+  {
+    element: <Outlet />,
+    children: [{ path: "/create-group", element: <CreateGroupPage /> }],
   },
 ]);
