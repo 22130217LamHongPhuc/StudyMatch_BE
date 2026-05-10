@@ -79,6 +79,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
 
         return toResponse(savedStudyGroup);
     }
+
     @Override
     public StudyGroupDetailResponse getGroupById(Long groupId) {
         StudyGroup studyGroup = studyGroupRepository.findById(groupId)
@@ -112,6 +113,42 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 studyGroup.getCreatedAt(),
                 studyGroup.getUpdatedAt(),
                 slotResponses
+        );
+    }
+
+
+    @Override
+    public List<StudyGroupDetailResponse> getGroupsByUserId(Long userId) {
+
+        List<StudyGroup> groups = groupMemberRepository.findGroupsByUserId(
+                userId,
+                GroupMemberStatus.ACTIVE,
+                "ACTIVE"
+        );
+
+        return groups.stream()
+                .map(this::mapToDetailResponse)
+                .toList();
+    }
+
+    private StudyGroupDetailResponse mapToDetailResponse(StudyGroup group) {
+
+        return new StudyGroupDetailResponse(
+                group.getId(),
+                group.getName(),
+                group.getDescription(),
+                group.getOwnerUserId(),
+                group.getTermId(),
+                group.getMainSubjectId(),
+                group.getSubjectName(),
+                group.getStudyGoal(),
+                group.getStudyMode(),
+                group.getMaxMembers(),
+                group.getVisibility(),
+                group.getStatus(),
+                group.getCreatedAt(),
+                group.getUpdatedAt(),
+                new ArrayList<>()
         );
     }
 

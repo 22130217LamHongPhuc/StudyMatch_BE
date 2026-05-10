@@ -17,4 +17,8 @@ public interface AcademicTermRepository extends JpaRepository<AcademicTerm, Long
             Short endYear
     );
 
+    Optional<AcademicTerm> findByStatus(String status);
+
+
+
 }

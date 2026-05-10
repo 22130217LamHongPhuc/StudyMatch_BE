@@ -1,4 +1,4 @@
-package com.example.microservice.enums;
+package com.group_service.enums;
 
 public enum StatusCode {
     INVALID_TOKEN ,

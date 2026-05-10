@@ -70,5 +70,7 @@ public class StudyGroup {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+
 }
 

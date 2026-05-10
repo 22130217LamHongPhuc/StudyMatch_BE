@@ -1,4 +1,4 @@
-package com.example.microservice.dto.respone;
+package com.example.microservice.dto.response;
 
 
 import com.example.microservice.enums.StatusCode;
@@ -15,7 +15,7 @@ public class ApiResponse<T> {
 
 
 
-    public ApiResponse(boolean success, StatusCode code,String message, T data) {
+    public ApiResponse(boolean success, StatusCode code, String message, T data) {
         this.success = success;
         this.message = message;
         this.data = data;

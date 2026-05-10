@@ -1,7 +1,7 @@
-package com.example.microservice.dto.response;
+package com.group_service.dto;
 
 
-import com.example.microservice.enums.StatusCode;
+import com.group_service.enums.StatusCode;
 import lombok.Getter;
 import lombok.Setter;
 

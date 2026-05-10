@@ -1,8 +1,8 @@
 package com.example.microservice.exception;
 
 
+import com.example.microservice.dto.response.ApiResponse;
 import com.example.microservice.enums.StatusCode;
-import com.example.microservice.dto.respone.ApiResponse;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
