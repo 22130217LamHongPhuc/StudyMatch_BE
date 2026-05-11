@@ -5,5 +5,6 @@ public enum EnumEvent {
     MESSAGE_UPDATED,
     MESSAGE_ACK,
     READ_RECEIPT,
-    MESSAGE_RECALL
+    MESSAGE_RECALL,
+    REACTION_ADD;
 }

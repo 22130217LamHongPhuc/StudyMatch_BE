@@ -23,7 +23,7 @@ public class MessDTO {
         this.setMediaURL(message.getMediaUrl());
         this.setFileName(message.getFileName());
         this.setSenderId(message.getSenderId());
-        this.setMessageId(message.getSenderId());
+        this.setMessageId(message.getId());
     }
     public MessDTO(){
 

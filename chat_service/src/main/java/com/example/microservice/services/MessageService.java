@@ -26,7 +26,7 @@ public class MessageService {
     }
 
 
-    public Message getMessById(int id){
+    public Message getMessById(Long id){
         return messageRepo.findMessageById((long) id);
     }
 
@@ -57,6 +57,7 @@ public class MessageService {
         mess.setIsDeleted(true);
         Message result =  messageRepo.save(mess);
         result.setContent(null);
+        System.out.println(result.toString() + "result reacall nè");
         return  new MessDTO(result);
     }
 

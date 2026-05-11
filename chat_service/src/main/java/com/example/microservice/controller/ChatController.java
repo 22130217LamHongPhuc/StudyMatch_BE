@@ -4,8 +4,10 @@ import com.example.microservice.config.EnumEvent;
 import com.example.microservice.dto.*;
 import com.example.microservice.entity.Conversation;
 import com.example.microservice.entity.Message;
+import com.example.microservice.entity.MessageReaction;
 import com.example.microservice.services.ChatService;
 import com.example.microservice.services.MessageService;
+import com.example.microservice.services.ReactionService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +34,8 @@ public class ChatController {
     private ObjectMapper objectMapper;
     @Autowired
     MessageService messageService;
+    @Autowired
+    ReactionService reactionService;
     @MessageMapping("/send")
     public void sendMessage(SocketRequest<?> mess,  Principal principal){
         Authentication authentication = (Authentication) principal;
@@ -67,14 +71,34 @@ public class ChatController {
             );
             recallMess(request, Long.valueOf(userId) );
         }
+        if(mess.getEvent().equals("REACTION_ADD")){
+            ReactionRequest request = objectMapper.convertValue(mess.getData(),
+                    ReactionRequest.class);
+            addReaction(request, Long.valueOf(userId));
+
+        }
     }
+    public void addReaction (ReactionRequest request, Long userId   ){
+        Optional<?> otherUID = chatService.findUserOther(request.getConversationID(), Long.valueOf(userId));
+        if(otherUID.isEmpty()) return;
+        MessageReaction reaction= reactionService.insertReaction(Long.valueOf(request.getMessageID()),request.getEmoji(),Long.valueOf(userId)  );
+        ReactionData response= new ReactionData();
+        response.setConversationId(request.getConversationID());
+        response.setMessage( new ReactionDTO(request.getMessageID(), request.getEmoji()));
+        SocketEnvelope<ReactionData> res = new SocketEnvelope<>(EnumEvent.REACTION_ADD.toString(), response);
+        socketSendMess(String.valueOf(userId),String.valueOf(otherUID.get()),  res, res);
+
+    }
+
+
     public void recallMess (   RecallRequest request, Long userId   ){
         Optional<?> otherUID = chatService.findUserOther(request.getConversationID(), Long.valueOf(userId));
         if(otherUID.isEmpty()) return;
         boolean check =  chatService.checkPrivateExist(request.getConversationID(),userId );
        if(!check) return ;
       MessDTO dto =   messageService.recallMess(request.getConversationID(), request.getMessageID());
-       SocketEnvelope<MessDTO> response = new SocketEnvelope<>(EnumEvent.MESSAGE_RECALL.toString(), dto);
+        NewMessageData newMess = new NewMessageData( request.getConversationID(), dto);
+       SocketEnvelope<NewMessageData> response = new SocketEnvelope<>(EnumEvent.MESSAGE_RECALL.toString(), newMess);
         socketSendMess(String.valueOf(userId),String.valueOf(otherUID.get()),  response, response);
 
     }
