@@ -5,6 +5,7 @@ import com.example.microservice.dto.*;
 import com.example.microservice.entity.Conversation;
 import com.example.microservice.entity.Message;
 import com.example.microservice.services.ChatService;
+import com.example.microservice.services.MessageService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +30,8 @@ public class ChatController {
     private final SimpMessagingTemplate messagingTemplate;
     @Autowired
     private ObjectMapper objectMapper;
+    @Autowired
+    MessageService messageService;
     @MessageMapping("/send")
     public void sendMessage(SocketRequest<?> mess,  Principal principal){
         Authentication authentication = (Authentication) principal;
@@ -57,6 +60,23 @@ public class ChatController {
                     mess.getData(), FirstPrivateMess.class);
             firstMess(firstPrivateMess);
         }
+        if(mess.getEvent().equals("MESSAGE_RECALL")){
+            RecallRequest request = objectMapper.convertValue(
+                    mess.getData(),
+                    RecallRequest.class
+            );
+            recallMess(request, Long.valueOf(userId) );
+        }
+    }
+    public void recallMess (   RecallRequest request, Long userId   ){
+        Optional<?> otherUID = chatService.findUserOther(request.getConversationID(), Long.valueOf(userId));
+        if(otherUID.isEmpty()) return;
+        boolean check =  chatService.checkPrivateExist(request.getConversationID(),userId );
+       if(!check) return ;
+      MessDTO dto =   messageService.recallMess(request.getConversationID(), request.getMessageID());
+       SocketEnvelope<MessDTO> response = new SocketEnvelope<>(EnumEvent.MESSAGE_RECALL.toString(), dto);
+        socketSendMess(String.valueOf(userId),String.valueOf(otherUID.get()),  response, response);
+
     }
 
     public void firstMess(FirstPrivateMess mess){
@@ -93,5 +113,10 @@ public class ChatController {
         } catch(Exception ex){
             System.out.println("co loi roi");
         }
+    }
+    public void socketSendMess (String currentUID, String otherUID, SocketEnvelope<?> currResponse, SocketEnvelope<?> otherResponse){
+        messagingTemplate.convertAndSendToUser( currentUID, "/queue/chat", currResponse );
+        messagingTemplate.convertAndSendToUser(otherUID, "/queue/chat", otherResponse);
+
     }
 }

@@ -62,7 +62,6 @@ public class ChatService {
        return conversationRepo.findById(id);
     }
 
-
     public Optional<Long> findUserOther(Long conversationId, Long userCurrent){
         return  privateConversationRepo.findOtherUserId(conversationId, userCurrent);
     }

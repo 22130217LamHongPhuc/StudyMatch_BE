@@ -3,6 +3,7 @@ package com.example.microservice.services;
 import com.example.microservice.config.APIResponse;
 import com.example.microservice.dto.MessDTO;
 import com.example.microservice.entity.Message;
+import com.example.microservice.exception.ResourceNotFoundException;
 import com.example.microservice.handle.ResponseStatus;
 import com.example.microservice.repository.MessageRepo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,6 +46,18 @@ public class MessageService {
             list.add(dto);
         }
           return list;
+    }
+
+    public MessDTO recallMess (Long conversationId, Long messageId){
+        Message mess = messageRepo.findMessageById(messageId);
+        if(mess == null){
+            throw new ResourceNotFoundException("message không tồn tại");
+        }
+        mess.setDeletedAt(LocalDateTime.now());
+        mess.setIsDeleted(true);
+        Message result =  messageRepo.save(mess);
+        result.setContent(null);
+        return  new MessDTO(result);
     }
 
 

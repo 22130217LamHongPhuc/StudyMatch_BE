@@ -75,7 +75,7 @@ public class Message {
     private Boolean isDeleted = false;
 
     @Column(name = "deleted_at")
-    private Instant deletedAt;
+    private LocalDateTime deletedAt;
 
     @NotNull
     @ColumnDefault("current_timestamp()")

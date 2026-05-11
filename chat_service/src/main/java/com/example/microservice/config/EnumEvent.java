@@ -4,5 +4,6 @@ public enum EnumEvent {
     NEW_MESSAGE ,
     MESSAGE_UPDATED,
     MESSAGE_ACK,
-    READ_RECEIPT
+    READ_RECEIPT,
+    MESSAGE_RECALL
 }
