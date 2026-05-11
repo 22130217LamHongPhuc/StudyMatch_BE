@@ -13,9 +13,11 @@ import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import java.nio.file.attribute.UserPrincipal;
 import java.security.Principal;
 import java.util.Optional;
 
@@ -28,22 +30,27 @@ public class ChatController {
     @Autowired
     private ObjectMapper objectMapper;
     @MessageMapping("/send")
-    public void sendMessage(SocketRequest<?> mess,    SimpMessageHeaderAccessor headerAccessor){
-        Object userIdObj = headerAccessor.getSessionAttributes().get("userId");
-        if (userIdObj == null) {
-            System.out.println("Không tìm thấy userId trong session");
-            return;
-        }
+    public void sendMessage(SocketRequest<?> mess,  Principal principal){
+        Authentication authentication = (Authentication) principal;
+        System.out.println("auth nè"+ authentication);
+        System.out.println("pricipal nè" + principal);
+        String userId = principal.getName();
+        System.out.println("user id "+ userId);
+//        UserPrincipal userPrincipal =
+//        if (userIdObj == null) {
+//            System.out.println("Không tìm thấy userId trong session");
+//            return;
+//        }
 
-        Long senderId = Long.valueOf(userIdObj.toString());
-        System.out.println("senderId = " + senderId);
-        System.out.println("đây là user gửi nè: " + senderId);
+//        Long senderId = Long.valueOf(userIdObj.toString());
+//        System.out.println("senderId = " + senderId);
+//        System.out.println("đây là user gửi nè: " + senderId);
         if(mess.getEvent().equals("SEND_CHAT")){
             SendMessageRequest data = objectMapper.convertValue(
                     mess.getData(),
                     SendMessageRequest.class
             );
-            sendChat(data);
+            sendChat(data, userId);
         }
         if(mess.getEvent().equals("FIRST_PRIVATE_MESS")){
             FirstPrivateMess firstPrivateMess = objectMapper.convertValue(
@@ -57,7 +64,7 @@ public class ChatController {
         conversation.setConversationType("private");
     }
 
-    public void sendChat(SendMessageRequest mess){
+    public void sendChat(SendMessageRequest mess, String currentUID){
         boolean exist = chatService.checkPrivateExist(Long.valueOf(mess.getConversationId()), Long.valueOf(mess.getSenderId()));
         if(!exist) return;
         try{
@@ -78,13 +85,13 @@ public class ChatController {
             System.out.println("user can chuyen di"+String.valueOf(otherUser.get()));
             NewMessageData newMess = new NewMessageData(Long.valueOf(mess.getConversationId()), messDTO);
             SocketEnvelope<NewMessageData> response = new SocketEnvelope<NewMessageData>(EnumEvent.NEW_MESSAGE.toString(), newMess);
+            SocketEnvelope<NewMessageData> response_ack = new SocketEnvelope<NewMessageData>(EnumEvent.MESSAGE_ACK.toString(), newMess);
             System.out.println("response nè" + response);
-            messagingTemplate.convertAndSend(   "/queue/messages/"+otherUser.get(),response);
+            messagingTemplate.convertAndSendToUser( currentUID, "/queue/chat", response_ack );
+            messagingTemplate.convertAndSendToUser(String.valueOf(otherUser.get()), "/queue/chat", response);
             System.out.println("lưu thành công nè");
         } catch(Exception ex){
             System.out.println("co loi roi");
-
-
         }
     }
 }

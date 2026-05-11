@@ -43,14 +43,18 @@ public class SecurityConfig {
                           session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(
                 request ->
-                        request.requestMatchers("/api/auth/**","/swagger-ui/**","/v3/api-docs/**","/api/echo/**","/api/campus-locations/**","/api/verify-email/**").permitAll()
+//                        request.requestMatchers("/api/auth/**","/swagger-ui/**","/v3/api-docs/**","/api/echo/**","/api/campus-locations/**","/api/verify-email/**").permitAll()
+                        request.requestMatchers(       "/api/auth/**",
+                                        "/api/verify-email/**",
+                                        "/swagger-ui/**",
+                                        "/v3/api-docs/**",
+                                        "/api/echo/**",
+                                        "/api/campus-locations/**", "/users/**",
+                                        "/profile/**").permitAll()
                                 .anyRequest().authenticated())
-
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
-
-
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
