@@ -1,11 +1,13 @@
 package com.example.demo.p1;
 
-public  class A {
-     String name = "Tai";
+import java.util.*;
 
-     A(){
-          System.out.println("ăn ở cha");
 
-     }
+public abstract  class   A{
+  public void m1(){
+      System.out.println("cha");
+  };
+
 
 }
+

@@ -29,7 +29,7 @@ public class UserService {
     public ProfileDto getProfile(Long id, Long targetId){
         Long friendsCount = getFriendCount(id);
         MutualFriendsDto mutualDto = getMutualFriends(id, targetId);
-        User user = getProfile(id);
+        User user = getProfile(targetId);
         ProfileDto  res = new ProfileDto();
         res.setAvatarUrl(user.getAvatarUrl());
         res.setStatusFriend(mutualDto.getStatusFriend());

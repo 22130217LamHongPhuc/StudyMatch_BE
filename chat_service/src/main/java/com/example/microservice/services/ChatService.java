@@ -97,4 +97,8 @@ public class ChatService {
         privateConversation.setUser2Id(req.getUser2Id());
         return privateConversationRepo.save(privateConversation);
     }
+
+
+
+
 }

@@ -45,7 +45,6 @@ public class FriendsController {
         dto.setFriend(isFriends);
         System.out.println(dto.toString() + "dto nè");
         return dto;
-
     }
 
 

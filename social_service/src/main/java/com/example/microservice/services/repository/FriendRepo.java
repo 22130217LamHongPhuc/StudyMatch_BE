@@ -49,5 +49,4 @@ from friends
 where  (user1_id =:user1 and user2_id =:user2) or (user1_id =:user2 and user2_id =:user1)
 """, nativeQuery = true)
     Long isFriends(@Param("user1") Long user1, @Param ("user2") Long user2);
-
 }
