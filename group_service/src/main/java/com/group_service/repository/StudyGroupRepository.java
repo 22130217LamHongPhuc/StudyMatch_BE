@@ -56,32 +56,35 @@ public interface StudyGroupRepository extends JpaRepository<StudyGroup, Long> {
 
 
     @Query("""
-    SELECT g.id AS id,
-           g.name AS name,
-           g.groupType AS groupType,
-           g.subjectName AS subjectName,
-           g.termId AS termId,
-           g.createdByUserId AS createdByUserId,
-           g.ownerUserId AS ownerUserId,
-           g.maxMembers AS maxMembers,
-           g.status AS status,
-           g.createdAt AS createdAt,
-           COUNT(gm.id) AS memberCount
-    FROM StudyGroup g
-    LEFT JOIN GroupMember gm
-           ON gm.groupId = g.id
-    WHERE (:groupType IS NULL OR g.groupType = :groupType)
-      AND (:groupStatus IS NULL OR g.status = :groupStatus) AND
-      (LOWER(g.name) LIKE LOWER(CONCAT('%', :keyWord, '%'))
-    OR LOWER(CAST(g.description AS string)) LIKE LOWER(CONCAT('%', :keyWord, '%')))
-    GROUP BY g.id
-    ORDER BY g.createdAt DESC
+SELECT g.id AS id,
+       g.name AS name,
+       g.groupType AS groupType,
+       g.subjectName AS subjectName,
+       g.termId AS termId,
+       g.createdByUserId AS createdByUserId,
+       g.ownerUserId AS ownerUserId,
+       g.maxMembers AS maxMembers,
+       g.status AS status,
+       g.createdAt AS createdAt,
+       COUNT(gm.id) AS memberCount
+FROM StudyGroup g
+LEFT JOIN GroupMember gm
+       ON gm.groupId = g.id
+WHERE (CAST(:groupType AS string) IS NULL OR g.groupType = :groupType)
+  AND (CAST(:groupStatus AS string) IS NULL OR g.status = :groupStatus)
+  AND (
+        :keyWord IS NULL OR
+        LOWER(g.name) LIKE LOWER(CONCAT('%', :keyWord, '%'))
+      )
+GROUP BY g.id, g.name, g.groupType, g.subjectName,
+         g.termId, g.createdByUserId, g.ownerUserId,
+         g.maxMembers, g.status, g.createdAt
+ORDER BY g.createdAt DESC
 """)
     Page<AdminGroupProjection> filterAdminGroups(
             @Param("groupType") GroupType groupType,
             @Param("groupStatus") GroupStatus groupStatus,
             @Param("keyWord") String keyWord,
-
             Pageable pageable
     );
 

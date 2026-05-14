@@ -11,6 +11,8 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> {
 
+    long countByGroupId(Long groupId);
+
     @Query("""
         select g
         from GroupMember gm

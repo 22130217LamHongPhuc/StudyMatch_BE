@@ -10,6 +10,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class GroupFilterRequest {
+    private String keyword;
     private GroupType type;
     private GroupVisibility visibility;
     private GroupStatus status;

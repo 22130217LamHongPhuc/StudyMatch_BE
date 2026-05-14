@@ -175,9 +175,14 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 Sort.by(Sort.Direction.DESC, "createdAt")
         );
 
+        String keyword = filter.getKeyword() == null
+                ? null
+                : filter.getKeyword().trim();
+
         Page<AdminGroupProjection> groups = studyGroupRepository.filterAdminGroups(
                 filter.getType(),
                 filter.getStatus(),
+                keyword,
                 pageable
         );
 
@@ -262,6 +267,45 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     @Override
     public GroupStats getStatsForGroups() {
         return studyGroupRepository.getStats();
+    }
+
+    @Override
+    public AdminGroupDetailResponse getGroupDetailForAdmin(Long groupId) {
+        StudyGroup studyGroup = studyGroupRepository.findById(groupId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Study group not found"));
+
+        long memberCount = groupMemberRepository.countByGroupId(groupId);
+
+        List<StudentFreeTimeSlot> freeTimeSlots = studentFreeTimeSlotRepository.findByGroupId(groupId);
+        List<FreeTimeSlotResponse> slotResponses = freeTimeSlots.stream()
+                .map(slot -> new FreeTimeSlotResponse(
+                        slot.getId(),
+                        slot.getGroupId(),
+                        slot.getTermId(),
+                        slot.getDayOfWeek(),
+                        slot.getSlotCode(),
+                        slot.getIsAvailable()
+                ))
+                .toList();
+
+        return new AdminGroupDetailResponse(
+                studyGroup.getId(),
+                studyGroup.getName(),
+                studyGroup.getDescription(),
+                studyGroup.getGroupType(),
+                studyGroup.getCreatedByUserId(),
+                studyGroup.getOwnerUserId(),
+                studyGroup.getTermId(),
+                studyGroup.getMainSubjectId(),
+                studyGroup.getSubjectName(),
+                studyGroup.getMaxMembers(),
+                studyGroup.getVisibility(),
+                studyGroup.getStatus(),
+                memberCount,
+                studyGroup.getCreatedAt(),
+                studyGroup.getUpdatedAt(),
+                slotResponses
+        );
     }
 
 
