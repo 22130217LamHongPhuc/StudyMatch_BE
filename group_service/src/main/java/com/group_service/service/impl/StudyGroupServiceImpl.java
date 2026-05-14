@@ -1,16 +1,22 @@
 package com.group_service.service.impl;
 
 import com.group_service.dto.*;
+
+import com.group_service.dto.projection.AdminGroupProjection;
+import com.group_service.dto.projection.GroupStats;
 import com.group_service.entity.GroupMember;
 import com.group_service.entity.StudentFreeTimeSlot;
 import com.group_service.entity.StudyGroup;
-import com.group_service.entity.enums.GroupMemberRole;
-import com.group_service.entity.enums.GroupMemberStatus;
+import com.group_service.entity.enums.*;
 import com.group_service.repository.GroupMemberRepository;
 import com.group_service.repository.StudentFreeTimeSlotRepository;
 import com.group_service.repository.StudyGroupRepository;
 import com.group_service.service.StudyGroupService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,22 +36,22 @@ public class StudyGroupServiceImpl implements StudyGroupService {
 
     @Override
     @Transactional
-    public StudyGroupResponse createGroup(CreateStudyGroupRequest request) {
+    public StudyGroupResponse createStudyGroup(CreateStudyGroupRequest request) {
         String normalizedName = request.getName().trim();
         Long ownerUserId = request.getOwnerUserId();
 
         StudyGroup studyGroup = StudyGroup.builder()
+                .groupType(GroupType.STUDY)
                 .name(normalizedName)
                 .description(normalizeText(request.getDescription()))
-                .ownerUserId(ownerUserId)
+                .createdByUserId(request.getOwnerUserId())
+                .ownerUserId(request.getOwnerUserId())
                 .termId(request.getTermId())
                 .mainSubjectId(request.getMainSubjectId())
                 .subjectName(normalizeText(request.getSubjectName()))
-                .studyGoal(normalizeText(request.getStudyGoal()))
-                .studyMode(normalizeText(request.getStudyMode()))
                 .maxMembers(request.getMaxMembers())
-                .visibility(normalizeVisibility(request.getVisibility()))
-                .status("ACTIVE")
+                .visibility(GroupVisibility.PUBLIC)
+                .status(GroupStatus.ACTIVE)
                 .build();
 
         StudyGroup savedStudyGroup = studyGroupRepository.save(studyGroup);
@@ -81,6 +87,38 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     }
 
     @Override
+    public StudyGroupResponse createCommunityGroup(CreateStudyGroupRequest request) {
+        String normalizedName = request.getName().trim();
+        Long ownerUserId = request.getOwnerUserId();
+
+        StudyGroup studyGroup = StudyGroup.builder()
+                .groupType(GroupType.COMMUNITY)
+                .name(normalizedName)
+                .description(normalizeText(request.getDescription()))
+                .createdByUserId(request.getOwnerUserId())
+                .ownerUserId(request.getOwnerUserId())
+                .termId(request.getTermId())
+                .mainSubjectId(request.getMainSubjectId())
+                .subjectName(normalizeText(request.getSubjectName()))
+                .visibility(GroupVisibility.COMMUNITY)
+                .status(GroupStatus.ACTIVE)
+                .build();
+
+        StudyGroup savedStudyGroup = studyGroupRepository.save(studyGroup);
+
+        GroupMember ownerMember = GroupMember.builder()
+                .groupId(savedStudyGroup.getId())
+                .userId(ownerUserId)
+                .role(GroupMemberRole.ADMIN)
+                .status(GroupMemberStatus.ACTIVE)
+                .build();
+
+        groupMemberRepository.save(ownerMember);
+
+        return toResponse(savedStudyGroup);
+    }
+
+    @Override
     public StudyGroupDetailResponse getGroupById(Long groupId) {
         StudyGroup studyGroup = studyGroupRepository.findById(groupId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Study group not found"));
@@ -105,8 +143,6 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 studyGroup.getTermId(),
                 studyGroup.getMainSubjectId(),
                 studyGroup.getSubjectName(),
-                studyGroup.getStudyGoal(),
-                studyGroup.getStudyMode(),
                 studyGroup.getMaxMembers(),
                 studyGroup.getVisibility(),
                 studyGroup.getStatus(),
@@ -123,13 +159,66 @@ public class StudyGroupServiceImpl implements StudyGroupService {
         List<StudyGroup> groups = groupMemberRepository.findGroupsByUserId(
                 userId,
                 GroupMemberStatus.ACTIVE,
-                "ACTIVE"
+                GroupStatus.ACTIVE
         );
 
         return groups.stream()
                 .map(this::mapToDetailResponse)
                 .toList();
     }
+
+    @Override
+    public Page<AdminGroupResponse> getGroupsForAdmin(GroupFilterRequest filter,int page, int limit) {
+        Pageable pageable = PageRequest.of(
+                page,
+                limit,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+
+        Page<AdminGroupProjection> groups = studyGroupRepository.filterAdminGroups(
+                filter.getType(),
+                filter.getStatus(),
+                pageable
+        );
+
+        return groups.map(this::mapToAdminGroupResponse);
+    }
+
+    @Override
+    public Page<AdminGroupResponse> getGroupsByKeywordForAdmin(String keyword, int page, int limit) {
+        Pageable pageable = PageRequest.of(
+                page,
+                limit,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+
+        Page<AdminGroupProjection> groups = studyGroupRepository.searchAdminGroupsByKeyword(
+                keyword.trim(),
+                pageable
+        );
+
+        System.out.println("Found " + groups.getTotalElements() + " groups matching keyword: " + keyword);
+
+        return groups.map(this::mapToAdminGroupResponse);
+    }
+
+
+    private AdminGroupResponse mapToAdminGroupResponse(AdminGroupProjection group) {
+
+        return AdminGroupResponse.builder()
+                .id(group.getId())
+                .name(group.getName())
+                .type(group.getGroupType().name())
+                .subjectName(group.getSubjectName())
+                .status(group.getStatus())
+                .createdAt(group.getCreatedAt())
+                .memberCount(group.getMemberCount())
+                .build();
+    }
+
+
+
+
 
     private StudyGroupDetailResponse mapToDetailResponse(StudyGroup group) {
 
@@ -141,8 +230,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 group.getTermId(),
                 group.getMainSubjectId(),
                 group.getSubjectName(),
-                group.getStudyGoal(),
-                group.getStudyMode(),
+
                 group.getMaxMembers(),
                 group.getVisibility(),
                 group.getStatus(),
@@ -161,8 +249,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 studyGroup.getTermId(),
                 studyGroup.getMainSubjectId(),
                 studyGroup.getSubjectName(),
-                studyGroup.getStudyGoal(),
-                studyGroup.getStudyMode(),
+
                 studyGroup.getMaxMembers(),
                 studyGroup.getVisibility(),
                 studyGroup.getStatus(),
@@ -170,6 +257,14 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 studyGroup.getUpdatedAt()
         );
     }
+
+
+    @Override
+    public GroupStats getStatsForGroups() {
+        return studyGroupRepository.getStats();
+    }
+
+
 
     private String normalizeText(String value) {
         return StringUtils.hasText(value) ? value.trim() : null;

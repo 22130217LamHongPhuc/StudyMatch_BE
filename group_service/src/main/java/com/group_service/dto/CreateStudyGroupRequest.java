@@ -39,13 +39,8 @@ public class CreateStudyGroupRequest {
         @Size(max = 150)
         private String subjectName;
 
-        @Size(max = 50)
-        private String studyGoal;
 
-        @Size(max = 50)
-        private String studyMode;
 
-        @NotNull
         @Min(1)
         private Integer maxMembers;
 

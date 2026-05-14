@@ -1,5 +1,7 @@
 package com.group_service.dto;
 
+import com.group_service.entity.enums.GroupStatus;
+import com.group_service.entity.enums.GroupVisibility;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -24,15 +26,11 @@ public class StudyGroupResponse {
 
     private String subjectName;
 
-    private String studyGoal;
-
-    private String studyMode;
-
     private Integer maxMembers;
 
-    private String visibility;
+    private GroupVisibility visibility;
 
-    private String status;
+    private GroupStatus status;
 
     private LocalDateTime createdAt;
 

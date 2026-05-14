@@ -1,6 +1,5 @@
 package com.group_service.controller;
 
-import com.group_service.clients.ProfileClient;
 import com.group_service.dto.ApiResponse;
 import com.group_service.dto.CreateStudyGroupRequest;
 import com.group_service.dto.StudyGroupDetailResponse;
@@ -9,7 +8,6 @@ import com.group_service.enums.StatusCode;
 import com.group_service.service.StudyGroupService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,11 +31,25 @@ public class StudyGroupController {
     public ResponseEntity<ApiResponse<StudyGroupResponse>> createGroup(@Valid @RequestBody CreateStudyGroupRequest request) {
 //        Long termId = profileClient.getActiveTerm();
         request.setTermId(8L);
-        StudyGroupResponse response = studyGroupService.createGroup(request);
+        StudyGroupResponse response = studyGroupService.createStudyGroup(request);
         return ResponseEntity.ok(new ApiResponse<>(
                true,
                StatusCode.SUCCESS,
                "create group successfully",
+                response
+        ));
+    }
+
+
+    @PostMapping("/community")
+    public ResponseEntity<ApiResponse<StudyGroupResponse>> createCommunityGroup(@Valid @RequestBody CreateStudyGroupRequest request) {
+//        Long termId = profileClient.getActiveTerm();
+        request.setTermId(8L);
+        StudyGroupResponse response = studyGroupService.createCommunityGroup(request);
+        return ResponseEntity.ok(new ApiResponse<>(
+                true,
+                StatusCode.SUCCESS,
+                "create  community group successfully",
                 response
         ));
     }
