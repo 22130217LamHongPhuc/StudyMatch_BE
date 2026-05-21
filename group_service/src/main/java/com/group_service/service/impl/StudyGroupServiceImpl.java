@@ -4,10 +4,12 @@ import com.group_service.dto.*;
 
 import com.group_service.dto.projection.AdminGroupProjection;
 import com.group_service.dto.projection.GroupStats;
+import com.group_service.entity.GroupFreeTimeSlot;
 import com.group_service.entity.GroupMember;
 import com.group_service.entity.UserFreeTimeSlot;
 import com.group_service.entity.StudyGroup;
 import com.group_service.entity.enums.*;
+import com.group_service.repository.GroupFreeTimeSlotRepository;
 import com.group_service.repository.GroupMemberRepository;
 import com.group_service.repository.StudentFreeTimeSlotRepository;
 import com.group_service.repository.StudyGroupRepository;
@@ -32,7 +34,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
 
     private final StudyGroupRepository studyGroupRepository;
     private final GroupMemberRepository groupMemberRepository;
-    private final StudentFreeTimeSlotRepository studentFreeTimeSlotRepository;
+    private final GroupFreeTimeSlotRepository groupFreeTimeSlotRepository;
 
     @Override
     @Transactional
@@ -66,10 +68,10 @@ public class StudyGroupServiceImpl implements StudyGroupService {
         groupMemberRepository.save(ownerMember);
 
         if (request.getFreeTimeSlots() != null && !request.getFreeTimeSlots().isEmpty()) {
-            List<UserFreeTimeSlot> slots = new ArrayList<>();
+            List<GroupFreeTimeSlot> slots = new ArrayList<>();
 
             for (FreeTimeSlotRequest slotRequest : request.getFreeTimeSlots()) {
-                UserFreeTimeSlot slot = UserFreeTimeSlot.builder()
+                GroupFreeTimeSlot slot = GroupFreeTimeSlot.builder()
                         .groupId(savedStudyGroup.getId())
                         .termId(request.getTermId())
                         .dayOfWeek(slotRequest.getDayOfWeek())
@@ -80,7 +82,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 slots.add(slot);
             }
 
-            studentFreeTimeSlotRepository.saveAll(slots);
+            groupFreeTimeSlotRepository.saveAll(slots);
         }
 
         return toResponse(savedStudyGroup);
@@ -123,7 +125,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
         StudyGroup studyGroup = studyGroupRepository.findById(groupId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Study group not found"));
 
-        List<UserFreeTimeSlot> freeTimeSlots = studentFreeTimeSlotRepository.findByGroupId(groupId);
+        List<GroupFreeTimeSlot> freeTimeSlots = groupFreeTimeSlotRepository.findByGroupId(groupId);
         List<FreeTimeSlotResponse> slotResponses = freeTimeSlots.stream()
                 .map(slot -> new FreeTimeSlotResponse(
                         slot.getId(),
@@ -344,7 +346,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
 
         long memberCount = groupMemberRepository.countByGroupId(groupId);
 
-        List<UserFreeTimeSlot> freeTimeSlots = studentFreeTimeSlotRepository.findByGroupId(groupId);
+        List<GroupFreeTimeSlot> freeTimeSlots = groupFreeTimeSlotRepository.findByGroupId(groupId);
         List<FreeTimeSlotResponse> slotResponses = freeTimeSlots.stream()
                 .map(slot -> new FreeTimeSlotResponse(
                         slot.getId(),

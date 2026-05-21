@@ -1,30 +1,26 @@
 package com.group_service.entity;
 
+import com.group_service.entity.enums.StudySessionParticipantRole;
+import com.group_service.entity.enums.StudySessionParticipantStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 
 @Entity
 @Table(
-        name = "user_free_time_slots",
+        name = "study_session_participants",
         uniqueConstraints = @UniqueConstraint(
-                name = "uk_user_term_day_time",
-                columnNames = {
-                        "user_id",
-                        "term_id",
-                        "day_of_week",
-                        "start_time",
-                        "end_time"
-                }
+                name = "uk_session_user",
+                columnNames = {"session_id", "user_id"}
         ),
         indexes = {
-                @Index(name = "idx_user_free_time_user", columnList = "user_id"),
-                @Index(name = "idx_user_free_time_day", columnList = "day_of_week"),
-                @Index(name = "idx_user_free_time_term", columnList = "term_id")
+                @Index(name = "idx_participant_session", columnList = "session_id"),
+                @Index(name = "idx_participant_user", columnList = "user_id"),
+                @Index(name = "idx_participant_status", columnList = "status"),
+                @Index(name = "idx_participant_role", columnList = "role")
         }
 )
 @Getter
@@ -32,35 +28,31 @@ import java.time.LocalTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class UserFreeTimeSlot {
+public class StudySessionParticipant {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "session_id", nullable = false)
+    private Long sessionId;
+
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @Column(name = "term_id")
-    private Long termId;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private StudySessionParticipantRole role;
 
-    /**
-     * 0 = Monday, 1 = Tuesday, ..., 6 = Sunday
-     */
-    @Column(name = "day_of_week", nullable = false, columnDefinition = "TINYINT")
-    private Byte dayOfWeek;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private StudySessionParticipantStatus status;
 
-    @Column(name = "start_time", nullable = false)
-    private LocalTime startTime;
+    @Column(name = "responded_at")
+    private LocalDateTime respondedAt;
 
-    @Column(name = "end_time", nullable = false)
-    private LocalTime endTime;
-
-    @Column(name = "is_available", nullable = false, columnDefinition = "TINYINT(1)")
-    private Boolean isAvailable;
-
-    @Column(length = 255)
-    private String note;
+    @Column(name = "joined_at")
+    private LocalDateTime joinedAt;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -69,4 +61,8 @@ public class UserFreeTimeSlot {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "session_id", insertable = false, updatable = false)
+    private StudySession studySession;
 }
