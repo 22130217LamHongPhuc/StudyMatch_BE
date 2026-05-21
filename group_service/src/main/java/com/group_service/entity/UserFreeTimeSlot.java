@@ -26,7 +26,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class StudentFreeTimeSlot {
+public class UserFreeTimeSlot {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

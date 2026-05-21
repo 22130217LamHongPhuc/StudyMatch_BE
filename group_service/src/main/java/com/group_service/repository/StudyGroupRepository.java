@@ -111,5 +111,19 @@ ORDER BY g.createdAt DESC
             @Param("keyWord") String keyWord,
             Pageable pageable
     );
+
+    @Query("""
+        SELECT g
+        FROM StudyGroup g
+        WHERE g.status = :status
+          AND (:groupType IS NULL OR g.groupType = :groupType)
+          AND (:mainSubjectId IS NULL OR g.mainSubjectId = :mainSubjectId)
+    """)
+    Page<StudyGroup> findByFiltersForBrowse(
+            @Param("status") GroupStatus status,
+            @Param("groupType") GroupType groupType,
+            @Param("mainSubjectId") Long mainSubjectId,
+            Pageable pageable
+    );
 }
 

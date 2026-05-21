@@ -4,11 +4,13 @@ import com.group_service.dto.AdminGroupResponse;
 import com.group_service.dto.AdminGroupDetailResponse;
 import com.group_service.dto.ApiResponse;
 import com.group_service.dto.GroupFilterRequest;
+import com.group_service.dto.UpdateGroupStatusRequest;
 import com.group_service.dto.projection.GroupStats;
 import com.group_service.entity.enums.GroupStatus;
 import com.group_service.entity.enums.GroupType;
 import com.group_service.enums.StatusCode;
 import com.group_service.service.StudyGroupService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
@@ -68,6 +70,21 @@ public class AdminStudyGroupController {
                 true,
                 StatusCode.SUCCESS,
                 "Get group detail successfully",
+                response
+        ));
+    }
+
+    @PatchMapping("/{groupId}/status")
+    public ResponseEntity<ApiResponse<AdminGroupDetailResponse>> updateGroupStatusForAdmin(
+            @PathVariable Long groupId,
+            @Valid @RequestBody UpdateGroupStatusRequest request
+    ) {
+        AdminGroupDetailResponse response = studyGroupService.updateGroupStatusForAdmin(groupId, request);
+
+        return ResponseEntity.ok(new ApiResponse<>(
+                true,
+                StatusCode.SUCCESS,
+                "Update group status successfully",
                 response
         ));
     }

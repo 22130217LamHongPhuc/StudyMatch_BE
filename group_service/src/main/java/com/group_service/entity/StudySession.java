@@ -27,7 +27,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class GroupStudySession {
+public class StudySession {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

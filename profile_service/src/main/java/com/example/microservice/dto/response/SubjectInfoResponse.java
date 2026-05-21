@@ -6,7 +6,6 @@ import lombok.Setter;
 @Setter
 @Getter
 public class SubjectInfoResponse {
-    // Getters and Setters
     private Long subjectId;
     private String subjectCode;
     private String subjectName;

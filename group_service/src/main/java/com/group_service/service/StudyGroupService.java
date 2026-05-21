@@ -23,6 +23,17 @@ public interface StudyGroupService {
 
     AdminGroupDetailResponse getGroupDetailForAdmin(Long groupId);
 
+    AdminGroupDetailResponse updateGroupStatusForAdmin(Long groupId, UpdateGroupStatusRequest request);
+
+    Page<StudyGroupResponse> getGroupsByTypeAndSubject(
+            com.group_service.entity.enums.GroupType groupType,
+            Long mainSubjectId,
+            int page,
+            int limit
+    );
+
+    JoinGroupResponse joinGroup(Long groupId, JoinGroupRequest request);
+
 
 }
 

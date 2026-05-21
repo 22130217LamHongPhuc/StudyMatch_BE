@@ -23,7 +23,8 @@ public class StudentProfileDetailResponse {
     }
 
     public StudentProfileDetailResponse(Long profileId, Long userId, String studentCode, String fullName,
-                                       String gender, String ageGroup, String region, LocalDateTime createdAt) {
+                                       String gender, String ageGroup, String region, LocalDateTime createdAt
+                                        ) {
         this.profileId = profileId;
         this.userId = userId;
         this.studentCode = studentCode;
