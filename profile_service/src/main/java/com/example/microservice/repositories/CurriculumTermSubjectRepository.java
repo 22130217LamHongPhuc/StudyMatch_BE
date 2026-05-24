@@ -35,7 +35,10 @@ public interface CurriculumTermSubjectRepository extends JpaRepository<Curriculu
         from CurriculumTermSubject cts
         join cts.subject s
         where cts.curriculum.curriculumId = :curriculumId
-        order by s.subjectCode asc
+        order by s.subjectName asc
     """)
     List<SubjectInfoResponse> findDistinctSubjectsByCurriculumId(@Param("curriculumId") Long curriculumId);
+
+
+
 }

@@ -1,5 +1,6 @@
 package com.group_service.repository;
 
+import com.group_service.entity.GroupFreeTimeSlot;
 import com.group_service.entity.UserFreeTimeSlot;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -7,10 +8,10 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface StudentFreeTimeSlotRepository extends JpaRepository<UserFreeTimeSlot, Long> {
-    List<UserFreeTimeSlot> findByGroupIdAndTermId(Long groupId, Long termId);
+public interface GroupFreeTimeSlotRepository extends JpaRepository<GroupFreeTimeSlot, Long> {
+    List<GroupFreeTimeSlot> findByGroupIdAndTermId(Long groupId, Long termId);
 
-    List<UserFreeTimeSlot> findByGroupId(Long groupId);
+    List<GroupFreeTimeSlot> findByGroupId(Long groupId);
 
     void deleteByGroupIdAndTermId(Long groupId, Long termId);
 }
