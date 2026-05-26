@@ -21,6 +21,8 @@ import com.example.microservice.repositories.SubjectRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.LinkedHashSet;
@@ -65,10 +67,12 @@ public class ProfileUpdateService {
         try {
             validateRequest(request);
 
+            System.out.println(request);
+
             Cohort cohort = cohortRepository.findById(request.getCohortId())
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy khóa học với ID: " + request.getCohortId()));
 
-            AcademicTerm term = academicTermRepository.findById(request.getTermId())
+            AcademicTerm term = academicTermRepository.findByStatus("ACTIVE")
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy học kỳ với ID: " + request.getTermId()));
 
             StudentProfile studentProfile = studentProfileRepository.findByUserId(userId)
@@ -84,7 +88,7 @@ public class ProfileUpdateService {
             studentProfileRepository.save(studentProfile);
 
             StudentTermProfile studentTermProfile = studentTermProfileRepository
-                    .findByUserIdAndTerm_TermId(userId, request.getTermId())
+                    .findByUserIdAndTerm_TermId(userId, term.getTermId())
                     .orElse(new StudentTermProfile());
 
             studentTermProfile.setUserId(userId);
@@ -102,7 +106,15 @@ public class ProfileUpdateService {
             replaceFreeTimeSlots(userId, term, request);
             replaceSubjectScheduleSlots(userId, term, request);
 
-            reloadAiRecommender(userId);
+            TransactionSynchronizationManager.registerSynchronization(
+                    new TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                            reloadAiRecommender(userId);
+                        }
+                    }
+            );
+
 
             UserProfileFullResponse response = profileLoadService.loadUserProfile(userId);
             if (response.isSuccess()) {
