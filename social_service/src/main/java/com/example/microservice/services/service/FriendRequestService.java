@@ -4,10 +4,15 @@ import com.example.microservice.services.entity.FriendRequest;
 import com.example.microservice.services.repository.FriendRequestRepo;
 import com.example.microservice.services.Dto.FriendRequestDto;
 import com.example.microservice.services.Dto.AllFriendRequestsDto;
+import com.example.microservice.services.entity.Friend;
+import com.example.microservice.services.repository.FriendRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -19,6 +24,8 @@ import java.util.stream.Collectors;
 public class FriendRequestService {
     @Autowired
     FriendRequestRepo repo;
+    @Autowired
+    FriendRepo friendRepo;
 
 
     public FriendRequest friendRequest(Long senderId,Long reveiverId){
@@ -93,6 +100,29 @@ public class FriendRequestService {
             res.setReceived(getReceivedRequests(userId));
         }
         return res;
+    }
+
+    @Transactional
+    public FriendRequestDto updateStatus(Long requestId, String status){
+        FriendRequest req = repo.findById(requestId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Friend request not found"));
+
+        req.setStatus(status.toUpperCase());
+        req.setUpdatedAt(getTimeZone());
+        FriendRequest saved = repo.save(req);
+
+        if ("APPROVED".equalsIgnoreCase(status)) {
+            Long friendCount = friendRepo.isFriends(req.getSenderId(), req.getReceiverId());
+            if (friendCount == null || friendCount == 0) {
+                Friend friend = new Friend();
+                friend.setUser1Id(req.getSenderId());
+                friend.setUser2Id(req.getReceiverId());
+                friend.setCreatedAt(Instant.now());
+                friendRepo.save(friend);
+            }
+        }
+
+        return toDto(saved);
     }
 
 }

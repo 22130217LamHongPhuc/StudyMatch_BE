@@ -13,6 +13,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class UserService {
@@ -70,6 +71,12 @@ public class UserService {
                 .hasNext(userPage.hasNext())
                 .hasPrevious(userPage.hasPrevious())
                 .build();
+    }
+
+    public List<BasicUserResponse> getBasicUsers(List<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) return List.of();
+        List<User> users = repo.findAllByUserIdIn(userIds);
+        return users.stream().map(BasicUserResponse::from).collect(Collectors.toList());
     }
 
 

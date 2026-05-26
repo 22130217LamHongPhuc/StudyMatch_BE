@@ -50,4 +50,14 @@ where  (user1_id =:user1 and user2_id =:user2) or (user1_id =:user2 and user2_id
 """, nativeQuery = true)
     Long isFriends(@Param("user1") Long user1, @Param ("user2") Long user2);
 
+    @Query(value = """
+    SELECT CASE 
+        WHEN user1_id = :userId THEN user2_id 
+        ELSE user1_id 
+    END as user_id
+    FROM friends
+    WHERE user1_id = :userId OR user2_id = :userId
+    """, nativeQuery = true)
+    java.util.List<Long> getFriendListByUserId(@Param("userId") Long userId);
+
 }
