@@ -11,7 +11,6 @@ import com.group_service.entity.StudyGroup;
 import com.group_service.entity.enums.*;
 import com.group_service.repository.GroupFreeTimeSlotRepository;
 import com.group_service.repository.GroupMemberRepository;
-import com.group_service.repository.StudentFreeTimeSlotRepository;
 import com.group_service.repository.StudyGroupRepository;
 import com.group_service.service.StudyGroupService;
 import lombok.RequiredArgsConstructor;
