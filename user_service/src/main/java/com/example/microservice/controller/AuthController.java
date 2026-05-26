@@ -62,7 +62,7 @@ public class AuthController {
         user.setEmail(request.getEmail());
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         user.setRole("student");
-        user.setStatus("pending");
+        user.setStatus("ACTIVE");
         user.setEmailVerified(false);
         user.setOnboardingCompleted(false);
         userRepository.save(user);

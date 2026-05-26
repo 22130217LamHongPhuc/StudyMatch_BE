@@ -62,7 +62,7 @@ public class GoogleAuthService {
             newUser.setFullName(name);
             newUser.setAvatarUrl(picture);
             newUser.setRole("student");
-            newUser.setStatus("active");
+            newUser.setStatus("ACTIVE");
             newUser.setEmailVerified(true);
             newUser.setOnboardingCompleted(false);
             return userRepository.save(newUser);
