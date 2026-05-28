@@ -65,6 +65,9 @@ public class StudySession {
 
     private String location;
 
+    @Column(name = "meeting_url", length = 500)
+    private String meetingUrl;
+
     @Column(name = "created_by_user_id", nullable = false)
     private Long createdByUserId;
 
