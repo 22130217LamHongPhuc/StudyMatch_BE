@@ -4,6 +4,8 @@ import com.group_service.clients.UserClient;
 import com.group_service.dto.ApiResponse;
 import com.group_service.dto.BasicUserResponse;
 import com.group_service.dto.CreateStudySessionRequest;
+import com.group_service.dto.SessionConfirmationStatsResponse;
+import com.group_service.dto.SessionParticipantConfirmationResponse;
 import com.group_service.dto.StudySessionResponse;
 import com.group_service.dto.StudySessionStatsResponse;
 import com.group_service.entity.GroupMember;
@@ -288,6 +290,55 @@ public class StudySessionServiceImpl implements StudySessionService {
 
     @Override
     @Transactional(readOnly = true)
+    public SessionConfirmationStatsResponse getConfirmationStats(Long sessionId, Long userId) {
+        StudySession session = studySessionRepository.findById(sessionId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Study session not found"));
+
+        boolean hasAccess = switch (session.getSessionType()) {
+            case GROUP -> session.getCreatedByUserId().equals(userId);
+            case USER_PAIR -> participantRepository.existsBySessionIdAndUserId(sessionId, userId);
+        };
+
+        if (!hasAccess) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not allowed to view confirmation stats for this session");
+        }
+
+        List<StudySessionParticipant> participants = participantRepository.findBySessionId(sessionId);
+        List<SessionParticipantConfirmationResponse> otherParticipants = participants.stream()
+                .filter(participant -> !participant.getUserId().equals(userId))
+                .map(participant -> new SessionParticipantConfirmationResponse(
+                        participant.getUserId(),
+                        resolveParticipantUserName(participant),
+                        participant.getRole(),
+                        participant.getStatus(),
+                        participant.getRespondedAt()
+                ))
+                .toList();
+
+        long acceptedCount = otherParticipants.stream()
+                .filter(participant -> participant.status() == StudySessionParticipantStatus.ACCEPTED)
+                .count();
+        long pendingCount = otherParticipants.stream()
+                .filter(participant -> participant.status() == StudySessionParticipantStatus.PENDING)
+                .count();
+        long declinedCount = otherParticipants.stream()
+                .filter(participant -> participant.status() == StudySessionParticipantStatus.DECLINED)
+                .count();
+
+        return new SessionConfirmationStatsResponse(
+                session.getId(),
+                session.getSessionType(),
+                userId,
+                otherParticipants.size(),
+                acceptedCount,
+                pendingCount,
+                declinedCount,
+                otherParticipants
+        );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public StudySessionStatsResponse getSessionStats(Long userId) {
 
         LocalDate today = LocalDate.now();
@@ -430,5 +481,12 @@ public class StudySessionServiceImpl implements StudySessionService {
 
     private String normalizeText(String value) {
         return StringUtils.hasText(value) ? value.trim() : null;
+    }
+
+    private String resolveParticipantUserName(StudySessionParticipant participant) {
+        if (StringUtils.hasText(participant.getUserName())) {
+            return participant.getUserName();
+        }
+        return fallbackUserName(participant.getUserId());
     }
 }

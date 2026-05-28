@@ -1,6 +1,7 @@
 package com.group_service.service;
 
 import com.group_service.dto.CreateStudySessionRequest;
+import com.group_service.dto.SessionConfirmationStatsResponse;
 import com.group_service.dto.StudySessionResponse;
 import com.group_service.dto.StudySessionStatsResponse;
 import com.group_service.entity.enums.GroupStudySessionStatus;
@@ -36,4 +37,6 @@ public interface StudySessionService {
     void cancelSession(Long sessionId, Long userId);
 
     StudySessionStatsResponse getSessionStats(Long userId);
+
+    SessionConfirmationStatsResponse getConfirmationStats(Long sessionId, Long userId);
 }

@@ -2,6 +2,7 @@ package com.group_service.controller;
 
 import com.group_service.dto.ApiResponse;
 import com.group_service.dto.CreateStudySessionRequest;
+import com.group_service.dto.SessionConfirmationStatsResponse;
 import com.group_service.dto.RespondSessionRequest;
 import com.group_service.dto.StudySessionResponse;
 import com.group_service.dto.StudySessionStatsResponse;
@@ -100,6 +101,20 @@ public class StudySessionController {
                 true,
                 StatusCode.SUCCESS,
                 "Get session detail successfully",
+                response
+        ));
+    }
+
+    @GetMapping("/{sessionId}/confirmation-stats")
+    public ResponseEntity<ApiResponse<SessionConfirmationStatsResponse>> getConfirmationStats(
+            @PathVariable Long sessionId,
+            @RequestParam Long userId
+    ) {
+        SessionConfirmationStatsResponse response = studySessionService.getConfirmationStats(sessionId, userId);
+        return ResponseEntity.ok(new ApiResponse<>(
+                true,
+                StatusCode.SUCCESS,
+                "Get confirmation stats successfully",
                 response
         ));
     }
