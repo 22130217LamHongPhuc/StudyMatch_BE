@@ -1,12 +1,16 @@
 package com.group_service.service.impl;
 
 import com.group_service.clients.UserClient;
+import com.group_service.dto.ApiResponse;
+import com.group_service.dto.BasicUserResponse;
 import com.group_service.dto.CreateStudySessionRequest;
 import com.group_service.dto.StudySessionResponse;
 import com.group_service.dto.StudySessionStatsResponse;
+import com.group_service.entity.GroupMember;
 import com.group_service.entity.StudyGroup;
 import com.group_service.entity.StudySession;
 import com.group_service.entity.StudySessionParticipant;
+import com.group_service.entity.enums.GroupMemberStatus;
 import com.group_service.entity.enums.GroupStatus;
 import com.group_service.entity.enums.GroupStudySessionStatus;
 import com.group_service.entity.enums.StudySessionParticipantRole;
@@ -30,6 +34,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -54,8 +59,12 @@ public class StudySessionServiceImpl implements StudySessionService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Group is deleted");
         }
 
-        if (!groupMemberRepository.existsByGroupIdAndUserId(groupId, request.getCreatedByUserId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not a member of this group");
+        if (!groupMemberRepository.existsByGroupIdAndUserIdAndStatus(
+                groupId,
+                request.getCreatedByUserId(),
+                GroupMemberStatus.ACTIVE
+        )) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not an active member of this group");
         }
 
         validateTimeRange(request.getStartTime(), request.getEndTime());
@@ -78,14 +87,35 @@ public class StudySessionServiceImpl implements StudySessionService {
 
         StudySession saved = studySessionRepository.save(session);
 
-        StudySessionParticipant hostParticipant = StudySessionParticipant.builder()
-                .sessionId(saved.getId())
-                .userId(request.getCreatedByUserId())
-                .role(StudySessionParticipantRole.HOST)
-                .status(StudySessionParticipantStatus.ACCEPTED)
-                .respondedAt(LocalDateTime.now())
-                .build();
-        participantRepository.save(hostParticipant);
+        List<GroupMember> activeMembers = groupMemberRepository.findByGroupIdAndStatus(groupId, GroupMemberStatus.ACTIVE);
+        if (activeMembers.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Group has no active members");
+        }
+
+        List<Long> userIds = activeMembers.stream()
+                .map(GroupMember::getUserId)
+                .distinct()
+                .toList();
+
+        Map<Long, String> userNames = fetchUserNames(userIds);
+        List<StudySessionParticipant> participants = activeMembers.stream()
+                .map(member -> {
+                    Long memberUserId = member.getUserId();
+                    boolean isHost = memberUserId.equals(request.getCreatedByUserId());
+                    String userName = userNames.getOrDefault(memberUserId, fallbackUserName(memberUserId));
+
+                    return StudySessionParticipant.builder()
+                            .sessionId(saved.getId())
+                            .userId(memberUserId)
+                            .userName(userName)
+                            .role(isHost ? StudySessionParticipantRole.HOST : StudySessionParticipantRole.PARTICIPANT)
+                            .status(isHost ? StudySessionParticipantStatus.ACCEPTED : StudySessionParticipantStatus.PENDING)
+                            .respondedAt(isHost ? LocalDateTime.now() : null)
+                            .build();
+                })
+                .toList();
+
+        participantRepository.saveAll(participants);
 
         return toResponse(saved, request.getCreatedByUserId());
     }
@@ -95,6 +125,10 @@ public class StudySessionServiceImpl implements StudySessionService {
     public StudySessionResponse createPairSession(CreateStudySessionRequest request) {
         if (request.getPartnerUserId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "partnerUserId is required for pair session");
+        }
+
+        if (!StringUtils.hasText(request.getPartnerUserName())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "partnerUserName is required for pair session");
         }
 
         if (request.getCreatedByUserId().equals(request.getPartnerUserId())) {
@@ -121,9 +155,23 @@ public class StudySessionServiceImpl implements StudySessionService {
 
         StudySession saved = studySessionRepository.save(session);
 
+        Map<Long, String> userNames = fetchUserNames(List.of(request.getCreatedByUserId(), request.getPartnerUserId()));
+        String hostUserName = userNames.getOrDefault(
+                request.getCreatedByUserId(),
+                fallbackUserName(request.getCreatedByUserId())
+        );
+        String partnerUserName = userNames.get(request.getPartnerUserId());
+        if (!StringUtils.hasText(partnerUserName)) {
+            partnerUserName = normalizeText(request.getPartnerUserName());
+        }
+        if (!StringUtils.hasText(partnerUserName)) {
+            partnerUserName = fallbackUserName(request.getPartnerUserId());
+        }
+
         StudySessionParticipant host = StudySessionParticipant.builder()
                 .sessionId(saved.getId())
                 .userId(request.getCreatedByUserId())
+                .userName(hostUserName)
                 .role(StudySessionParticipantRole.HOST)
                 .status(StudySessionParticipantStatus.ACCEPTED)
                 .respondedAt(LocalDateTime.now())
@@ -132,6 +180,7 @@ public class StudySessionServiceImpl implements StudySessionService {
         StudySessionParticipant partner = StudySessionParticipant.builder()
                 .sessionId(saved.getId())
                 .userId(request.getPartnerUserId())
+                .userName(partnerUserName)
                 .role(StudySessionParticipantRole.PARTICIPANT)
                 .status(StudySessionParticipantStatus.PENDING)
                 .build();
@@ -240,6 +289,7 @@ public class StudySessionServiceImpl implements StudySessionService {
     @Override
     @Transactional(readOnly = true)
     public StudySessionStatsResponse getSessionStats(Long userId) {
+
         LocalDate today = LocalDate.now();
         LocalDateTime dayStart = today.atStartOfDay();
         LocalDateTime dayEnd = today.plusDays(1).atStartOfDay();
@@ -278,15 +328,14 @@ public class StudySessionServiceImpl implements StudySessionService {
         }
 
         String partnerName = null;
+        String partnerUserName = null;
         if (s.getSessionType() == StudySessionType.USER_PAIR && currentUserId != null) {
-            List<StudySessionParticipant> participants = participantRepository.findBySessionId(s.getId());
-            Long partnerUserId = participants.stream()
-                    .filter(p -> !p.getUserId().equals(currentUserId))
-                    .map(StudySessionParticipant::getUserId)
-                    .findFirst()
+            StudySessionParticipant partner = participantRepository
+                    .findFirstBySessionIdAndUserIdNot(s.getId(), currentUserId)
                     .orElse(null);
-            if (partnerUserId != null) {
-                partnerName = fetchUserFullName(partnerUserId);
+            if (partner != null) {
+                partnerUserName = normalizeText(partner.getUserName());
+                partnerName = fetchUserFullName(partner.getUserId());
             }
         }
 
@@ -307,6 +356,7 @@ public class StudySessionServiceImpl implements StudySessionService {
                 s.getStatus(),
                 participantStatus,
                 partnerName,
+                partnerUserName,
                 groupName,
                 membersCount,
                 s.getSubjectName(),
@@ -327,6 +377,35 @@ public class StudySessionServiceImpl implements StudySessionService {
         } catch (Exception e) {
             log.warn("Failed to fetch user name for userId={}: {}", userId, e.getMessage());
         }
+        return "User #" + userId;
+    }
+
+    private Map<Long, String> fetchUserNames(List<Long> userIds) {
+        Map<Long, String> result = new HashMap<>();
+        try {
+            ApiResponse<List<BasicUserResponse>> response = userClient.getBasicUsers(userIds);
+            if (response == null || response.getData() == null) {
+                return result;
+            }
+            for (BasicUserResponse user : response.getData()) {
+                if (user == null || user.getUserId() == null) {
+                    continue;
+                }
+                String userName = normalizeText(user.getUserName());
+                if (!StringUtils.hasText(userName)) {
+                    userName = normalizeText(user.getFullName());
+                }
+                if (StringUtils.hasText(userName)) {
+                    result.put(user.getUserId(), userName);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to fetch basic users for ids={}: {}", userIds, e.getMessage());
+        }
+        return result;
+    }
+
+    private String fallbackUserName(Long userId) {
         return "User #" + userId;
     }
 

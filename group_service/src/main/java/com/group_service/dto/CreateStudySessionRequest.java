@@ -42,5 +42,8 @@ public class CreateStudySessionRequest {
 
     private Long partnerUserId;
 
+    @Size(max = 100)
+    private String partnerUserName;
+
     private Long subjectId;
 }

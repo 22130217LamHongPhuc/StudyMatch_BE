@@ -22,6 +22,7 @@ public record StudySessionResponse(
         GroupStudySessionStatus status,
         StudySessionParticipantStatus participantStatus,
         String partnerName,
+        String partnerUserName,
         String groupName,
         Long membersCount,
         String subjectName,

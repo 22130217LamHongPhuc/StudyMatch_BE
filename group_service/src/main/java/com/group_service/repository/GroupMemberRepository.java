@@ -15,6 +15,10 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
 
     boolean existsByGroupIdAndUserId(Long groupId, Long userId);
 
+    boolean existsByGroupIdAndUserIdAndStatus(Long groupId, Long userId, GroupMemberStatus status);
+
+    List<GroupMember> findByGroupIdAndStatus(Long groupId, GroupMemberStatus status);
+
     long countByGroupIdAndStatus(Long groupId, GroupMemberStatus status);
 
     @Query("""

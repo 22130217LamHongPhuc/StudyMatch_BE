@@ -11,6 +11,8 @@ public interface StudySessionParticipantRepository extends JpaRepository<StudySe
 
     Optional<StudySessionParticipant> findBySessionIdAndUserId(Long sessionId, Long userId);
 
+    Optional<StudySessionParticipant> findFirstBySessionIdAndUserIdNot(Long sessionId, Long userId);
+
     List<StudySessionParticipant> findBySessionId(Long sessionId);
 
     long countBySessionId(Long sessionId);
