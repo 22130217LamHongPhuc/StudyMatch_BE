@@ -64,6 +64,7 @@ public class ProfileUpdateService {
 
     @Transactional
     public UserProfileFullResponse updateProfile(Long userId, OnboardingSubmitRequest request) {
+
         try {
             validateRequest(request);
 
