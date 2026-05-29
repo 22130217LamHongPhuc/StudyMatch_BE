@@ -1,16 +1,23 @@
 package com.group_service.service.impl;
 
 import com.group_service.dto.*;
+
+import com.group_service.dto.projection.AdminGroupProjection;
+import com.group_service.dto.projection.GroupStats;
+import com.group_service.entity.GroupFreeTimeSlot;
 import com.group_service.entity.GroupMember;
-import com.group_service.entity.StudentFreeTimeSlot;
+import com.group_service.entity.UserFreeTimeSlot;
 import com.group_service.entity.StudyGroup;
-import com.group_service.entity.enums.GroupMemberRole;
-import com.group_service.entity.enums.GroupMemberStatus;
+import com.group_service.entity.enums.*;
+import com.group_service.repository.GroupFreeTimeSlotRepository;
 import com.group_service.repository.GroupMemberRepository;
-import com.group_service.repository.StudentFreeTimeSlotRepository;
 import com.group_service.repository.StudyGroupRepository;
 import com.group_service.service.StudyGroupService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +26,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -26,26 +34,26 @@ public class StudyGroupServiceImpl implements StudyGroupService {
 
     private final StudyGroupRepository studyGroupRepository;
     private final GroupMemberRepository groupMemberRepository;
-    private final StudentFreeTimeSlotRepository studentFreeTimeSlotRepository;
+    private final GroupFreeTimeSlotRepository groupFreeTimeSlotRepository;
 
     @Override
     @Transactional
-    public StudyGroupResponse createGroup(CreateStudyGroupRequest request) {
+    public StudyGroupResponse createStudyGroup(CreateStudyGroupRequest request) {
         String normalizedName = request.getName().trim();
         Long ownerUserId = request.getOwnerUserId();
 
         StudyGroup studyGroup = StudyGroup.builder()
+                .groupType(GroupType.STUDY)
                 .name(normalizedName)
                 .description(normalizeText(request.getDescription()))
-                .ownerUserId(ownerUserId)
+                .createdByUserId(request.getOwnerUserId())
+                .ownerUserId(request.getOwnerUserId())
                 .termId(request.getTermId())
                 .mainSubjectId(request.getMainSubjectId())
                 .subjectName(normalizeText(request.getSubjectName()))
-                .studyGoal(normalizeText(request.getStudyGoal()))
-                .studyMode(normalizeText(request.getStudyMode()))
                 .maxMembers(request.getMaxMembers())
-                .visibility(normalizeVisibility(request.getVisibility()))
-                .status("ACTIVE")
+                .visibility(GroupVisibility.PUBLIC)
+                .status(GroupStatus.ACTIVE)
                 .build();
 
         StudyGroup savedStudyGroup = studyGroupRepository.save(studyGroup);
@@ -59,11 +67,13 @@ public class StudyGroupServiceImpl implements StudyGroupService {
 
         groupMemberRepository.save(ownerMember);
 
+        addInvitedMembers(savedStudyGroup.getId(), ownerUserId, request.getMaxMembers(), request.getInvitedUserIds());
+
         if (request.getFreeTimeSlots() != null && !request.getFreeTimeSlots().isEmpty()) {
-            List<StudentFreeTimeSlot> slots = new ArrayList<>();
+            List<GroupFreeTimeSlot> slots = new ArrayList<>();
 
             for (FreeTimeSlotRequest slotRequest : request.getFreeTimeSlots()) {
-                StudentFreeTimeSlot slot = StudentFreeTimeSlot.builder()
+                GroupFreeTimeSlot slot = GroupFreeTimeSlot.builder()
                         .groupId(savedStudyGroup.getId())
                         .termId(request.getTermId())
                         .dayOfWeek(slotRequest.getDayOfWeek())
@@ -74,8 +84,43 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 slots.add(slot);
             }
 
-            studentFreeTimeSlotRepository.saveAll(slots);
+            groupFreeTimeSlotRepository.saveAll(slots);
         }
+
+        return toResponse(savedStudyGroup);
+    }
+
+    @Override
+    @Transactional
+    public StudyGroupResponse createCommunityGroup(CreateStudyGroupRequest request) {
+        String normalizedName = request.getName().trim();
+        Long ownerUserId = request.getOwnerUserId();
+
+        StudyGroup studyGroup = StudyGroup.builder()
+                .groupType(GroupType.COMMUNITY)
+                .name(normalizedName)
+                .description(normalizeText(request.getDescription()))
+                .createdByUserId(request.getOwnerUserId())
+                .ownerUserId(request.getOwnerUserId())
+                .termId(request.getTermId())
+                .mainSubjectId(request.getMainSubjectId())
+                .subjectName(normalizeText(request.getSubjectName()))
+                .visibility(GroupVisibility.COMMUNITY)
+                .status(GroupStatus.ACTIVE)
+                .build();
+
+        StudyGroup savedStudyGroup = studyGroupRepository.save(studyGroup);
+
+        GroupMember ownerMember = GroupMember.builder()
+                .groupId(savedStudyGroup.getId())
+                .userId(ownerUserId)
+                .role(GroupMemberRole.ADMIN)
+                .status(GroupMemberStatus.ACTIVE)
+                .build();
+
+        groupMemberRepository.save(ownerMember);
+
+        addInvitedMembers(savedStudyGroup.getId(), ownerUserId, request.getMaxMembers(), request.getInvitedUserIds());
 
         return toResponse(savedStudyGroup);
     }
@@ -85,7 +130,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
         StudyGroup studyGroup = studyGroupRepository.findById(groupId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Study group not found"));
 
-        List<StudentFreeTimeSlot> freeTimeSlots = studentFreeTimeSlotRepository.findByGroupId(groupId);
+        List<GroupFreeTimeSlot> freeTimeSlots = groupFreeTimeSlotRepository.findByGroupId(groupId);
         List<FreeTimeSlotResponse> slotResponses = freeTimeSlots.stream()
                 .map(slot -> new FreeTimeSlotResponse(
                         slot.getId(),
@@ -105,8 +150,6 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 studyGroup.getTermId(),
                 studyGroup.getMainSubjectId(),
                 studyGroup.getSubjectName(),
-                studyGroup.getStudyGoal(),
-                studyGroup.getStudyMode(),
                 studyGroup.getMaxMembers(),
                 studyGroup.getVisibility(),
                 studyGroup.getStatus(),
@@ -123,13 +166,139 @@ public class StudyGroupServiceImpl implements StudyGroupService {
         List<StudyGroup> groups = groupMemberRepository.findGroupsByUserId(
                 userId,
                 GroupMemberStatus.ACTIVE,
-                "ACTIVE"
+                GroupStatus.ACTIVE
         );
 
         return groups.stream()
                 .map(this::mapToDetailResponse)
                 .toList();
     }
+
+    @Override
+    public Page<AdminGroupResponse> getGroupsForAdmin(GroupFilterRequest filter,int page, int limit) {
+        Pageable pageable = PageRequest.of(
+                page,
+                limit,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+
+        String keyword = filter.getKeyword() == null
+                ? null
+                : filter.getKeyword().trim();
+
+        Page<AdminGroupProjection> groups = studyGroupRepository.filterAdminGroups(
+                filter.getType(),
+                filter.getStatus(),
+                keyword,
+                pageable
+        );
+
+        return groups.map(this::mapToAdminGroupResponse);
+    }
+
+    @Override
+    public Page<AdminGroupResponse> getGroupsByKeywordForAdmin(String keyword, int page, int limit) {
+        Pageable pageable = PageRequest.of(
+                page,
+                limit,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+
+        Page<AdminGroupProjection> groups = studyGroupRepository.searchAdminGroupsByKeyword(
+                keyword.trim(),
+                pageable
+        );
+
+        System.out.println("Found " + groups.getTotalElements() + " groups matching keyword: " + keyword);
+
+        return groups.map(this::mapToAdminGroupResponse);
+    }
+
+    @Override
+    public Page<StudyGroupResponse> getGroupsByTypeAndSubject(GroupType groupType, Long mainSubjectId, int page, int limit) {
+        Pageable pageable = PageRequest.of(
+                page,
+                limit,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+
+        Page<StudyGroup> groups = studyGroupRepository.findByFiltersForBrowse(
+                GroupStatus.ACTIVE,
+                groupType,
+                mainSubjectId,
+                pageable
+        );
+
+        return groups.map(this::toResponse);
+    }
+
+    @Override
+    @Transactional
+    public JoinGroupResponse joinGroup(Long groupId, JoinGroupRequest request) {
+        if (request == null || request.getUserId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "userId must not be null");
+        }
+
+        StudyGroup studyGroup = studyGroupRepository.findById(groupId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Study group not found"));
+
+        if (studyGroup.getStatus() == GroupStatus.DELETED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot join a deleted group");
+        }
+
+        if (studyGroup.getStatus() != GroupStatus.ACTIVE) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Group is not active");
+        }
+
+        Long userId = request.getUserId();
+        if (groupMemberRepository.existsByGroupIdAndUserId(groupId, userId)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "User already joined this group");
+        }
+
+        Integer maxMembers = studyGroup.getMaxMembers();
+        if (maxMembers != null) {
+            long activeMembers = groupMemberRepository.countByGroupIdAndStatus(groupId, GroupMemberStatus.ACTIVE);
+            if (activeMembers >= maxMembers) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Group has reached max members");
+            }
+        }
+
+        GroupMember member = GroupMember.builder()
+                .groupId(groupId)
+                .userId(userId)
+                .role(GroupMemberRole.MEMBER)
+                .status(GroupMemberStatus.ACTIVE)
+                .build();
+
+        GroupMember saved = groupMemberRepository.save(member);
+
+        return new JoinGroupResponse(
+                saved.getId(),
+                saved.getGroupId(),
+                saved.getUserId(),
+                saved.getRole(),
+                saved.getStatus(),
+                saved.getJoinedAt()
+        );
+    }
+
+
+    private AdminGroupResponse mapToAdminGroupResponse(AdminGroupProjection group) {
+
+        return AdminGroupResponse.builder()
+                .id(group.getId())
+                .name(group.getName())
+                .type(group.getGroupType().name())
+                .subjectName(group.getSubjectName())
+                .status(group.getStatus())
+                .createdAt(group.getCreatedAt())
+                .memberCount(group.getMemberCount())
+                .build();
+    }
+
+
+
+
 
     private StudyGroupDetailResponse mapToDetailResponse(StudyGroup group) {
 
@@ -141,8 +310,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 group.getTermId(),
                 group.getMainSubjectId(),
                 group.getSubjectName(),
-                group.getStudyGoal(),
-                group.getStudyMode(),
+
                 group.getMaxMembers(),
                 group.getVisibility(),
                 group.getStatus(),
@@ -161,8 +329,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 studyGroup.getTermId(),
                 studyGroup.getMainSubjectId(),
                 studyGroup.getSubjectName(),
-                studyGroup.getStudyGoal(),
-                studyGroup.getStudyMode(),
+
                 studyGroup.getMaxMembers(),
                 studyGroup.getVisibility(),
                 studyGroup.getStatus(),
@@ -170,6 +337,113 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 studyGroup.getUpdatedAt()
         );
     }
+
+    private void addInvitedMembers(Long groupId, Long ownerUserId, Integer maxMembers, List<Long> invitedUserIds) {
+        if (invitedUserIds == null || invitedUserIds.isEmpty()) {
+            return;
+        }
+
+        List<Long> uniqueInvitedUserIds = invitedUserIds.stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .filter(userId -> !userId.equals(ownerUserId))
+                .toList();
+
+        if (maxMembers != null) {
+            long totalMembersAfterCreate = 1L + uniqueInvitedUserIds.size();
+            if (totalMembersAfterCreate > maxMembers) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invited members exceed max members");
+            }
+        }
+
+        if (uniqueInvitedUserIds.isEmpty()) {
+            return;
+        }
+
+        List<GroupMember> invitedMembers = new ArrayList<>();
+        for (Long userId : uniqueInvitedUserIds) {
+            invitedMembers.add(GroupMember.builder()
+                    .groupId(groupId)
+                    .userId(userId)
+                    .role(GroupMemberRole.MEMBER)
+                    .status(GroupMemberStatus.ACTIVE)
+                    .build());
+        }
+
+        groupMemberRepository.saveAll(invitedMembers);
+    }
+
+
+    @Override
+    public GroupStats getStatsForGroups() {
+        return studyGroupRepository.getStats();
+    }
+
+    @Override
+    public AdminGroupDetailResponse getGroupDetailForAdmin(Long groupId) {
+        StudyGroup studyGroup = studyGroupRepository.findById(groupId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Study group not found"));
+
+        long memberCount = groupMemberRepository.countByGroupId(groupId);
+
+        List<GroupFreeTimeSlot> freeTimeSlots = groupFreeTimeSlotRepository.findByGroupId(groupId);
+        List<FreeTimeSlotResponse> slotResponses = freeTimeSlots.stream()
+                .map(slot -> new FreeTimeSlotResponse(
+                        slot.getId(),
+                        slot.getGroupId(),
+                        slot.getTermId(),
+                        slot.getDayOfWeek(),
+                        slot.getSlotCode(),
+                        slot.getIsAvailable()
+                ))
+                .toList();
+
+        return new AdminGroupDetailResponse(
+                studyGroup.getId(),
+                studyGroup.getName(),
+                studyGroup.getDescription(),
+                studyGroup.getGroupType(),
+                studyGroup.getCreatedByUserId(),
+                studyGroup.getOwnerUserId(),
+                studyGroup.getTermId(),
+                studyGroup.getMainSubjectId(),
+                studyGroup.getSubjectName(),
+                studyGroup.getMaxMembers(),
+                studyGroup.getVisibility(),
+                studyGroup.getStatus(),
+                memberCount,
+                studyGroup.getCreatedAt(),
+                studyGroup.getUpdatedAt(),
+                slotResponses
+        );
+    }
+
+    @Override
+    @Transactional
+    public AdminGroupDetailResponse updateGroupStatusForAdmin(Long groupId, UpdateGroupStatusRequest request) {
+
+
+        StudyGroup studyGroup = studyGroupRepository.findById(groupId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Study group not found"));
+
+        GroupStatus currentStatus = studyGroup.getStatus();
+        GroupStatus newStatus = request.getStatus();
+
+        if (currentStatus == GroupStatus.DELETED && newStatus != GroupStatus.DELETED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot change status of a deleted group");
+        }
+
+        if (currentStatus == newStatus) {
+            return getGroupDetailForAdmin(groupId);
+        }
+
+        studyGroup.setStatus(newStatus);
+        studyGroupRepository.save(studyGroup);
+
+        return getGroupDetailForAdmin(groupId);
+    }
+
+
 
     private String normalizeText(String value) {
         return StringUtils.hasText(value) ? value.trim() : null;

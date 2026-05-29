@@ -48,7 +48,7 @@ public class OnboardingService {
             Cohort cohort = cohortRepository.findById(request.getCohortId())
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy khóa học với ID: " + request.getCohortId()));
 
-            AcademicTerm term = academicTermRepository.findById(request.getTermId())
+            AcademicTerm term = academicTermRepository.findByStatus("active")
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy học kỳ với ID: " + request.getTermId()));
 
             StudentProfile studentProfile = studentProfileRepository.findByUserId(userId)

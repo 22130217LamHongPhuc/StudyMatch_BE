@@ -2,6 +2,7 @@ package com.group_service.entity;
 
 import com.group_service.entity.enums.GroupStudySessionMode;
 import com.group_service.entity.enums.GroupStudySessionStatus;
+import com.group_service.entity.enums.StudySessionType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -21,19 +22,19 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "group_study_sessions")
+@Table(name = "study_sessions")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class GroupStudySession {
+public class StudySession {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "group_id", nullable = false)
+    @Column(name = "group_id")
     private Long groupId;
 
     @Column(nullable = false, length = 150)
@@ -48,11 +49,24 @@ public class GroupStudySession {
     @Column(name = "end_time", nullable = false)
     private LocalDateTime endTime;
 
+    @Column(name = "subject_id")
+    private Long subjectId;
+
+    @Column(name = "subject_name")
+    private String subjectName;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "study_mode", nullable = false, length = 20)
     private GroupStudySessionMode studyMode;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "session_type", nullable = false, length = 20)
+    private StudySessionType sessionType;
+
     private String location;
+
+    @Column(name = "meeting_url", length = 500)
+    private String meetingUrl;
 
     @Column(name = "created_by_user_id", nullable = false)
     private Long createdByUserId;

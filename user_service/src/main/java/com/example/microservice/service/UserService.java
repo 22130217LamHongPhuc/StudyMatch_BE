@@ -1,12 +1,19 @@
 package com.example.microservice.service;
 
-import com.example.microservice.dto.respone.MutualFriendsDto;
-import com.example.microservice.dto.respone.ProfileDto;
+import com.example.microservice.dto.respone.*;
 import com.example.microservice.entity.User;
 import com.example.microservice.feignAPI.SocialClient;
 import com.example.microservice.repository.UserRepository;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class UserService {
@@ -42,4 +49,41 @@ public class UserService {
         return res;
     }
 
+
+
+    public PageResponse<AdminUserListItemResponse> getUsersForAdmin(int page,int size,String keyword,String status,String role) {
+        Pageable pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+        Page<User> userPage = repo.findUsersForAdmin(keyword,status,role,pageable);
+        List<AdminUserListItemResponse> items = userPage.getContent().stream()
+                .map(AdminUserListItemResponse::from).toList();
+
+
+        return PageResponse.<AdminUserListItemResponse>builder()
+                .content(items)
+                .page(page)
+                .limit(size)
+                .totalPages(userPage.getTotalPages())
+                .totalElements(userPage.getTotalElements())
+                .hasNext(userPage.hasNext())
+                .hasPrevious(userPage.hasPrevious())
+                .build();
+    }
+
+    public List<BasicUserResponse> getBasicUsers(List<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) return List.of();
+        List<User> users = repo.findAllByUserIdIn(userIds);
+        return users.stream().map(BasicUserResponse::from).collect(Collectors.toList());
+    }
+
+
+    public AdminUserStatusResponse updateStatusUser(Long userId, @NotNull() String status) {
+        User user = repo.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        user.setStatus(status);
+        repo.save(user);
+        return new AdminUserStatusResponse( user.getStatus());
+    }
 }

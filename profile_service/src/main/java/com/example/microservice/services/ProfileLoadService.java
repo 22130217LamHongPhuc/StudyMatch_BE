@@ -73,6 +73,7 @@ public class ProfileLoadService {
             response.setScheduleSlots(scheduleSlotResponses);
 
             response.setSuccess(true);
+
             response.setMessage("User profile loaded successfully");
 
         } catch (Exception e) {

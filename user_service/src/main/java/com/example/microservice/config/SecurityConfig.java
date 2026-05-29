@@ -43,14 +43,7 @@ public class SecurityConfig {
                           session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(
                 request ->
-//                        request.requestMatchers("/api/auth/**","/swagger-ui/**","/v3/api-docs/**","/api/echo/**","/api/campus-locations/**","/api/verify-email/**").permitAll()
-                        request.requestMatchers(       "/api/auth/**",
-                                        "/api/verify-email/**",
-                                        "/swagger-ui/**",
-                                        "/v3/api-docs/**",
-                                        "/api/echo/**",
-                                        "/api/campus-locations/**", "/users/**",
-                                        "/profile/**").permitAll()
+                        request.requestMatchers("/api/auth/**","/swagger-ui/**","/v3/api-docs/**","/api/verify-email/**","/api/admin/**","api/users/**" ).permitAll()
                                 .anyRequest().authenticated())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
@@ -60,7 +53,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         configuration.setAllowedOriginPatterns(Arrays.asList("*"));
-        configuration.setAllowedMethods(Arrays.asList("GET","POST","PUT","DELETE","OPTIONS"));
+        configuration.setAllowedMethods(Arrays.asList("GET","POST","PUT","DELETE","OPTIONS","PATCH"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
 
