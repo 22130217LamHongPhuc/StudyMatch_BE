@@ -13,20 +13,4 @@ import java.util.Map;
 
     @Component
     public class UserInterceptor implements ChannelInterceptor {
-
-        @Override
-        public Message<?> preSend(Message<?> message, MessageChannel channel) {
-            StompHeaderAccessor accessor = StompHeaderAccessor.wrap(message);
-
-            if (StompCommand.CONNECT.equals(accessor.getCommand())) {
-                String userId = accessor.getFirstNativeHeader("userId");
-
-                if (userId != null && !userId.isBlank()) {
-                    if (accessor.getSessionAttributes() != null) {
-                        accessor.getSessionAttributes().put("userId", userId);
-                    }
-                }
-            }
-            return message;
-        }
     }

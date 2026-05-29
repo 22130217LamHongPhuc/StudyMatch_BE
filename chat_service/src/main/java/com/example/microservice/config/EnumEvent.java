@@ -3,5 +3,18 @@ package com.example.microservice.config;
 public enum EnumEvent {
     NEW_MESSAGE ,
     MESSAGE_UPDATED,
-    READ_RECEIPT
+    MESSAGE_ACK,
+    MESSAGE_SENT,
+    MESSAGE_DELIVERED,
+    MESSAGE_SEEN,
+
+    NEW_REPLY,
+    READ_RECEIPT,
+    MESSAGE_RECALL,
+    REACTION_ADD,
+    SEND_REPLY_MESSAGE,
+    VIDEO_CALL_INVITE,
+    VIDEO_CALL_ACCEPTED,
+    VIDEO_CALL_REJECTED,
+    VIDEO_CALL_ENDED
 }

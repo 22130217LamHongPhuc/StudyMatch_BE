@@ -30,6 +30,8 @@ public class ChatService {
     MessageRepo messageRepo;
     @Autowired
     ConversationRepo conversationRepo;
+    @Autowired
+    MessageStatusService messageStatusService;
 //    public User sendMessage(Long userId) {
 //        User user = userClient.getUser(userId);
 //        return user;
@@ -62,7 +64,6 @@ public class ChatService {
        return conversationRepo.findById(id);
     }
 
-
     public Optional<Long> findUserOther(Long conversationId, Long userCurrent){
         return  privateConversationRepo.findOtherUserId(conversationId, userCurrent);
     }
@@ -86,6 +87,11 @@ public class ChatService {
                         req.getUser2Id()
                 );
         if (existed.isPresent()) {
+            messageStatusService.createInitialStatuses(
+                    existed.get().getId(),
+                    req.getUser1Id(),
+                    req.getUser2Id()
+            );
             return existed.get();
         }
         Conversation conversation = new Conversation();
@@ -96,6 +102,16 @@ public class ChatService {
         privateConversation.setConversations(savedConversation);
         privateConversation.setUser1Id(req.getUser1Id());
         privateConversation.setUser2Id(req.getUser2Id());
-        return privateConversationRepo.save(privateConversation);
+        PrivateConversation savedPrivateConversation = privateConversationRepo.save(privateConversation);
+        messageStatusService.createInitialStatuses(
+                savedConversation.getId(),
+                req.getUser1Id(),
+                req.getUser2Id()
+        );
+        return savedPrivateConversation;
     }
+
+
+
+
 }

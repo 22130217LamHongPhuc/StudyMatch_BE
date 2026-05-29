@@ -6,7 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
 public interface ConversationRepo extends JpaRepository< Conversation , Long> {
-    Optional<Conversation> findById(Long id);
-
+    Optional<Conversation> findConversationById(Long id);
 
 }

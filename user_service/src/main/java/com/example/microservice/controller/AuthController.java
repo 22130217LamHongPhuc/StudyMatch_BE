@@ -4,6 +4,7 @@ package com.example.microservice.controller;
 import com.example.microservice.dto.request.*;
 import com.example.microservice.dto.respone.ApiResponse;
 import com.example.microservice.dto.respone.AuthResponse;
+import com.example.microservice.dto.respone.TokenValidateResponse;
 import com.example.microservice.entity.EmailVerificationToken;
 import com.example.microservice.entity.PasswordResetToken;
 import com.example.microservice.entity.RefreshToken;
@@ -15,16 +16,18 @@ import com.example.microservice.service.*;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
-
+@CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
-
+    @Autowired
+    CustomUserDetailService userDetailsService;
     @Autowired
     private JwtService jwtService;
 
@@ -36,6 +39,7 @@ public class AuthController {
 
     @Autowired
     RefreshTokenService refreshTokenService;
+
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -89,9 +93,9 @@ public class AuthController {
         ));
     }
 
+
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<AuthResponse>> login(@RequestBody AuthRequest request) {
-
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new AppException("User not found with email: " + request.getEmail(), StatusCode.USER_NOT_FOUND));
 
@@ -231,6 +235,34 @@ public class AuthController {
                 "Verification email sent",
                 null
         ));
+    }
+
+    @GetMapping("/validate-token")
+    public ResponseEntity<TokenValidateResponse> validateToken(
+            @RequestHeader(value = "Authorization", required = false) String authorization
+    ) {
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return ResponseEntity.ok(TokenValidateResponse.invalid("Missing token"));
+        }
+        String token = authorization.substring(7);
+       String username = jwtService.extractUsername(token);
+        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+
+
+
+        try {
+            boolean valid = jwtService.isTokenValid(token, userDetails);
+            if (!valid) {
+                return ResponseEntity.ok(TokenValidateResponse.invalid("Invalid token"));
+            }
+            CustomUserDetails customUserDetails = (CustomUserDetails) userDetails;
+            Long userId = customUserDetails.getUserId();
+
+            return ResponseEntity.ok(TokenValidateResponse.valid(userId, username));
+
+        } catch (Exception e) {
+            return ResponseEntity.ok(TokenValidateResponse.invalid("Token error"));
+        }
     }
 
 

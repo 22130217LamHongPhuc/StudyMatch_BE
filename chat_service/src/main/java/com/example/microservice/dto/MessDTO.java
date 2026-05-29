@@ -1,5 +1,6 @@
 package com.example.microservice.dto;
 
+import com.example.microservice.entity.Message;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -14,4 +15,18 @@ public class MessDTO {
     private String mediaURL;
     private String fileName;
     private LocalDateTime createdAt;
+    private String status;
+
+    public MessDTO (Message message){
+        this.setCreatedAt(message.getCreatedAt());
+        this.setType(message.getType());
+        this.setContent(message.getContent());
+        this.setMediaURL(message.getMediaUrl());
+        this.setFileName(message.getFileName());
+        this.setSenderId(message.getSenderId());
+        this.setMessageId(message.getId());
+    }
+    public MessDTO(){
+
+    }
 }

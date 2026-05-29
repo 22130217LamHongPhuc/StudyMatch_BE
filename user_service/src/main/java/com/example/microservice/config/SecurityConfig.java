@@ -45,12 +45,9 @@ public class SecurityConfig {
                 request ->
                         request.requestMatchers("/api/auth/**","/swagger-ui/**","/v3/api-docs/**","/api/verify-email/**","/api/admin/**","api/users/**" ).permitAll()
                                 .anyRequest().authenticated())
-
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
-
-
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();

@@ -16,7 +16,7 @@ public class ReactionService {
     @Autowired
     MessageService messService;
 
-    public MessageReaction insertReaction (int messId, String emoji, int userId){
+    public MessageReaction insertReaction (Long messId, String emoji, Long userId){
         System.out.println(messId + emoji + userId);
         MessageReaction messageReaction;
         Message mess = messService.getMessById(messId);
