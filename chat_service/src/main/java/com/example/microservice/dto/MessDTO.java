@@ -15,6 +15,7 @@ public class MessDTO {
     private String mediaURL;
     private String fileName;
     private LocalDateTime createdAt;
+    private String status;
 
     public MessDTO (Message message){
         this.setCreatedAt(message.getCreatedAt());

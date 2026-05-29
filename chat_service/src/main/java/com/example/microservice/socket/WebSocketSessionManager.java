@@ -1,38 +1,47 @@
 package com.example.microservice.socket;
 
 import org.springframework.stereotype.Component;
-import org.springframework.web.socket.WebSocketSession;
-
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class WebSocketSessionManager {
-    private final Map<Long, Set<WebSocketSession>> userSessions = new ConcurrentHashMap<>();
+    private final Map<Long, Set<String>> userSessions = new ConcurrentHashMap<>();
     private final Map<String, Long> sessionToUser = new ConcurrentHashMap<>();
 
-    public void addSession(Long userId, WebSocketSession session) {
-        userSessions.computeIfAbsent(userId, k -> ConcurrentHashMap.newKeySet()).add(session);
-        sessionToUser.put(session.getId(), userId);
+    public void addSession(Long userId, String sessionId) {
+        if (userId == null || sessionId == null) {
+            return;
+        }
+        userSessions.computeIfAbsent(userId, k -> ConcurrentHashMap.newKeySet()).add(sessionId);
+        sessionToUser.put(sessionId, userId);
     }
 
-    public void removeSession(WebSocketSession session) {
-        Long userId = sessionToUser.remove(session.getId());
+    public void removeSession(String sessionId) {
+        if (sessionId == null) {
+            return;
+        }
+        Long userId = sessionToUser.remove(sessionId);
         if (userId == null) {
             return;
         }
 
-        Set<WebSocketSession> sessions = userSessions.get(userId);
+        Set<String> sessions = userSessions.get(userId);
         if (sessions != null) {
-            sessions.remove(session);
+            sessions.remove(sessionId);
             if (sessions.isEmpty()) {
                 userSessions.remove(userId);
             }
         }
     }
 
-    public Set<WebSocketSession> getSessions(Long userId) {
+    public Set<String> getSessions(Long userId) {
         return userSessions.getOrDefault(userId, Set.of());
+    }
+
+    public boolean isOnline(Long userId) {
+        Set<String> sessions = userSessions.get(userId);
+        return sessions != null && !sessions.isEmpty();
     }
 }

@@ -2,8 +2,11 @@ package com.example.microservice.config;
 
 import com.example.microservice.dto.TokenValidateResponse;
 import com.example.microservice.feignClient.UserClient;
+import com.example.microservice.services.MessageDeliveryService;
+import com.example.microservice.socket.WebSocketSessionManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.stomp.StompCommand;
@@ -17,10 +20,14 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
-
 public class WebSocketAuthInterceptor implements ChannelInterceptor {
     @Autowired
     UserClient client;
+    @Autowired
+    WebSocketSessionManager sessionManager;
+    @Autowired
+    @Lazy
+    MessageDeliveryService messageDeliveryService;
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
         StompHeaderAccessor accessor =
@@ -29,6 +36,8 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
         System.out.println("nhảy vào connect nè");
         if(StompCommand.CONNECT.equals(accessor.getCommand())){
             handleConnect(accessor);
+        } else if (StompCommand.DISCONNECT.equals(accessor.getCommand())) {
+            sessionManager.removeSession(accessor.getSessionId());
         }
      return   message;
     }
@@ -48,8 +57,10 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
                         String.valueOf(userId),
                         null,
                         List.of()
-                );
+        );
         accessor.setUser(authentication);
+        sessionManager.addSession(userId, accessor.getSessionId());
+        messageDeliveryService.markPendingDeliveredForUser(userId);
 
         System.out.println("WebSocket connected userId = " + userId);
         System.out.println("WebSocket connected username = " + response.getUsername());

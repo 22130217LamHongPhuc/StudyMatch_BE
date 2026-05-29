@@ -2,9 +2,9 @@ package com.example.microservice.repository;
 
 
 import com.example.microservice.entity.PrivateConversation;
-import feign.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -33,6 +33,12 @@ public interface PrivateConversationRepo extends JpaRepository<PrivateConversati
     """, nativeQuery = true)
     Optional<Long> findOtherUserId(@Param("conversationId") Long conversationId,
                                    @Param("currentUserId") Long currentUserId);
+
+    @Query("""
+    select p from PrivateConversation p
+    where p.user1Id = :userId or p.user2Id = :userId
+""")
+    List<PrivateConversation> findByParticipantId(@Param("userId") Long userId);
 
 
     @Query("""

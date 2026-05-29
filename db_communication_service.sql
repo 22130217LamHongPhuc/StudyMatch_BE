@@ -183,4 +183,27 @@ CREATE TABLE `messages`  (
 -- Records of messages
 -- ----------------------------
 
+-- ----------------------------
+-- Table structure for message_status
+-- ----------------------------
+DROP TABLE IF EXISTS `message_status`;
+CREATE TABLE `message_status`  (
+  `status_id` bigint NOT NULL AUTO_INCREMENT,
+  `conversation_id` bigint NOT NULL,
+  `user_id` bigint NOT NULL,
+  `last_seen_message_id` bigint NULL DEFAULT NULL,
+  `last_delivered_message_id` bigint NULL DEFAULT NULL,
+  `updated_at` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`status_id`) USING BTREE,
+  UNIQUE INDEX `uk_message_status_conversation_user`(`conversation_id` ASC, `user_id` ASC) USING BTREE,
+  INDEX `idx_message_status_conversation_id`(`conversation_id` ASC) USING BTREE,
+  INDEX `idx_message_status_user_id`(`user_id` ASC) USING BTREE,
+  INDEX `idx_message_status_last_seen`(`last_seen_message_id` ASC) USING BTREE,
+  INDEX `idx_message_status_last_delivered`(`last_delivered_message_id` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of message_status
+-- ----------------------------
+
 SET FOREIGN_KEY_CHECKS = 1;
