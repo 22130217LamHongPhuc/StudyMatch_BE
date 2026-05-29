@@ -318,6 +318,7 @@ public class StudySessionServiceImpl implements StudySessionService {
         long acceptedCount = otherParticipants.stream()
                 .filter(participant -> participant.status() == StudySessionParticipantStatus.ACCEPTED)
                 .count();
+        acceptedCount++;
         long pendingCount = otherParticipants.stream()
                 .filter(participant -> participant.status() == StudySessionParticipantStatus.PENDING)
                 .count();
@@ -329,7 +330,7 @@ public class StudySessionServiceImpl implements StudySessionService {
                 session.getId(),
                 session.getSessionType(),
                 userId,
-                otherParticipants.size(),
+                otherParticipants.size() + 1,
                 acceptedCount,
                 pendingCount,
                 declinedCount,

@@ -8,7 +8,7 @@ public record SessionConfirmationStatsResponse(
         Long sessionId,
         StudySessionType sessionType,
         Long currentUserId,
-        long totalOtherParticipants,
+        long totalParticipants,
         long acceptedCount,
         long pendingCount,
         long declinedCount,
