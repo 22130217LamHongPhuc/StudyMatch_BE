@@ -1,6 +1,7 @@
 package com.example.microservice.repository;
 
 import com.example.microservice.entity.User;
+import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,6 +14,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
     boolean existsByEmail(String email);
     User findUsersByUserId(Long userId);
+    List<User> findAllByUserIdIn(List<Long> userIds);
 
 
 

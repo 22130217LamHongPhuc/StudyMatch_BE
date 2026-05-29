@@ -40,6 +40,9 @@ public class StudySessionParticipant {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
+    @Column(name = "user_name", length = 100)
+    private String userName;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private StudySessionParticipantRole role;

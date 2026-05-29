@@ -26,6 +26,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -66,6 +67,8 @@ public class StudyGroupServiceImpl implements StudyGroupService {
 
         groupMemberRepository.save(ownerMember);
 
+        addInvitedMembers(savedStudyGroup.getId(), ownerUserId, request.getMaxMembers(), request.getInvitedUserIds());
+
         if (request.getFreeTimeSlots() != null && !request.getFreeTimeSlots().isEmpty()) {
             List<GroupFreeTimeSlot> slots = new ArrayList<>();
 
@@ -88,6 +91,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     }
 
     @Override
+    @Transactional
     public StudyGroupResponse createCommunityGroup(CreateStudyGroupRequest request) {
         String normalizedName = request.getName().trim();
         Long ownerUserId = request.getOwnerUserId();
@@ -115,6 +119,8 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 .build();
 
         groupMemberRepository.save(ownerMember);
+
+        addInvitedMembers(savedStudyGroup.getId(), ownerUserId, request.getMaxMembers(), request.getInvitedUserIds());
 
         return toResponse(savedStudyGroup);
     }
@@ -330,6 +336,41 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 studyGroup.getCreatedAt(),
                 studyGroup.getUpdatedAt()
         );
+    }
+
+    private void addInvitedMembers(Long groupId, Long ownerUserId, Integer maxMembers, List<Long> invitedUserIds) {
+        if (invitedUserIds == null || invitedUserIds.isEmpty()) {
+            return;
+        }
+
+        List<Long> uniqueInvitedUserIds = invitedUserIds.stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .filter(userId -> !userId.equals(ownerUserId))
+                .toList();
+
+        if (maxMembers != null) {
+            long totalMembersAfterCreate = 1L + uniqueInvitedUserIds.size();
+            if (totalMembersAfterCreate > maxMembers) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invited members exceed max members");
+            }
+        }
+
+        if (uniqueInvitedUserIds.isEmpty()) {
+            return;
+        }
+
+        List<GroupMember> invitedMembers = new ArrayList<>();
+        for (Long userId : uniqueInvitedUserIds) {
+            invitedMembers.add(GroupMember.builder()
+                    .groupId(groupId)
+                    .userId(userId)
+                    .role(GroupMemberRole.MEMBER)
+                    .status(GroupMemberStatus.ACTIVE)
+                    .build());
+        }
+
+        groupMemberRepository.saveAll(invitedMembers);
     }
 
 

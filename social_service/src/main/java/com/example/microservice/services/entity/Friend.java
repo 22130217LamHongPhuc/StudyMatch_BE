@@ -1,9 +1,6 @@
 package com.example.microservice.services.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
@@ -17,6 +14,7 @@ import java.time.Instant;
 @Table(name = "friends")
 public class Friend {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "friend_id", nullable = false)
     private Long id;
 

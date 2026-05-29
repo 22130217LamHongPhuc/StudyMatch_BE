@@ -30,11 +30,20 @@ public class CreateStudySessionRequest {
     @Size(max = 255)
     private String location;
 
+    @Size(max = 500)
+    private String meetingUrl;
+
     @NotNull
     private Long createdByUserId;
 
     private StudySessionType sessionType;
 
     private String subjectName;
-}
 
+    private Long partnerUserId;
+
+    @Size(max = 100)
+    private String partnerUserName;
+
+    private Long subjectId;
+}
