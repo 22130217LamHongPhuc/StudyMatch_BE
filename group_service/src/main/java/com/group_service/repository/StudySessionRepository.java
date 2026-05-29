@@ -79,4 +79,15 @@ public interface StudySessionRepository extends JpaRepository<StudySession, Long
           AND s.status <> com.group_service.entity.enums.GroupStudySessionStatus.CANCELLED
     """)
     long countGroupSessions(@Param("userId") Long userId);
+
+    @Query("""
+        SELECT s FROM StudySession s
+        WHERE s.status = com.group_service.entity.enums.GroupStudySessionStatus.SCHEDULED
+          AND s.reminderSent = false
+          AND s.startTime BETWEEN :now AND :fiveMinLater
+    """)
+    List<StudySession> findUpcomingSessions(
+            @Param("now") LocalDateTime now,
+            @Param("fiveMinLater") LocalDateTime fiveMinLater
+    );
 }

@@ -82,6 +82,9 @@ public class StudySession {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @Column(name = "reminder_sent")
+    private boolean reminderSent = false;
 }
 
 

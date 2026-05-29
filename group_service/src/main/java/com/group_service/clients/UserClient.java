@@ -2,6 +2,7 @@ package com.group_service.clients;
 
 import com.group_service.dto.ApiResponse;
 import com.group_service.dto.BasicUserResponse;
+import com.group_service.dto.SessionReminderEmailRequest;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,4 +20,7 @@ public interface UserClient {
 
     @PostMapping("/api/users/basic-info")
     ApiResponse<List<BasicUserResponse>> getBasicUsers(@RequestBody List<Long> userIds);
+
+    @PostMapping("/api/users/send-session-reminder")
+    void sendSessionReminderEmail(@RequestBody SessionReminderEmailRequest request);
 }
