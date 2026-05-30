@@ -88,9 +88,11 @@ public class StudySessionReminderScheduler {
         for (Long userId : onlineUserIds) {
             try {
                 SessionReminderRequest request = new SessionReminderRequest(
+                        session.getId(),
                         userId,
                         session.getTitle(),
                         startTimeFormatted,
+                        session.getMeetingUrl(),
                         groupName
                 );
                 chatClient.sendSessionReminder(request);

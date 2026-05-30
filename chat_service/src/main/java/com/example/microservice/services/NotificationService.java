@@ -39,6 +39,9 @@ public class NotificationService {
         data.put("sessionTitle", request.getSessionTitle());
         data.put("startTime", request.getStartTime());
         data.put("groupName", request.getGroupName());
+        data.put("sessionId", request.getSessionId());
+        data.put("meetingUrl",request.getSessionId());
+
 
         SocketEnvelope<Map<String, Object>> envelope = new SocketEnvelope<>(
                 EnumEvent.STUDY_SESSION_REMINDER.toString(),

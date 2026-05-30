@@ -168,4 +168,72 @@ public class JavaMail {
     </div>
     """.formatted(link, link);
     }
+
+    public void sendSessionReminderEmail(String toEmail, String fullName, String sessionTitle, String startTime, String groupName) {
+        Properties props = new Properties();
+        props.put("mail.smtp.host", "smtp.gmail.com");
+        props.put("mail.smtp.port", "587");
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.starttls.enable", "true");
+
+        Session session = Session.getInstance(props, new Authenticator() {
+            protected PasswordAuthentication getPasswordAuthentication() {
+                return new PasswordAuthentication(fromEmail, password);
+            }
+        });
+
+        try {
+            Message message = new MimeMessage(session);
+            message.setFrom(new InternetAddress(fromEmail));
+            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toEmail));
+            message.setSubject("📚 Nhắc lịch học: " + sessionTitle);
+            String htmlContent = buildSessionReminderTemplate(fullName, sessionTitle, startTime, groupName);
+            message.setContent(htmlContent, "text/html; charset=utf-8");
+            Transport.send(message);
+        } catch (MessagingException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private String buildSessionReminderTemplate(String fullName, String sessionTitle, String startTime, String groupName) {
+        return """
+        <div style="font-family: Arial, sans-serif; background-color: #f4f6f8; padding: 40px;">
+            <div style="max-width: 600px; margin: auto; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                
+                <div style="background: linear-gradient(90deg, #2196F3, #1565C0); padding: 20px; text-align: center;">
+                    <h1 style="color: white; margin: 0;">StudyMatch</h1>
+                </div>
+
+                <div style="padding: 30px; text-align: center;">
+                    <h2 style="color: #333;">Xin chào %s 👋</h2>
+                    
+                    <p style="color: #555; font-size: 16px;">
+                        Buổi học của bạn sắp bắt đầu!
+                    </p>
+
+                    <div style="background: #e3f2fd; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: left;">
+                        <p style="margin: 8px 0; color: #333; font-size: 15px;">
+                            📖 <b>Buổi học:</b> %s
+                        </p>
+                        <p style="margin: 8px 0; color: #333; font-size: 15px;">
+                            👥 <b>Nhóm:</b> %s
+                        </p>
+                        <p style="margin: 8px 0; color: #333; font-size: 15px;">
+                            🕐 <b>Bắt đầu lúc:</b> %s
+                        </p>
+                    </div>
+
+                    <p style="color: #555; font-size: 14px;">
+                        Hãy chuẩn bị và tham gia đúng giờ nhé!
+                    </p>
+                </div>
+
+                <div style="background: #f1f1f1; padding: 15px; text-align: center; font-size: 12px; color: #888;">
+                    © 2026 StudyMatch. All rights reserved.
+                </div>
+            </div>
+        </div>
+        """.formatted(fullName, sessionTitle, groupName, startTime);
+    }
 }
+

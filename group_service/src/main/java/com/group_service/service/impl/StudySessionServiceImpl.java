@@ -85,6 +85,7 @@ public class StudySessionServiceImpl implements StudySessionService {
                 .sessionType(StudySessionType.GROUP)
                 .subjectName(request.getSubjectName())
                 .subjectId(request.getSubjectId())
+                .reminderSent(false)
                 .build();
 
         StudySession saved = studySessionRepository.save(session);
@@ -152,6 +153,7 @@ public class StudySessionServiceImpl implements StudySessionService {
                 .status(GroupStudySessionStatus.SCHEDULED)
                 .sessionType(StudySessionType.USER_PAIR)
                 .subjectName(request.getSubjectName())
+                .reminderSent(false)
                 .subjectId(request.getSubjectId())
                 .build();
 

@@ -1,4 +1,4 @@
-package com.group_service.dto;
+package com.example.microservice.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -7,8 +7,10 @@ import lombok.Setter;
 
 @Getter
 @Setter
+@NoArgsConstructor
 @AllArgsConstructor
 public class SessionReminderRequest {
+
     private Long sessionId;
     private Long userId;
     private String sessionTitle;
