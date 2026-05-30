@@ -39,8 +39,7 @@ public class User {
 
     @Column(name = "full_name", length = 120)
     private String fullName;
-    @Column (name= "bio")
-    private String bio;
+
 
     @Column(name = "avatar_url", length = 500)
     private String avatarUrl;

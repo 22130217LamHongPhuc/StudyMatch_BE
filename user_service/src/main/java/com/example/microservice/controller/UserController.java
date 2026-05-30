@@ -24,9 +24,6 @@ public class UserController {
         return ResponseEntity.ok(new ApiResponse<>(true, StatusCode.SUCCESS, "Get basic users successfully", users));
     }
 
-    @GetMapping("/batch")
-    public ResponseEntity<?> getUsersByIds(@RequestParam java.util.List<Long> ids){
-        return ResponseEntity.ok(userService.getUsersByIds(ids));
-    }
+
 
 }

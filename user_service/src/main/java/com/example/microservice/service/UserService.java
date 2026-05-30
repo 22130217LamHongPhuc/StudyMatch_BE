@@ -33,6 +33,7 @@ public class UserService {
         System.out.println(res + "nhận về êf");
         return res;
     }
+
     public ProfileDto getProfile(Long id, Long targetId){
         Long friendsCount = getFriendCount(id);
         MutualFriendsDto mutualDto = getMutualFriends(id, targetId);
@@ -86,4 +87,6 @@ public class UserService {
         repo.save(user);
         return new AdminUserStatusResponse( user.getStatus());
     }
+
+
 }
