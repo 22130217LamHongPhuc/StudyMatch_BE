@@ -1,11 +1,7 @@
 package com.example.microservice.security;
 
-
-import com.example.microservice.enums.StatusCode;
-import com.example.microservice.dto.respone.ApiResponse;
 import com.example.microservice.service.CustomUserDetailService;
 import com.example.microservice.service.JwtService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.JwtException;
 import io.micrometer.common.lang.NonNull;
 import jakarta.servlet.FilterChain;
@@ -31,60 +27,53 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     CustomUserDetailService userDetailsService;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getServletPath();
+        return path.startsWith("/users/")
+                || path.startsWith("/profile/")
+                || path.startsWith("/api/auth/")
+                || path.startsWith("/api/verify-email/")
+                || path.startsWith("/swagger-ui/")
+                || path.startsWith("/v3/api-docs/")
+                || path.startsWith("/api/echo/")
+                || path.startsWith("/api/campus-locations/");
+    }
+
+    @Override
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            @NonNull HttpServletResponse response,
+            @NonNull FilterChain filterChain
+    ) throws ServletException, IOException {
         String authHeader = request.getHeader("Authorization");
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
+
         String token = authHeader.substring(7);
-        System.out.println(token + "đây là token nè");
-        String username;
         try {
-            username = jwtService.extractUsername(token);
+            String username = jwtService.extractUsername(token);
             UserDetails userDetails = userDetailsService.loadUserByUsername(username);
             UsernamePasswordAuthenticationToken authToken =
-                        new UsernamePasswordAuthenticationToken(
-                                userDetails,
-                                null,
-                                userDetails.getAuthorities()
-                        );
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+                    new UsernamePasswordAuthenticationToken(
+                            userDetails,
+                            null,
+                            userDetails.getAuthorities()
+                    );
+            SecurityContextHolder.getContext().setAuthentication(authToken);
 
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             Object principal = authentication.getPrincipal();
-            System.out.println("pricipal trong filter nè" + principal);
-
+            System.out.println("principal in filter: " + principal);
         } catch (JwtException e) {
-            System.out.println("nhảy vaào catch nè");
+            SecurityContextHolder.clearContext();
+            System.out.println("Invalid JWT: " + e.getMessage());
+        } catch (RuntimeException e) {
+            SecurityContextHolder.clearContext();
+            System.out.println("JWT filter error: " + e.getMessage());
         }
-//            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-//            response.setContentType("application/json");
-//
-//            ApiResponse<Object> apiResponse = new ApiResponse<>(
-//                    false,
-//                    StatusCode.INVALID_TOKEN,
-//                    "Token expired",
-//                    null
-//            );
-//
-//            response.getWriter().write(new ObjectMapper().writeValueAsString(apiResponse));
-//            return;
-//        }
-//        if(username != null && SecurityContextHolder.getContext().getAuthentication() == null){
-//            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-//            if(jwtService.isTokenValid(token, userDetails)){
-//                UsernamePasswordAuthenticationToken authToken =
-//                        new UsernamePasswordAuthenticationToken(
-//                                userDetails,
-//                                null,
-//                                userDetails.getAuthorities()
-//                        );
-//                SecurityContextHolder.getContext().setAuthentication(authToken);
-//            }
-//
-//        }
-        filterChain.doFilter(request, response);
 
+        filterChain.doFilter(request, response);
     }
 }

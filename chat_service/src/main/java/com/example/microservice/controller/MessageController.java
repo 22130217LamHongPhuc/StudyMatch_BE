@@ -22,6 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -46,6 +47,23 @@ public class MessageController {
     MessageStatusService messageStatusService;
     @Autowired
     WebSocketSessionManager sessionManager;
+
+    @GetMapping("/presence/online")
+    public Map<Long, Boolean> getOnlineStatuses(@RequestParam(required = false) String userIds) {
+        Map<Long, Boolean> statuses = new LinkedHashMap<>();
+        if (userIds == null || userIds.isBlank()) {
+            return statuses;
+        }
+
+        for (String rawUserId : userIds.split(",")) {
+            try {
+                Long userId = Long.valueOf(rawUserId.trim());
+                statuses.put(userId, sessionManager.isOnline(userId));
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return statuses;
+    }
 
 
     @PostMapping("/media")

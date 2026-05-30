@@ -34,6 +34,11 @@ public class FriendsController {
         return friendService.totalFriend(id);
     }
 
+    @GetMapping("/friends/{id}")
+    public java.util.List<Long> getFriends(@PathVariable Long id){
+        return friendService.getFriendUserIds(id);
+    }
+
     @GetMapping("/friends/{id}/mutual")
     public MutualFriendsDto getMutualFriends(@PathVariable Long id, @RequestParam Long targetUserId){
         Long mutualFriends = friendService.countMutualFriends(id, targetUserId);

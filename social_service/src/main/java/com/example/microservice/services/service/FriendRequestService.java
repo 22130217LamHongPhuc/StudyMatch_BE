@@ -1,9 +1,7 @@
 package com.example.microservice.services.service;
 
-import com.example.microservice.services.entity.Friend;
 import com.example.microservice.services.entity.FriendRequest;
 import com.example.microservice.services.repository.FriendRequestRepo;
-import com.netflix.discovery.converters.Auto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -18,6 +16,9 @@ public class FriendRequestService {
 
 
     public FriendRequest friendRequest(Long senderId,Long reveiverId){
+        if (senderId != null && senderId.equals(reveiverId)) {
+            throw new IllegalArgumentException("Cannot send a friend request to yourself");
+        }
         FriendRequest req = new FriendRequest();
         req.setSenderId(senderId);
         req.setStatus("PENDING");

@@ -1,6 +1,5 @@
 package com.example.microservice.config;
 
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -19,12 +18,12 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
-                .cors(cors -> {})
+                .cors(cors -> {
+                })
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/ws", "/ws/**").permitAll()
-                        .anyRequest().permitAll()
-                );
+                        .anyRequest().permitAll());
 
         return http.build();
     }

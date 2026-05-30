@@ -10,21 +10,23 @@ public class WebSocketSessionManager {
     private final Map<Long, Set<String>> userSessions = new ConcurrentHashMap<>();
     private final Map<String, Long> sessionToUser = new ConcurrentHashMap<>();
 
-    public void addSession(Long userId, String sessionId) {
+    public boolean addSession(Long userId, String sessionId) {
         if (userId == null || sessionId == null) {
-            return;
+            return false;
         }
+        boolean wasOffline = !isOnline(userId);
         userSessions.computeIfAbsent(userId, k -> ConcurrentHashMap.newKeySet()).add(sessionId);
         sessionToUser.put(sessionId, userId);
+        return wasOffline;
     }
 
-    public void removeSession(String sessionId) {
+    public Long removeSession(String sessionId) {
         if (sessionId == null) {
-            return;
+            return null;
         }
         Long userId = sessionToUser.remove(sessionId);
         if (userId == null) {
-            return;
+            return null;
         }
 
         Set<String> sessions = userSessions.get(userId);
@@ -34,6 +36,7 @@ public class WebSocketSessionManager {
                 userSessions.remove(userId);
             }
         }
+        return userId;
     }
 
     public Set<String> getSessions(Long userId) {

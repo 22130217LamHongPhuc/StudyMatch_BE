@@ -4,11 +4,11 @@ import com.example.microservice.dto.TokenValidateResponse;
 import com.example.microservice.feignClient.UserClient;
 import com.example.microservice.services.MessageDeliveryService;
 import com.example.microservice.socket.WebSocketSessionManager;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
@@ -28,27 +28,36 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
     @Autowired
     @Lazy
     MessageDeliveryService messageDeliveryService;
+    @Autowired
+    @Lazy
+    SimpMessagingTemplate messagingTemplate;
+
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
         StompHeaderAccessor accessor =
                 MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
+        if (accessor == null || accessor.getCommand() == null) {
+            return message;
+        }
 
-        System.out.println("nhảy vào connect nè");
-        if(StompCommand.CONNECT.equals(accessor.getCommand())){
+        if (StompCommand.CONNECT.equals(accessor.getCommand())) {
             handleConnect(accessor);
         } else if (StompCommand.DISCONNECT.equals(accessor.getCommand())) {
-            sessionManager.removeSession(accessor.getSessionId());
+            Long userId = sessionManager.removeSession(accessor.getSessionId());
+            if (userId != null && !sessionManager.isOnline(userId)) {
+                broadcastPresence(userId, false);
+            }
         }
-     return   message;
+        return message;
     }
 
-    public void handleConnect (StompHeaderAccessor accessor ){
-        String authorization  = accessor.getFirstNativeHeader("Authorization");
+    public void handleConnect(StompHeaderAccessor accessor) {
+        String authorization = accessor.getFirstNativeHeader("Authorization");
         if (authorization == null || !authorization.startsWith("Bearer ")) {
             throw new IllegalArgumentException("Missing token");
         }
-        TokenValidateResponse response= client.validateToken(authorization);
-        if(response == null || !response.isValid()){
+        TokenValidateResponse response = client.validateToken(authorization);
+        if (response == null || !response.isValid()) {
             throw new IllegalArgumentException("Invalid token");
         }
         Long userId = response.getUserId();
@@ -57,13 +66,25 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
                         String.valueOf(userId),
                         null,
                         List.of()
-        );
+                );
         accessor.setUser(authentication);
-        sessionManager.addSession(userId, accessor.getSessionId());
+        boolean wasOffline = sessionManager.addSession(userId, accessor.getSessionId());
         messageDeliveryService.markPendingDeliveredForUser(userId);
+        if (wasOffline) {
+            broadcastPresence(userId, true);
+        }
+    }
 
-        System.out.println("WebSocket connected userId = " + userId);
-        System.out.println("WebSocket connected username = " + response.getUsername());
-        System.out.println("Principal đã set = " + accessor.getUser());
+    private void broadcastPresence(Long userId, boolean online) {
+        messagingTemplate.convertAndSend(
+                "/topic/presence",
+                java.util.Map.of(
+                        "event", "USER_PRESENCE",
+                        "data", java.util.Map.of(
+                                "userId", userId,
+                                "online", online
+                        )
+                )
+        );
     }
 }
