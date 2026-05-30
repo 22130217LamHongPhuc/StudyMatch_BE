@@ -44,6 +44,7 @@ public class OnboardingController {
 
     @GetMapping("/profile/{userId}")
     public ResponseEntity<UserProfileFullResponse> getFullUserProfile(
+
             @PathVariable Long userId) {
         UserProfileFullResponse response = profileLoadService.loadUserProfile(userId);
 

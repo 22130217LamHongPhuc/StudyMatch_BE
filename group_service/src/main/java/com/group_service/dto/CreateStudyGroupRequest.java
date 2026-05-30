@@ -1,15 +1,5 @@
 package com.group_service.dto;
 
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
-import lombok.Data;
-
-import java.util.List;
-
-import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -39,18 +29,14 @@ public class CreateStudyGroupRequest {
         @Size(max = 150)
         private String subjectName;
 
-        @Size(max = 50)
-        private String studyGoal;
-
-        @Size(max = 50)
-        private String studyMode;
-
-        @NotNull
         @Min(1)
         private Integer maxMembers;
 
         @Size(max = 30)
         private String visibility;
+
+        @Size(max = 100)
+        private List<@NotNull Long> invitedUserIds;
 
         private List<FreeTimeSlotRequest> freeTimeSlots;
 }

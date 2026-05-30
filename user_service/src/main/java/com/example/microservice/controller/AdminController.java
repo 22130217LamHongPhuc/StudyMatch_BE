@@ -11,8 +11,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/admin")
 public class AdminController {
 
-    @GetMapping("")
-    public ResponseEntity<ApiResponse<String>> test() {
-        return ResponseEntity.ok(new ApiResponse<>(true, null, "Admin endpoint is working", "Hello Admin"));
-    }
+//    @GetMapping("")
+//    public ResponseEntity<ApiResponse<String>> test() {
+//        return ResponseEntity.ok(new ApiResponse<>(true, null, "Admin endpoint is working", "Hello Admin"));
+//    }
 }
