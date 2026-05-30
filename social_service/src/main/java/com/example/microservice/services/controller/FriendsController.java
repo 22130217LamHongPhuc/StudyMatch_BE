@@ -16,7 +16,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/social")
-// @CrossOrigin(origins = "*")
+ @CrossOrigin(origins = "*")
 public class FriendsController {
     @Autowired
     FriendRequestService service;

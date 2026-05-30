@@ -14,6 +14,8 @@ public class BasicUserResponse {
     @JsonAlias("full_name")
     private String fullName;
 
+    @JsonAlias("email")
+    private String email;
 
     public String getUserName() {
         return fullName;

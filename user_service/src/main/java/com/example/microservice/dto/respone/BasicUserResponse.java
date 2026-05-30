@@ -17,12 +17,16 @@ public class BasicUserResponse {
     @JsonProperty("avatar_url")
     private String avatarUrl;
 
+    @JsonProperty("email")
+    private String email;
+
     public static BasicUserResponse from(User user) {
         if (user == null) return null;
         return BasicUserResponse.builder()
                 .userId(user.getUserId())
                 .fullName(user.getFullName())
                 .avatarUrl(user.getAvatarUrl())
+                .email(user.getEmail())
                 .build();
     }
 }
