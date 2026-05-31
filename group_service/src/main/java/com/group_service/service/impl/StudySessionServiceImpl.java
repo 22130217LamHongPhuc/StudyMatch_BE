@@ -4,6 +4,7 @@ import com.group_service.clients.UserClient;
 import com.group_service.dto.ApiResponse;
 import com.group_service.dto.BasicUserResponse;
 import com.group_service.dto.CreateStudySessionRequest;
+import com.group_service.dto.JoinStudySessionResponse;
 import com.group_service.dto.SessionConfirmationStatsResponse;
 import com.group_service.dto.SessionParticipantConfirmationResponse;
 import com.group_service.dto.StudySessionResponse;
@@ -14,6 +15,7 @@ import com.group_service.entity.StudySession;
 import com.group_service.entity.StudySessionParticipant;
 import com.group_service.entity.enums.GroupMemberStatus;
 import com.group_service.entity.enums.GroupStatus;
+import com.group_service.entity.enums.GroupStudySessionMode;
 import com.group_service.entity.enums.GroupStudySessionStatus;
 import com.group_service.entity.enums.StudySessionParticipantRole;
 import com.group_service.entity.enums.StudySessionParticipantStatus;
@@ -23,6 +25,7 @@ import com.group_service.repository.StudyGroupRepository;
 import com.group_service.repository.StudySessionParticipantRepository;
 import com.group_service.repository.StudySessionRepository;
 import com.group_service.service.StudySessionService;
+import com.group_service.service.ZegoCloudTokenService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -50,6 +53,7 @@ public class StudySessionServiceImpl implements StudySessionService {
     private final StudyGroupRepository studyGroupRepository;
     private final GroupMemberRepository groupMemberRepository;
     private final UserClient userClient;
+    private final ZegoCloudTokenService zegoCloudTokenService;
 
     @Override
     @Transactional
@@ -224,6 +228,51 @@ public class StudySessionServiceImpl implements StudySessionService {
 
     @Override
     @Transactional
+    public JoinStudySessionResponse joinSession(Long sessionId, Long userId) {
+        StudySession session = studySessionRepository.findByIdForUpdate(sessionId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Study session not found"));
+
+        if (session.getStatus() == GroupStudySessionStatus.CANCELLED || session.getStatus() == GroupStudySessionStatus.COMPLETED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Session is not available for joining");
+        }
+
+        if (session.getStudyMode() == GroupStudySessionMode.OFFLINE) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only ONLINE or HYBRID sessions can be joined");
+        }
+
+        StudySessionParticipant participant = participantRepository.findBySessionIdAndUserId(sessionId, userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not a participant of this session"));
+
+        if (participant.getStatus() == StudySessionParticipantStatus.DECLINED) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not allowed to join this session");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        validateJoinWindow(session.getStartTime(), session.getEndTime(), now);
+
+        String roomId = ensureRoomId(session);
+        StudySession savedSession = studySessionRepository.save(session);
+
+        if (participant.getStatus() != StudySessionParticipantStatus.JOINED) {
+            participant.setStatus(StudySessionParticipantStatus.JOINED);
+        }
+        if (participant.getJoinedAt() == null) {
+            participant.setJoinedAt(now);
+        }
+        participantRepository.save(participant);
+
+        String token = zegoCloudTokenService.generateToken(userId, roomId);
+
+        return new JoinStudySessionResponse(
+                savedSession.getId(),
+                roomId,
+                token,
+                now
+        );
+    }
+
+    @Override
+    @Transactional
     public StudySessionResponse respondToSession(Long sessionId, Long userId, StudySessionParticipantStatus status) {
         if (status != StudySessionParticipantStatus.ACCEPTED && status != StudySessionParticipantStatus.DECLINED) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Status must be ACCEPTED or DECLINED");
@@ -305,8 +354,18 @@ public class StudySessionServiceImpl implements StudySessionService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not allowed to view confirmation stats for this session");
         }
 
-        List<StudySessionParticipant> participants = participantRepository.findBySessionId(sessionId);
-        List<SessionParticipantConfirmationResponse> otherParticipants = participants.stream()
+        List<StudySessionParticipant> participantsDb = participantRepository.findBySessionId(sessionId);
+        List<SessionParticipantConfirmationResponse> participants = participantsDb.stream()
+                .map(participant -> new SessionParticipantConfirmationResponse(
+                        participant.getUserId(),
+                        resolveParticipantUserName(participant),
+                        participant.getRole(),
+                        participant.getStatus(),
+                        participant.getRespondedAt()
+                ))
+                .toList();
+
+        List<SessionParticipantConfirmationResponse> anotherParticipants = participantsDb.stream()
                 .filter(participant -> !participant.getUserId().equals(userId))
                 .map(participant -> new SessionParticipantConfirmationResponse(
                         participant.getUserId(),
@@ -317,14 +376,13 @@ public class StudySessionServiceImpl implements StudySessionService {
                 ))
                 .toList();
 
-        long acceptedCount = otherParticipants.stream()
+        long acceptedCount = participants.stream()
                 .filter(participant -> participant.status() == StudySessionParticipantStatus.ACCEPTED)
                 .count();
-        acceptedCount++;
-        long pendingCount = otherParticipants.stream()
+        long pendingCount = participants.stream()
                 .filter(participant -> participant.status() == StudySessionParticipantStatus.PENDING)
                 .count();
-        long declinedCount = otherParticipants.stream()
+        long declinedCount = participants.stream()
                 .filter(participant -> participant.status() == StudySessionParticipantStatus.DECLINED)
                 .count();
 
@@ -332,11 +390,11 @@ public class StudySessionServiceImpl implements StudySessionService {
                 session.getId(),
                 session.getSessionType(),
                 userId,
-                otherParticipants.size() + 1,
+                participants.size() ,
                 acceptedCount,
                 pendingCount,
                 declinedCount,
-                otherParticipants
+                anotherParticipants
         );
     }
 
@@ -406,6 +464,7 @@ public class StudySessionServiceImpl implements StudySessionService {
                 s.getStudyMode(),
                 s.getLocation(),
                 s.getMeetingUrl(),
+                s.getRoomId(),
                 s.getCreatedByUserId(),
                 s.getStatus(),
                 participantStatus,
@@ -467,6 +526,29 @@ public class StudySessionServiceImpl implements StudySessionService {
         if (endTime.isBefore(startTime) || endTime.isEqual(startTime)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "endTime must be after startTime");
         }
+    }
+
+    private void validateJoinWindow(LocalDateTime startTime, LocalDateTime endTime, LocalDateTime now) {
+        LocalDateTime joinStart = startTime.minusMinutes(5);
+        LocalDateTime joinEnd = endTime.plusMinutes(5);
+
+        if (now.isBefore(joinStart) || now.isAfter(joinEnd)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Session can only be joined from 5 minutes before start until 5 minutes after end");
+        }
+    }
+
+    private String ensureRoomId(StudySession session) {
+        if (StringUtils.hasText(session.getRoomId())) {
+            return session.getRoomId();
+        }
+
+        String roomId = generateRoomId(session.getId());
+        session.setRoomId(roomId);
+        return roomId;
+    }
+
+    private String generateRoomId(Long sessionId) {
+        return "study-session-" + sessionId;
     }
 
     private void validateStatusTransition(GroupStudySessionStatus current, GroupStudySessionStatus target) {

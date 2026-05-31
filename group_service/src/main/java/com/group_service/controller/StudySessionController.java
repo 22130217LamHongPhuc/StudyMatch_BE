@@ -2,6 +2,7 @@ package com.group_service.controller;
 
 import com.group_service.dto.ApiResponse;
 import com.group_service.dto.CreateStudySessionRequest;
+import com.group_service.dto.JoinStudySessionResponse;
 import com.group_service.dto.SessionConfirmationStatsResponse;
 import com.group_service.dto.RespondSessionRequest;
 import com.group_service.dto.StudySessionResponse;
@@ -20,7 +21,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -101,6 +101,20 @@ public class StudySessionController {
                 true,
                 StatusCode.SUCCESS,
                 "Get session detail successfully",
+                response
+        ));
+    }
+
+    @PostMapping("/{sessionId}/join")
+    public ResponseEntity<ApiResponse<JoinStudySessionResponse>> joinSession(
+            @PathVariable Long sessionId,
+            @RequestParam Long userId
+    ) {
+        JoinStudySessionResponse response = studySessionService.joinSession(sessionId, userId);
+        return ResponseEntity.ok(new ApiResponse<>(
+                true,
+                StatusCode.SUCCESS,
+                "Join session successfully",
                 response
         ));
     }

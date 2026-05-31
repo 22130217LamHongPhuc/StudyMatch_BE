@@ -1,6 +1,7 @@
 package com.group_service.service;
 
 import com.group_service.dto.CreateStudySessionRequest;
+import com.group_service.dto.JoinStudySessionResponse;
 import com.group_service.dto.SessionConfirmationStatsResponse;
 import com.group_service.dto.StudySessionResponse;
 import com.group_service.dto.StudySessionStatsResponse;
@@ -29,6 +30,8 @@ public interface StudySessionService {
     );
 
     StudySessionResponse getSessionById(Long sessionId, Long userId);
+
+    JoinStudySessionResponse joinSession(Long sessionId, Long userId);
 
     StudySessionResponse respondToSession(Long sessionId, Long userId, StudySessionParticipantStatus status);
 
