@@ -14,17 +14,15 @@ import java.time.Instant;
 @Setter
 @Entity
 @Table(name = "conversation_participants")
+@IdClass(ConversationParticipantId.class)
 public class ConversationParticipant {
     @Id
-    @Column(name = "participant_id", nullable = false)
-    private Long id;
-
-    @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     @JoinColumn(name = "conversation_id", nullable = false)
     private Conversation conversation;
 
+    @Id
     @NotNull
     @Column(name = "user_id", nullable = false)
     private Long userId;
@@ -46,8 +44,5 @@ public class ConversationParticipant {
     @ColumnDefault("0")
     @Column(name = "is_pinned", nullable = false)
     private Boolean isPinned = false;
-
-    @Column(name = "last_read_at")
-    private Instant lastReadAt;
 
 }

@@ -7,7 +7,9 @@ import com.group_service.dto.JoinGroupResponse;
 import com.group_service.dto.StudyGroupDetailResponse;
 import com.group_service.dto.StudyGroupResponse;
 import com.group_service.entity.enums.GroupType;
+import com.group_service.entity.enums.GroupMemberStatus;
 import com.group_service.enums.StatusCode;
+import com.group_service.repository.GroupMemberRepository;
 import com.group_service.service.StudyGroupService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +26,7 @@ import java.util.List;
 public class StudyGroupController {
 
     private final StudyGroupService studyGroupService;
+    private final GroupMemberRepository groupMemberRepository;
 //    private final ProfileClient profileClient;
 //
 //    @GetMapping("/test")
@@ -104,6 +107,22 @@ public class StudyGroupController {
                 StatusCode.SUCCESS,
                 "Join group successfully",
                 response
+        ));
+    }
+
+    @GetMapping("/{groupId}/members/active-user-ids")
+    public ResponseEntity<ApiResponse<List<Long>>> getActiveMemberUserIds(@PathVariable Long groupId) {
+        List<Long> userIds = groupMemberRepository
+                .findByGroupIdAndStatus(groupId, GroupMemberStatus.ACTIVE)
+                .stream()
+                .map(member -> member.getUserId())
+                .toList();
+
+        return ResponseEntity.ok(new ApiResponse<>(
+                true,
+                StatusCode.SUCCESS,
+                "Get active group members successfully",
+                userIds
         ));
     }
 

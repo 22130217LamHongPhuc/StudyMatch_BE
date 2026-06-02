@@ -34,7 +34,7 @@ public class UserService {
         return res;
     }
     public ProfileDto getProfile(Long id, Long targetId){
-        Long friendsCount = getFriendCount(id);
+        Long friendsCount = getFriendCount(targetId);
         MutualFriendsDto mutualDto = getMutualFriends(id, targetId);
         User user = getProfile(targetId);
         ProfileDto  res = new ProfileDto();

@@ -1,10 +1,13 @@
 package com.example.microservice.services;
 
 import com.example.microservice.dto.MessDTO;
+import com.example.microservice.dto.ReactionDTO;
 import com.example.microservice.entity.Message;
+import com.example.microservice.entity.MessageReaction;
 import com.example.microservice.entity.MessageStatus;
 import com.example.microservice.exception.ResourceNotFoundException;
 import com.example.microservice.repository.MessageRepo;
+import com.example.microservice.repository.ReactionRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -14,6 +17,8 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class MessageService {
@@ -21,6 +26,8 @@ public class MessageService {
     MessageRepo messageRepo;
     @Autowired
     MessageStatusService messageStatusService;
+    @Autowired
+    ReactionRepo reactionRepo;
 
     public Page<Message> getConversation(Long conversationId, Pageable pageable){
         return messageRepo.findByConversationIdOrderByCreatedAtDesc(conversationId, pageable);
@@ -39,7 +46,8 @@ public class MessageService {
             MessDTO dto = new MessDTO(mess);
             list.add(dto);
         }
-          return list;
+        attachReactions(list);
+        return list;
     }
 
     public List<MessDTO> getListMessWithStatus(Long conversationId, Long currentUserId, Long targetUserId, Long page) {
@@ -56,7 +64,37 @@ public class MessageService {
             }
             list.add(dto);
         }
+        attachReactions(list);
         return list;
+    }
+
+    private void attachReactions(List<MessDTO> messages) {
+        List<Long> messageIds = messages.stream()
+                .map(MessDTO::getMessageId)
+                .filter(id -> id != null && id > 0)
+                .toList();
+        if (messageIds.isEmpty()) {
+            return;
+        }
+
+        Map<Long, List<ReactionDTO>> reactionsByMessageId = reactionRepo.findByMessageIdIn(messageIds)
+                .stream()
+                .collect(Collectors.groupingBy(
+                        reaction -> reaction.getMessage().getId(),
+                        Collectors.mapping(
+                                reaction -> new ReactionDTO(
+                                        reaction.getId(),
+                                        reaction.getMessage().getId(),
+                                        reaction.getUserId(),
+                                        reaction.getEmoji()
+                                ),
+                                Collectors.toList()
+                        )
+                ));
+
+        for (MessDTO message : messages) {
+            message.setReactions(reactionsByMessageId.getOrDefault(message.getMessageId(), List.of()));
+        }
     }
 
     private String resolveOutgoingStatus(Message message, MessageStatus targetStatus) {

@@ -19,6 +19,7 @@ import com.example.microservice.entity.Conversation;
 import com.example.microservice.entity.Message;
 import com.example.microservice.entity.MessageReaction;
 import com.example.microservice.services.ChatService;
+import com.example.microservice.services.MessageDeliveryService;
 import com.example.microservice.services.MessageService;
 import com.example.microservice.services.MessageStatusService;
 import com.example.microservice.services.ReactionService;
@@ -34,8 +35,10 @@ import org.springframework.stereotype.Controller;
 import java.security.Principal;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Controller
 @RequiredArgsConstructor
@@ -49,6 +52,8 @@ public class ChatController {
     MessageService messageService;
     @Autowired
     MessageStatusService messageStatusService;
+    @Autowired
+    MessageDeliveryService messageDeliveryService;
     @Autowired
     ReactionService reactionService;
     @Autowired
@@ -117,6 +122,10 @@ public class ChatController {
                 replyText(request, Long.valueOf(userId));
             }
         }
+
+        if (mess.getEvent().equals("CLIENT_READY")) {
+            messageDeliveryService.sendPendingMessagesToUser(Long.valueOf(userId));
+        }
     }
 
     public void sendChat(SendMessageRequest request, String currentUID) {
@@ -124,49 +133,48 @@ public class ChatController {
         Long conversationId = Long.valueOf(request.getConversationId());
 
         request.setSenderId(senderId.intValue());
-        boolean exists = chatService.checkPrivateExist(conversationId, senderId);
+        boolean exists = chatService.isParticipant(conversationId, senderId);
         if (!exists) return;
 
         try {
             Message message = chatService.saveMess(request);
             messageStatusService.markSenderSeen(conversationId, senderId, message);
-
-            Optional<Long> receiverIdOpt = chatService.findUserOther(conversationId, senderId);
-            if (receiverIdOpt.isEmpty()) return;
-
-            Long receiverId = receiverIdOpt.get();
             MessDTO messDTO = new MessDTO(message);
             NewMessageData newMessageData = new NewMessageData(conversationId, messDTO);
 
-            boolean receiverOnline = sessionManager.isOnline(receiverId);
-            if (receiverOnline) {
-                messageStatusService.markDelivered(conversationId, receiverId, message);
-                SocketEnvelope<NewMessageData> receiverResponse =
-                        new SocketEnvelope<>(EnumEvent.NEW_MESSAGE.toString(), newMessageData);
-                messagingTemplate.convertAndSendToUser(String.valueOf(receiverId), "/queue/chat", receiverResponse);
-            }
+            List<Long> participants = chatService.findConversationParticipants(conversationId);
+            if (participants.isEmpty()) return;
 
             MessageStatusData statusData = new MessageStatusData(
                     conversationId,
-                    receiverId,
-                    receiverOnline ? "DELIVERED" : "SENT",
+                    senderId,
+                    "SENT",
                     List.of(message.getId()),
                     Instant.now()
             );
             SocketEnvelope<MessageStatusData> senderResponse = new SocketEnvelope<>(
-                    receiverOnline ? EnumEvent.MESSAGE_DELIVERED.toString() : EnumEvent.MESSAGE_SENT.toString(),
+                    EnumEvent.MESSAGE_SENT.toString(),
                     statusData
             );
             messagingTemplate.convertAndSendToUser(currentUID, "/queue/chat", senderResponse);
+            SocketEnvelope<NewMessageData> senderAck =
+                    new SocketEnvelope<>(EnumEvent.MESSAGE_ACK.toString(), newMessageData);
+            messagingTemplate.convertAndSendToUser(currentUID, "/queue/chat", senderAck);
+
+            SocketEnvelope<NewMessageData> receiverResponse =
+                    new SocketEnvelope<>(EnumEvent.NEW_MESSAGE.toString(), newMessageData);
+            for (Long participantId : participants) {
+                if (participantId == null || participantId.equals(senderId)) {
+                    continue;
+                }
+                messagingTemplate.convertAndSendToUser(String.valueOf(participantId), "/queue/chat", receiverResponse);
+            }
         } catch (Exception ex) {
             ex.printStackTrace();
         }
     }
 
     public void deliveredMessage(MessageStatusRequest request, Long userId) {
-        Optional<?> otherUID = chatService.findUserOther(request.getConversationID(), userId);
-        if (otherUID.isEmpty()) return;
-
         List<Long> messageIds = normalizeMessageIds(request);
         if (messageIds.isEmpty()) return;
 
@@ -182,13 +190,13 @@ public class ChatController {
         );
         SocketEnvelope<MessageStatusData> response =
                 new SocketEnvelope<>(EnumEvent.MESSAGE_DELIVERED.toString(), data);
-        messagingTemplate.convertAndSendToUser(String.valueOf(otherUID.get()), "/queue/chat", response);
+        Set<Long> targets = resolveStatusNotifyTargets(request.getConversationID(), userId, messageIds);
+        for (Long targetId : targets) {
+            messagingTemplate.convertAndSendToUser(String.valueOf(targetId), "/queue/chat", response);
+        }
     }
 
     public void seenMessage(MessageStatusRequest request, Long userId) {
-        Optional<?> otherUID = chatService.findUserOther(request.getConversationID(), userId);
-        if (otherUID.isEmpty()) return;
-
         List<Long> messageIds = normalizeMessageIds(request);
         if (messageIds.isEmpty()) return;
 
@@ -203,7 +211,10 @@ public class ChatController {
         );
         SocketEnvelope<MessageStatusData> response =
                 new SocketEnvelope<>(EnumEvent.MESSAGE_SEEN.toString(), data);
-        socketSendMess(String.valueOf(userId), String.valueOf(otherUID.get()), response, response);
+        Set<Long> targets = resolveStatusNotifyTargets(request.getConversationID(), userId, messageIds);
+        for (Long targetId : targets) {
+            messagingTemplate.convertAndSendToUser(String.valueOf(targetId), "/queue/chat", response);
+        }
     }
 
     private List<Long> normalizeMessageIds(MessageStatusRequest request) {
@@ -237,19 +248,55 @@ public class ChatController {
     }
 
     public void addReaction(ReactionRequest request, Long userId) {
-        Optional<?> otherUID = chatService.findUserOther(request.getConversationID(), userId);
-        if (otherUID.isEmpty()) return;
+        Long conversationId = request.getConversationID();
+        System.out.println("[Reaction][BE][receive] userId=" + userId
+                + ", conversationId=" + conversationId
+                + ", messageId=" + request.getMessageID()
+                + ", emoji=" + request.getEmoji());
+        if (conversationId == null || !chatService.isParticipant(conversationId, userId)) {
+            System.out.println("[Reaction][BE][skip] user is not participant or missing conversationId, userId="
+                    + userId + ", conversationId=" + conversationId);
+            return;
+        }
 
         MessageReaction reaction = reactionService.insertReaction(
                 request.getMessageID(),
                 request.getEmoji(),
                 userId
         );
+        System.out.println("[Reaction][BE][saved] reactionId=" + reaction.getId()
+                + ", userId=" + reaction.getUserId()
+                + ", messageId=" + reaction.getMessage().getId()
+                + ", emoji=" + reaction.getEmoji());
         ReactionData response = new ReactionData();
-        response.setConversationId(request.getConversationID());
-        response.setMessage(new ReactionDTO(request.getMessageID(), request.getEmoji()));
-        SocketEnvelope<ReactionData> res = new SocketEnvelope<>(EnumEvent.REACTION_ADD.toString(), response);
-        socketSendMess(String.valueOf(userId), String.valueOf(otherUID.get()), res, res);
+        response.setConversationId(conversationId);
+        response.setMessage(new ReactionDTO(
+                reaction.getId(),
+                request.getMessageID(),
+                userId,
+                reaction.getEmoji()
+        ));
+
+        SocketEnvelope<ReactionData> ack =
+                new SocketEnvelope<>(EnumEvent.REACTION_ACK.toString(), response);
+        SocketEnvelope<ReactionData> receiverEvent =
+                new SocketEnvelope<>(EnumEvent.REACTION_ADD.toString(), response);
+
+        messagingTemplate.convertAndSendToUser(String.valueOf(userId), "/queue/chat", ack);
+        System.out.println("[Reaction][BE][send-ack] targetUserId=" + userId
+                + ", event=" + EnumEvent.REACTION_ACK);
+
+        List<Long> participants = chatService.findConversationParticipants(conversationId);
+        System.out.println("[Reaction][BE][participants] conversationId=" + conversationId
+                + ", participants=" + participants);
+        for (Long participantId : participants) {
+            if (participantId == null || participantId.equals(userId)) {
+                continue;
+            }
+            messagingTemplate.convertAndSendToUser(String.valueOf(participantId), "/queue/chat", receiverEvent);
+            System.out.println("[Reaction][BE][send-reaction] targetUserId=" + participantId
+                    + ", event=" + EnumEvent.REACTION_ADD);
+        }
     }
 
     public void recallMess(RecallRequest request, Long userId) {
@@ -273,5 +320,23 @@ public class ChatController {
     public void socketSendMess(String currentUID, String otherUID, SocketEnvelope<?> currResponse, SocketEnvelope<?> otherResponse) {
         messagingTemplate.convertAndSendToUser(currentUID, "/queue/chat", currResponse);
         messagingTemplate.convertAndSendToUser(otherUID, "/queue/chat", otherResponse);
+    }
+
+    private Set<Long> resolveStatusNotifyTargets(Long conversationId, Long actorUserId, List<Long> messageIds) {
+        String conversationType = chatService.getConversationType(conversationId);
+        Set<Long> targets = new LinkedHashSet<>();
+        if (chatService.isPrivateConversationType(conversationType)) {
+            chatService.findUserOther(conversationId, actorUserId).ifPresent(targets::add);
+            return targets;
+        }
+
+        for (Long messageId : messageIds) {
+            Message message = messageService.findMessById(messageId);
+            Long senderId = message.getSenderId();
+            if (senderId != null && !senderId.equals(actorUserId)) {
+                targets.add(senderId);
+            }
+        }
+        return targets;
     }
 }

@@ -29,6 +29,20 @@ public class NotificationService {
                 .collect(Collectors.toList());
     }
 
+    public Map<String, Boolean> getOnlineStatusMap(List<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, Boolean> statusMap = new HashMap<>();
+        for (Long userId : userIds) {
+            if (userId == null) {
+                continue;
+            }
+            statusMap.put(String.valueOf(userId), sessionManager.isOnline(userId));
+        }
+        return statusMap;
+    }
+
     public void sendSessionReminder(SessionReminderRequest request) {
         Long userId = request.getUserId();
         if (userId == null || !sessionManager.isOnline(userId)) {

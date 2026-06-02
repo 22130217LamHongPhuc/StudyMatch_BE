@@ -4,6 +4,7 @@ import com.example.microservice.entity.Message;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 
 @Data
@@ -16,6 +17,8 @@ public class MessDTO {
     private String fileName;
     private LocalDateTime createdAt;
     private String status;
+    private List<ReactionDTO> reactions;
+    private Boolean isDeleted;
 
     public MessDTO (Message message){
         this.setCreatedAt(message.getCreatedAt());
@@ -25,6 +28,7 @@ public class MessDTO {
         this.setFileName(message.getFileName());
         this.setSenderId(message.getSenderId());
         this.setMessageId(message.getId());
+        this.setIsDeleted(message.getIsDeleted());
     }
     public MessDTO(){
 

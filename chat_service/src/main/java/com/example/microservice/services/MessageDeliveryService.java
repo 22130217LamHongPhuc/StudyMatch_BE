@@ -1,7 +1,8 @@
 package com.example.microservice.services;
 
 import com.example.microservice.config.EnumEvent;
-import com.example.microservice.dto.MessageStatusData;
+import com.example.microservice.dto.MessDTO;
+import com.example.microservice.dto.NewMessageData;
 import com.example.microservice.dto.SocketEnvelope;
 import com.example.microservice.entity.Message;
 import com.example.microservice.entity.MessageStatus;
@@ -12,10 +13,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 public class MessageDeliveryService {
@@ -37,7 +35,7 @@ public class MessageDeliveryService {
     }
 
     @Transactional
-    public void markPendingDeliveredForUser(Long userId) {
+    public void sendPendingMessagesToUser(Long userId) {
         List<PrivateConversation> conversations = privateConversationRepo.findByParticipantId(userId);
         for (PrivateConversation privateConversation : conversations) {
             Long conversationId = privateConversation.getId();
@@ -46,35 +44,17 @@ public class MessageDeliveryService {
                     ? null
                     : status.getLastDeliveredMessage().getId();
 
-            List<Message> deliveredMessages = messageRepo.findUndeliveredMessagesForUser(
+            List<Message> pendingMessages = messageRepo.findUndeliveredMessagesForUser(
                     conversationId,
                     userId,
                     lastDeliveredMessageId
             );
-            if (deliveredMessages.isEmpty()) {
-                continue;
-            }
 
-            Message latestMessage = deliveredMessages.get(deliveredMessages.size() - 1);
-            messageStatusService.markDelivered(conversationId, userId, latestMessage);
-
-            Map<Long, List<Long>> messageIdsBySender = deliveredMessages.stream()
-                    .collect(Collectors.groupingBy(
-                            Message::getSenderId,
-                            Collectors.mapping(Message::getId, Collectors.toList())
-                    ));
-
-            for (Map.Entry<Long, List<Long>> entry : messageIdsBySender.entrySet()) {
-                MessageStatusData data = new MessageStatusData(
-                        conversationId,
-                        userId,
-                        "DELIVERED",
-                        entry.getValue(),
-                        Instant.now()
-                );
-                SocketEnvelope<MessageStatusData> response =
-                        new SocketEnvelope<>(EnumEvent.MESSAGE_DELIVERED.toString(), data);
-                messagingTemplate.convertAndSendToUser(String.valueOf(entry.getKey()), "/queue/chat", response);
+            for (Message pendingMessage : pendingMessages) {
+                NewMessageData data = new NewMessageData(conversationId, new MessDTO(pendingMessage));
+                SocketEnvelope<NewMessageData> response =
+                        new SocketEnvelope<>(EnumEvent.NEW_MESSAGE.toString(), data);
+                messagingTemplate.convertAndSendToUser(String.valueOf(userId), "/queue/chat", response);
             }
         }
     }
