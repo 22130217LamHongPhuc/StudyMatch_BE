@@ -58,6 +58,13 @@ public class ChatService {
     }
 
     public boolean checkGroupExist(Long conversationId, Long userId) {
+        Optional<Long> groupId = findGroupIdByConversationId(conversationId);
+        if (groupId.isPresent()) {
+            Optional<List<Long>> activeMemberIds = fetchActiveGroupMemberIdsSafely(groupId.get());
+            if (activeMemberIds.isPresent()) {
+                return activeMemberIds.get().contains(userId);
+            }
+        }
         return conversationParticipantRepo.existsActiveParticipant(conversationId, userId);
     }
 
@@ -80,9 +87,18 @@ public class ChatService {
         return groupConversationRepo.findConversationIdByGroupId(groupId);
     }
 
+    public Optional<Long> findGroupIdByConversationId(Long conversationId) {
+        return groupConversationRepo.findGroupIdByConversationId(conversationId);
+    }
+
     @Transactional
     public Optional<Long> ensureGroupConversation(Long groupId, Long currentUserId) {
         if (groupId == null) {
+            return Optional.empty();
+        }
+
+        List<Long> memberIds = fetchActiveGroupMemberIds(groupId);
+        if (currentUserId == null || !memberIds.contains(currentUserId)) {
             return Optional.empty();
         }
 
@@ -106,23 +122,36 @@ public class ChatService {
             }
         }
 
-        syncGroupParticipants(conversation, groupId, currentUserId);
+        syncGroupParticipants(conversation, memberIds);
         return Optional.of(conversationId);
     }
 
-    private void syncGroupParticipants(Conversation conversation, Long groupId, Long currentUserId) {
-        List<Long> memberIds;
+    private List<Long> fetchActiveGroupMemberIds(Long groupId) {
+        return fetchActiveGroupMemberIdsSafely(groupId).orElse(List.of());
+    }
+
+    private Optional<List<Long>> fetchActiveGroupMemberIdsSafely(Long groupId) {
         try {
             GroupApiResponse<List<Long>> response = groupClient.getActiveMemberUserIds(groupId);
-            memberIds = response != null && response.getData() != null ? response.getData() : List.of();
+            List<Long> memberIds = response != null && response.getData() != null
+                    ? response.getData().stream().filter(memberId -> memberId != null).distinct().toList()
+                    : List.of();
+            return Optional.of(memberIds);
         } catch (Exception ex) {
             ex.printStackTrace();
-            memberIds = List.of();
+            return Optional.empty();
         }
+    }
 
-        if (currentUserId != null && !memberIds.contains(currentUserId)) {
-            memberIds = new java.util.ArrayList<>(memberIds);
-            memberIds.add(currentUserId);
+    private void syncGroupParticipants(Conversation conversation, List<Long> memberIds) {
+        Instant now = Instant.now();
+        List<ConversationParticipant> activeParticipants =
+                conversationParticipantRepo.findActiveParticipantsByConversationId(conversation.getId());
+        for (ConversationParticipant participant : activeParticipants) {
+            if (!memberIds.contains(participant.getUserId())) {
+                participant.setLeftAt(now);
+                conversationParticipantRepo.save(participant);
+            }
         }
 
         for (Long memberId : memberIds) {
@@ -135,7 +164,7 @@ public class ChatService {
                         ConversationParticipant created = new ConversationParticipant();
                         created.setConversation(conversation);
                         created.setUserId(memberId);
-                        created.setJoinedAt(Instant.now());
+                        created.setJoinedAt(now);
                         return created;
                     });
             participant.setLeftAt(null);
@@ -172,6 +201,13 @@ public class ChatService {
             return privateConversationRepo.findParticipantIdsByConversationId(conversationId);
         }
         if (isGroupConversationType(type)) {
+            Optional<Long> groupId = findGroupIdByConversationId(conversationId);
+            if (groupId.isPresent()) {
+                Optional<List<Long>> activeMemberIds = fetchActiveGroupMemberIdsSafely(groupId.get());
+                if (activeMemberIds.isPresent()) {
+                    return activeMemberIds.get();
+                }
+            }
             return conversationParticipantRepo.findActiveUserIdsByConversationId(conversationId);
         }
         return conversationParticipantRepo.findActiveUserIdsByConversationId(conversationId);
