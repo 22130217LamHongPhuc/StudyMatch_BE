@@ -1,6 +1,7 @@
 package com.example.microservice.controller;
 
 
+import com.example.microservice.dto.request.UpdateUserProfileRequest;
 import com.example.microservice.dto.request.SessionReminderEmailRequest;
 import com.example.microservice.service.JavaMail;
 import com.example.microservice.service.UserService;
@@ -36,6 +37,14 @@ public class UserController {
             @RequestParam Long targetUserId
     ) {
         return ResponseEntity.ok(userService.getProfile(id, targetUserId));
+    }
+
+    @PutMapping("/{userId}/profile")
+    public ResponseEntity<ProfileDto> updateProfile(
+            @PathVariable Long userId,
+            @RequestBody UpdateUserProfileRequest request
+    ) {
+        return ResponseEntity.ok(userService.updateProfile(userId, request));
     }
 
     @GetMapping("/batch")

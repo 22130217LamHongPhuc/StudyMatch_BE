@@ -3,6 +3,7 @@ package com.example.microservice.controller;
 import com.example.microservice.config.APIResponse;
 import com.example.microservice.config.EnumEvent;
 import com.example.microservice.dto.CreatePrivateConversationRequest;
+import com.example.microservice.dto.MessageRequestDTO;
 import com.example.microservice.dto.MessageStatusData;
 import com.example.microservice.dto.MessDTO;
 import com.example.microservice.dto.SocketEnvelope;
@@ -130,6 +131,20 @@ public class Chat2 {
         }
 
         apiResponse = new APIResponse<>(ResponseStatus.SUCCESS, map);
+        return ResponseEntity.ok(apiResponse);
+    }
+
+    @GetMapping("/message-requests")
+    public ResponseEntity<?> getMessageRequests(@RequestParam Long currentUser) {
+        List<MessageRequestDTO> requests = serivce.getPendingMessageRequests(currentUser);
+        APIResponse<List<MessageRequestDTO>> apiResponse = new APIResponse<>(ResponseStatus.SUCCESS, requests);
+        return ResponseEntity.ok(apiResponse);
+    }
+
+    @GetMapping("/accepted-direct")
+    public ResponseEntity<?> getAcceptedDirectConversations(@RequestParam Long currentUser) {
+        List<MessageRequestDTO> conversations = serivce.getAcceptedDirectConversations(currentUser);
+        APIResponse<List<MessageRequestDTO>> apiResponse = new APIResponse<>(ResponseStatus.SUCCESS, conversations);
         return ResponseEntity.ok(apiResponse);
     }
 

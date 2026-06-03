@@ -44,4 +44,17 @@ public interface ConversationParticipantRepo extends JpaRepository<ConversationP
             @Param("conversationId") Long conversationId,
             @Param("userId") Long userId
     );
+
+    @Query(value = """
+            select cp.conversation_id, other_cp.user_id
+            from conversation_participants cp
+            join conversations c on c.conversation_id = cp.conversation_id
+            join conversation_participants other_cp on other_cp.conversation_id = cp.conversation_id
+            where cp.user_id = :userId
+              and cp.left_at is null
+              and other_cp.user_id <> :userId
+              and other_cp.left_at is null
+              and lower(c.conversation_type) in ('1', 'private')
+            """, nativeQuery = true)
+    List<Object[]> findPrivateConversationPairsByParticipantId(@Param("userId") Long userId);
 }

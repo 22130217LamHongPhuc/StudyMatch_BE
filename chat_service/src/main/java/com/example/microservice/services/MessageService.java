@@ -129,6 +129,27 @@ public class MessageService {
         return  new MessDTO(result);
     }
 
+    public MessDTO recallMess(Long conversationId, Long messageId, Long userId) {
+        Message mess = messageRepo.findMessageById(messageId);
+        if (mess == null) {
+            throw new ResourceNotFoundException("message khong ton tai");
+        }
+        if (mess.getConversation() == null || !conversationId.equals(mess.getConversation().getId())) {
+            throw new ResourceNotFoundException("message khong thuoc conversation");
+        }
+        if (mess.getSenderId() == null || !mess.getSenderId().equals(userId)) {
+            throw new IllegalArgumentException("Chi nguoi gui moi co the go tin nhan");
+        }
+
+        mess.setDeletedAt(LocalDateTime.now());
+        mess.setIsDeleted(true);
+        mess.setContent(null);
+        mess.setMediaUrl(null);
+        mess.setFileName(null);
+        Message result = messageRepo.save(mess);
+        return new MessDTO(result);
+    }
+
 
 
     public MessDTO replyText (Long messageID, Long senderId, String content){
@@ -141,8 +162,9 @@ public class MessageService {
 
         newMess.setConversation(mess.getConversation());
         newMess.setType("text");
-        newMess.setSenderId(mess.getSenderId());
+        newMess.setSenderId(senderId);
         newMess.setContent(content);
+        newMess.setReplyTo(mess);
         newMess.setCreatedAt(LocalDateTime.now());
         Message res = messageRepo.save(newMess);
         return  new MessDTO(res);

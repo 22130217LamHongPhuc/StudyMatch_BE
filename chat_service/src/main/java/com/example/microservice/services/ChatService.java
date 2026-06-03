@@ -2,13 +2,17 @@ package com.example.microservice.services;
 
 import com.example.microservice.dto.CreatePrivateConversationRequest;
 import com.example.microservice.dto.GroupApiResponse;
+import com.example.microservice.dto.MessageRequestDTO;
 import com.example.microservice.dto.SendMessageRequest;
+import com.example.microservice.dto.SocialApiResponse;
+import com.example.microservice.dto.SocialFriendDTO;
 import com.example.microservice.entity.Conversation;
 import com.example.microservice.entity.ConversationParticipant;
 import com.example.microservice.entity.GroupConversation;
 import com.example.microservice.entity.Message;
 import com.example.microservice.entity.PrivateConversation;
 import com.example.microservice.feignClient.GroupClient;
+import com.example.microservice.feignClient.SocialClient;
 import com.example.microservice.feignClient.UserClient;
 import com.example.microservice.repository.ConversationParticipantRepo;
 import com.example.microservice.repository.ConversationRepo;
@@ -22,8 +26,13 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -45,6 +54,8 @@ public class ChatService {
     MessageStatusService messageStatusService;
     @Autowired
     GroupClient groupClient;
+    @Autowired
+    SocialClient socialClient;
 //    public User sendMessage(Long userId) {
 //        User user = userClient.getUser(userId);
 //        return user;
@@ -106,7 +117,7 @@ public class ChatService {
         Conversation conversation;
         if (conversationId == null) {
             conversation = new Conversation();
-            conversation.setConversationType("group");
+            conversation.setConversationType("0");
             conversation.setCreatedAt(Instant.now());
             conversation = conversationRepo.save(conversation);
 
@@ -239,6 +250,127 @@ public class ChatService {
         return !op.isEmpty();
     }
 
+    public List<MessageRequestDTO> getPendingMessageRequests(Long currentUserId) {
+        Set<Long> friendIds = fetchFriendIds(currentUserId);
+        Map<Long, Long> conversationOtherUserMap = findPrivateConversationOtherUsers(currentUserId);
+
+        return conversationOtherUserMap.entrySet()
+                .stream()
+                .map(entry -> {
+                    Long conversationId = entry.getKey();
+                    Long otherUserId = entry.getValue();
+                    if (otherUserId == null || friendIds.contains(otherUserId)) return null;
+                    if (messageRepo.existsByConversationIdAndSenderId(conversationId, currentUserId)) return null;
+
+                    Message latestMessage = messageRepo
+                            .findFirstByConversationIdOrderByCreatedAtDescIdDesc(conversationId)
+                            .orElse(null);
+                    if (latestMessage == null || currentUserId.equals(latestMessage.getSenderId())) {
+                        return null;
+                    }
+
+                    return new MessageRequestDTO(
+                            conversationId,
+                            otherUserId,
+                            new com.example.microservice.dto.MessDTO(latestMessage)
+                    );
+                })
+                .filter(request -> request != null)
+                .sorted(Comparator.comparing(
+                        (MessageRequestDTO request) -> request.getLastMessage().getCreatedAt(),
+                        Comparator.nullsLast(Comparator.naturalOrder())
+                ).reversed())
+                .toList();
+    }
+
+    public List<MessageRequestDTO> getAcceptedDirectConversations(Long currentUserId) {
+        Set<Long> friendIds = fetchFriendIds(currentUserId);
+        Map<Long, Long> conversationOtherUserMap = findPrivateConversationOtherUsers(currentUserId);
+
+        return conversationOtherUserMap.entrySet()
+                .stream()
+                .map(entry -> {
+                    Long conversationId = entry.getKey();
+                    Long otherUserId = entry.getValue();
+                    if (otherUserId == null || friendIds.contains(otherUserId)) return null;
+                    if (!messageRepo.existsByConversationIdAndSenderId(conversationId, currentUserId)) return null;
+
+                    Message latestMessage = messageRepo
+                            .findFirstByConversationIdOrderByCreatedAtDescIdDesc(conversationId)
+                            .orElse(null);
+                    if (latestMessage == null) return null;
+
+                    return new MessageRequestDTO(
+                            conversationId,
+                            otherUserId,
+                            new com.example.microservice.dto.MessDTO(latestMessage)
+                    );
+                })
+                .filter(request -> request != null)
+                .sorted(Comparator.comparing(
+                        (MessageRequestDTO request) -> request.getLastMessage().getCreatedAt(),
+                        Comparator.nullsLast(Comparator.naturalOrder())
+                ).reversed())
+                .toList();
+    }
+
+    private Map<Long, Long> findPrivateConversationOtherUsers(Long currentUserId) {
+        Map<Long, Long> conversationOtherUserMap = new LinkedHashMap<>();
+
+        privateConversationRepo.findByParticipantId(currentUserId)
+                .forEach(privateConversation -> {
+                    Long otherUserId = resolveOtherPrivateUserId(privateConversation, currentUserId);
+                    if (otherUserId != null) {
+                        conversationOtherUserMap.put(privateConversation.getId(), otherUserId);
+                    }
+                });
+
+        conversationParticipantRepo.findPrivateConversationPairsByParticipantId(currentUserId)
+                .forEach(row -> {
+                    Long conversationId = toLong(row[0]);
+                    Long otherUserId = toLong(row[1]);
+                    if (conversationId != null && otherUserId != null) {
+                        conversationOtherUserMap.putIfAbsent(conversationId, otherUserId);
+                    }
+                });
+
+        return conversationOtherUserMap;
+    }
+
+    private Long resolveOtherPrivateUserId(PrivateConversation privateConversation, Long currentUserId) {
+        if (currentUserId.equals(privateConversation.getUser1Id())) {
+            return privateConversation.getUser2Id();
+        }
+        if (currentUserId.equals(privateConversation.getUser2Id())) {
+            return privateConversation.getUser1Id();
+        }
+        return null;
+    }
+
+    private Long toLong(Object value) {
+        if (value == null) return null;
+        if (value instanceof Number number) return number.longValue();
+        return Long.valueOf(value.toString());
+    }
+
+    private Set<Long> fetchFriendIds(Long currentUserId) {
+        try {
+            SocialApiResponse<List<SocialFriendDTO>> response = socialClient.getFriendList(currentUserId);
+            if (response == null || response.getData() == null) {
+                return Set.of();
+            }
+
+            return response.getData()
+                    .stream()
+                    .map(SocialFriendDTO::getUserId)
+                    .filter(userId -> userId != null)
+                    .collect(Collectors.toSet());
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return Set.of();
+        }
+    }
+
     @Transactional
     public PrivateConversation createPrivateConversation(CreatePrivateConversationRequest req) {
         if (req.getUser1Id() == null || req.getUser2Id() == null) {
@@ -254,6 +386,10 @@ public class ChatService {
                         req.getUser2Id()
                 );
         if (existed.isPresent()) {
+            Conversation existedConversation = conversationRepo.findById(existed.get().getId()).orElse(null);
+            if (existedConversation != null) {
+                ensurePrivateParticipants(existedConversation, req.getUser1Id(), req.getUser2Id());
+            }
             messageStatusService.createInitialStatuses(
                     existed.get().getId(),
                     req.getUser1Id(),
@@ -262,7 +398,7 @@ public class ChatService {
             return existed.get();
         }
         Conversation conversation = new Conversation();
-        conversation.setConversationType("private");
+        conversation.setConversationType("1");
         conversation.setCreatedAt(Instant.now());
         Conversation savedConversation = conversationRepo.save(conversation);
         PrivateConversation privateConversation = new PrivateConversation();
@@ -270,12 +406,33 @@ public class ChatService {
         privateConversation.setUser1Id(req.getUser1Id());
         privateConversation.setUser2Id(req.getUser2Id());
         PrivateConversation savedPrivateConversation = privateConversationRepo.save(privateConversation);
+        ensurePrivateParticipants(savedConversation, req.getUser1Id(), req.getUser2Id());
         messageStatusService.createInitialStatuses(
                 savedConversation.getId(),
                 req.getUser1Id(),
                 req.getUser2Id()
         );
         return savedPrivateConversation;
+    }
+
+    private void ensurePrivateParticipants(Conversation conversation, Long user1Id, Long user2Id) {
+        Instant now = Instant.now();
+        List.of(user1Id, user2Id).forEach(userId -> {
+            if (userId == null) return;
+            ConversationParticipant participant = conversationParticipantRepo
+                    .findByConversationIdAndUserId(conversation.getId(), userId)
+                    .orElseGet(() -> {
+                        ConversationParticipant created = new ConversationParticipant();
+                        created.setConversation(conversation);
+                        created.setUserId(userId);
+                        created.setJoinedAt(now);
+                        return created;
+                    });
+            participant.setLeftAt(null);
+            participant.setIsMuted(Boolean.FALSE);
+            participant.setIsPinned(Boolean.FALSE);
+            conversationParticipantRepo.save(participant);
+        });
     }
 
 

@@ -2,6 +2,7 @@ package com.example.microservice.controller;
 
 import com.example.microservice.config.EnumEvent;
 import com.example.microservice.dto.FirstPrivateMess;
+import com.example.microservice.dto.CreatePrivateConversationRequest;
 import com.example.microservice.dto.MessageStatusData;
 import com.example.microservice.dto.MessageStatusRequest;
 import com.example.microservice.dto.MessDTO;
@@ -77,7 +78,7 @@ public class ChatController {
                     mess.getData(),
                     FirstPrivateMess.class
             );
-            firstMess(firstPrivateMess);
+            firstMess(firstPrivateMess, Long.valueOf(userId));
         }
 
         if (mess.getEvent().equals("MESSAGE_RECALL")) {
@@ -230,21 +231,23 @@ public class ChatController {
 
     public void replyText(ReplyTextRequest request, Long userId) {
         Message mess = messageService.findMessById(request.getMessageID());
-        MessDTO requestMess = new MessDTO(mess);
-
-        Optional<?> otherUID = chatService.findUserOther(mess.getConversation().getId(), userId);
-        if (otherUID.isEmpty()) return;
+        Long conversationId = mess.getConversation().getId();
+        if (!chatService.isParticipant(conversationId, userId)) return;
 
         MessDTO dto = messageService.replyText(request.getMessageID(), userId, request.getContent());
-        ReplyResponse replyResponse = new ReplyResponse();
-        replyResponse.setReplyMessID(request.getMessageID());
-        replyResponse.setConversationId(mess.getConversation().getId());
-        replyResponse.setReplyMess(dto);
-        replyResponse.setMessage(requestMess);
+        NewMessageData newMessageData = new NewMessageData(conversationId, dto);
+        SocketEnvelope<NewMessageData> ack = new SocketEnvelope<>(EnumEvent.MESSAGE_ACK.toString(), newMessageData);
+        messagingTemplate.convertAndSendToUser(String.valueOf(userId), "/queue/chat", ack);
 
-        SocketEnvelope<ReplyResponse> res = new SocketEnvelope<>(EnumEvent.NEW_MESSAGE.toString(), replyResponse);
-        SocketEnvelope<ReplyResponse> resAck = new SocketEnvelope<>(EnumEvent.MESSAGE_ACK.toString(), replyResponse);
-        socketSendMess(String.valueOf(userId), String.valueOf(otherUID.get()), res, resAck);
+        SocketEnvelope<NewMessageData> receiverEvent =
+                new SocketEnvelope<>(EnumEvent.NEW_MESSAGE.toString(), newMessageData);
+        List<Long> participants = chatService.findConversationParticipants(conversationId);
+        for (Long participantId : participants) {
+            if (participantId == null || participantId.equals(userId)) {
+                continue;
+            }
+            messagingTemplate.convertAndSendToUser(String.valueOf(participantId), "/queue/chat", receiverEvent);
+        }
     }
 
     public void addReaction(ReactionRequest request, Long userId) {
@@ -300,21 +303,62 @@ public class ChatController {
     }
 
     public void recallMess(RecallRequest request, Long userId) {
-        Optional<?> otherUID = chatService.findUserOther(request.getConversationID(), userId);
-        if (otherUID.isEmpty()) return;
+        Long conversationId = request.getConversationID();
+        if (conversationId == null || !chatService.isParticipant(conversationId, userId)) return;
 
-        boolean check = chatService.checkPrivateExist(request.getConversationID(), userId);
-        if (!check) return;
-
-        MessDTO dto = messageService.recallMess(request.getConversationID(), request.getMessageID());
-        NewMessageData newMess = new NewMessageData(request.getConversationID(), dto);
+        MessDTO dto = messageService.recallMess(conversationId, request.getMessageID(), userId);
+        NewMessageData newMess = new NewMessageData(conversationId, dto);
         SocketEnvelope<NewMessageData> response = new SocketEnvelope<>(EnumEvent.MESSAGE_RECALL.toString(), newMess);
-        socketSendMess(String.valueOf(userId), String.valueOf(otherUID.get()), response, response);
+        List<Long> participants = chatService.findConversationParticipants(conversationId);
+        for (Long participantId : participants) {
+            if (participantId == null) {
+                continue;
+            }
+            messagingTemplate.convertAndSendToUser(String.valueOf(participantId), "/queue/chat", response);
+        }
     }
 
-    public void firstMess(FirstPrivateMess mess) {
-        Conversation conversation = new Conversation();
-        conversation.setConversationType("private");
+    public void firstMess(FirstPrivateMess mess, Long senderId) {
+        if (mess.getTo() == null || senderId.equals(mess.getTo())) return;
+
+        CreatePrivateConversationRequest conversationRequest = new CreatePrivateConversationRequest();
+        conversationRequest.setUser1Id(senderId);
+        conversationRequest.setUser2Id(mess.getTo());
+        Long conversationId = chatService.createPrivateConversation(conversationRequest).getId();
+
+        SendMessageRequest request = new SendMessageRequest();
+        request.setConversationId(conversationId.intValue());
+        request.setSenderId(senderId.intValue());
+        request.setType(mess.getType() == null || mess.getType().isBlank() ? "text" : mess.getType());
+        request.setContent(mess.getContent());
+
+        Message message = chatService.saveMess(request);
+        messageStatusService.markSenderSeen(conversationId, senderId, message);
+        MessDTO messDTO = new MessDTO(message);
+        NewMessageData newMessageData = new NewMessageData(conversationId, messDTO);
+
+        MessageStatusData statusData = new MessageStatusData(
+                conversationId,
+                senderId,
+                "SENT",
+                List.of(message.getId()),
+                Instant.now()
+        );
+        messagingTemplate.convertAndSendToUser(
+                String.valueOf(senderId),
+                "/queue/chat",
+                new SocketEnvelope<>(EnumEvent.MESSAGE_SENT.toString(), statusData)
+        );
+        messagingTemplate.convertAndSendToUser(
+                String.valueOf(senderId),
+                "/queue/chat",
+                new SocketEnvelope<>(EnumEvent.MESSAGE_ACK.toString(), newMessageData)
+        );
+        messagingTemplate.convertAndSendToUser(
+                String.valueOf(mess.getTo()),
+                "/queue/chat",
+                new SocketEnvelope<>(EnumEvent.NEW_MESSAGE.toString(), newMessageData)
+        );
     }
 
     public void socketSendMess(String currentUID, String otherUID, SocketEnvelope<?> currResponse, SocketEnvelope<?> otherResponse) {

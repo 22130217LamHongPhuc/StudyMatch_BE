@@ -21,14 +21,15 @@ public class MessDTO {
     private Boolean isDeleted;
 
     public MessDTO (Message message){
+        boolean deleted = Boolean.TRUE.equals(message.getIsDeleted());
         this.setCreatedAt(message.getCreatedAt());
         this.setType(message.getType());
-        this.setContent(message.getContent());
-        this.setMediaURL(message.getMediaUrl());
-        this.setFileName(message.getFileName());
+        this.setContent(deleted ? null : message.getContent());
+        this.setMediaURL(deleted ? null : message.getMediaUrl());
+        this.setFileName(deleted ? null : message.getFileName());
         this.setSenderId(message.getSenderId());
         this.setMessageId(message.getId());
-        this.setIsDeleted(message.getIsDeleted());
+        this.setIsDeleted(deleted);
     }
     public MessDTO(){
 
