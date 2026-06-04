@@ -1,51 +1,104 @@
 package com.group_service.service;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
-import org.springframework.web.server.ResponseStatusException;
 
-import javax.crypto.Mac;
+import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
+import javax.crypto.spec.IvParameterSpec;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
+import java.security.SecureRandom;
 import java.util.Base64;
+import java.util.Random;
 
 @Service
 public class ZegoCloudTokenService {
 
+    private static final String VERSION_FLAG = "04";
+    private static final int IV_LENGTH = 16;
+    private static final String TRANSFORMATION = "AES/CBC/PKCS5Padding";
+
     @Value("${app.zego.app-id:}")
-    private String appId;
+    private long appId;
 
     @Value("${app.zego.server-secret:}")
     private String serverSecret;
 
-    @Value("${app.zego.token-expiration-minutes:120}")
-    private long tokenExpirationMinutes;
+    @Value("${app.zego.token-ttl-seconds:7200}")
+    private int tokenTtlSeconds;
+
+
+
 
     public String generateToken(Long userId, String roomId) {
-        if (!StringUtils.hasText(appId) || !StringUtils.hasText(serverSecret)) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "ZEGOCLOUD is not configured");
-        }
-
-        long expiresAt = Instant.now().plus(tokenExpirationMinutes, ChronoUnit.MINUTES).getEpochSecond();
-        String payload = appId + ':' + roomId + ':' + userId + ':' + expiresAt;
-        String signature = sign(payload, serverSecret);
-        String token = payload + ':' + signature;
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(token.getBytes(StandardCharsets.UTF_8));
+        return generateVideoToken(String.valueOf(userId), roomId);
     }
 
-    private String sign(String payload, String secret) {
-        try {
-            Mac mac = Mac.getInstance("HmacSHA256");
-            mac.init(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
-            byte[] rawSignature = mac.doFinal(payload.getBytes(StandardCharsets.UTF_8));
-            return Base64.getUrlEncoder().withoutPadding().encodeToString(rawSignature);
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to generate ZEGOCLOUD token", e);
+    public String generateVideoToken(String userId, String roomId) {
+        String payload = "{\"room_id\":\"" + escapeJson(roomId)
+                + "\",\"privilege\":{\"1\":1,\"2\":1},\"stream_id_list\":null}";
+        return generateToken04(appId, userId, serverSecret, tokenTtlSeconds, payload);
+    }
+
+    private String generateToken04(long appId, String userId, String secret, int effectiveTimeInSeconds, String payload) {
+        if (appId == 0) {
+            throw new IllegalArgumentException("ZEGO appId is required");
         }
+        if (userId == null || userId.isBlank() || userId.length() > 64) {
+            throw new IllegalArgumentException("ZEGO userId must be 1-64 characters");
+        }
+        if (secret == null || secret.length() != 32) {
+            throw new IllegalArgumentException("ZEGO serverSecret must be 32 characters");
+        }
+        if (effectiveTimeInSeconds <= 0) {
+            throw new IllegalArgumentException("ZEGO token ttl must be greater than 0");
+        }
+
+        byte[] ivBytes = new byte[IV_LENGTH];
+        new SecureRandom().nextBytes(ivBytes);
+
+        long nowTime = System.currentTimeMillis() / 1000;
+        long expireTime = nowTime + effectiveTimeInSeconds;
+        int nonce = new Random().nextInt();
+        String content = "{\"app_id\":" + appId
+                + ",\"user_id\":\"" + escapeJson(userId)
+                + "\",\"ctime\":" + nowTime
+                + ",\"expire\":" + expireTime
+                + ",\"nonce\":" + nonce
+                + ",\"payload\":\"" + escapeJson(payload)
+                + "\"}";
+
+        try {
+            byte[] contentBytes = encrypt(content.getBytes(StandardCharsets.UTF_8), secret.getBytes(StandardCharsets.UTF_8), ivBytes);
+            ByteBuffer buffer = ByteBuffer.wrap(new byte[contentBytes.length + IV_LENGTH + 12]);
+            buffer.order(ByteOrder.BIG_ENDIAN);
+            buffer.putLong(expireTime);
+            packBytes(ivBytes, buffer);
+            packBytes(contentBytes, buffer);
+            return VERSION_FLAG + Base64.getEncoder().encodeToString(buffer.array());
+        } catch (Exception ex) {
+            throw new IllegalStateException("Cannot generate ZEGO token", ex);
+        }
+    }
+
+    private byte[] encrypt(byte[] content, byte[] secretKey, byte[] ivBytes) throws Exception {
+        SecretKeySpec key = new SecretKeySpec(secretKey, "AES");
+        IvParameterSpec iv = new IvParameterSpec(ivBytes);
+        Cipher cipher = Cipher.getInstance(TRANSFORMATION);
+        cipher.init(Cipher.ENCRYPT_MODE, key, iv);
+        return cipher.doFinal(content);
+    }
+
+    private void packBytes(byte[] bytes, ByteBuffer target) {
+        target.putShort((short) bytes.length);
+        target.put(bytes);
+    }
+
+    private String escapeJson(String value) {
+        return value.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 }
 

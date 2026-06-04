@@ -111,6 +111,8 @@ public class StudySessionController {
             @RequestParam Long userId
     ) {
         JoinStudySessionResponse response = studySessionService.joinSession(sessionId, userId);
+
+        System.out.println(response);
         return ResponseEntity.ok(new ApiResponse<>(
                 true,
                 StatusCode.SUCCESS,

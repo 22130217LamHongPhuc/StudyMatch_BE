@@ -14,20 +14,21 @@ import java.util.Date;
 @Service
 public class JwtService {
     @Value("${app.security.jwt.secret-key}")
-    private  String SECRET_KEY;
+    private String SECRET_KEY;
+
     public String generateToken(UserDetails user) {
         return Jwts.builder()
                 .setSubject(user.getUsername())
                 .setIssuedAt(new Date())
-                .setExpiration(new Date((System.currentTimeMillis() + 1000 * 60 * 24 * 30))) // 1 tháng
+                .setExpiration(new Date((System.currentTimeMillis() + 1000 * 60 * 24 * 30 * 12))) // 1 tháng
                 .signWith(getSignKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
-
     public String extractUsername(String token) {
         return extractAllClaims(token).getSubject();
     }
+
     private boolean isTokenExpired(String token) {
         return extractAllClaims(token).getExpiration().before(new Date());
     }
@@ -49,7 +50,5 @@ public class JwtService {
         byte[] keyBytes = SECRET_KEY.getBytes();
         return Keys.hmacShaKeyFor(keyBytes);
     }
-
-
 
 }

@@ -40,7 +40,7 @@ app:
   zego:
     app-id: 1819128302
     server-secret: e4bfc0adb25087cb3fa119b007b00d50
-    token-expiration-minutes: 120
+    token-ttl-seconds: 7200
 
 google:
   client-id: 714586252342-f47e1oar4i153si4gp61i15v7lg625ft.apps.googleusercontent.com
