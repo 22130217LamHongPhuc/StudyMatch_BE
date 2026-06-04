@@ -38,7 +38,7 @@ public class StudySessionReminderScheduler {
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy");
 
-    @Scheduled(fixedRate = 120_000)
+    @Scheduled(fixedRate = 60_000)
     public void checkAndSendReminders() {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime fiveMinLater = now.plusMinutes(5);

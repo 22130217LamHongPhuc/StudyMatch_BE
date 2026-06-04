@@ -6,7 +6,7 @@ spring:
     name: GROUP-SERVICE
 
   datasource:
-    url: jdbc:mysql://localhost:3306/db_group_service?useSSL=false&serverTimezone=UTC
+    url: jdbc:mysql://localhost:3306/db_group_service?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=%2B07:00
     username: root
     password: ""
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -18,6 +18,9 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
+
+  flyway:
+    enabled: true
 
 eureka:
   client:
@@ -33,6 +36,11 @@ app:
   security:
     jwt:
       secret-key: nlu_echo_by_phuc_lam_2004_this_is_be_for_applicati
+
+  zego:
+    app-id: 1819128302
+    server-secret: e4bfc0adb25087cb3fa119b007b00d50
+    token-ttl-seconds: 7200
 
 google:
   client-id: 714586252342-f47e1oar4i153si4gp61i15v7lg625ft.apps.googleusercontent.com

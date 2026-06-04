@@ -18,6 +18,7 @@ public record StudySessionResponse(
         GroupStudySessionMode studyMode,
         String location,
         String meetingUrl,
+        String roomId,
         Long createdByUserId,
         GroupStudySessionStatus status,
         StudySessionParticipantStatus participantStatus,
