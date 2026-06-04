@@ -1,6 +1,7 @@
 package com.group_service.repository;
 
 import com.group_service.entity.StudySession;
+import com.group_service.entity.enums.GroupStudySessionMode;
 import com.group_service.entity.enums.GroupStudySessionStatus;
 import com.group_service.entity.enums.StudySessionParticipantStatus;
 import com.group_service.entity.enums.StudySessionType;
@@ -96,4 +97,32 @@ public interface StudySessionRepository extends JpaRepository<StudySession, Long
             @Param("now") LocalDateTime now,
             @Param("fiveMinLater") LocalDateTime fiveMinLater
     );
+
+    @Query("""
+        SELECT s FROM StudySession s
+        LEFT JOIN StudyGroup g ON s.groupId = g.id
+        LEFT JOIN StudySessionParticipant p ON p.sessionId = s.id AND p.role = com.group_service.entity.enums.StudySessionParticipantRole.HOST
+        WHERE (:keyword IS NULL OR 
+               LOWER(s.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+               LOWER(g.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+               LOWER(p.userName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+              )
+          AND (:status IS NULL OR s.status = :status)
+          AND (:studyMode IS NULL OR s.studyMode = :studyMode)
+          AND (:sessionType IS NULL OR s.sessionType = :sessionType)
+          AND (:startFrom IS NULL OR s.startTime >= :startFrom)
+          AND (:startTo IS NULL OR s.startTime <= :startTo)
+    """)
+    Page<StudySession> findAdminSessionsWithFilters(
+            @Param("keyword") String keyword,
+            @Param("status") GroupStudySessionStatus status,
+            @Param("studyMode") GroupStudySessionMode studyMode,
+            @Param("sessionType") StudySessionType sessionType,
+            @Param("startFrom") LocalDateTime startFrom,
+            @Param("startTo") LocalDateTime startTo,
+            Pageable pageable
+    );
+
+    @Query("SELECT p.sessionId, COUNT(p.id) FROM StudySessionParticipant p WHERE p.sessionId IN :sessionIds GROUP BY p.sessionId")
+    List<Object[]> countParticipantsBySessionIds(@Param("sessionIds") List<Long> sessionIds);
 }
