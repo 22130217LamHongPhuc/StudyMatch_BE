@@ -62,4 +62,11 @@ public interface PrivateConversationRepo extends JpaRepository<PrivateConversati
             @Param("user1Id") Long user1Id,
             @Param("user2Id") Long user2Id
     );
+
+    @Query(value = """
+            select user1_id from private_conversations where conversation_id = :conversationId
+            union
+            select user2_id from private_conversations where conversation_id = :conversationId
+            """, nativeQuery = true)
+    List<Long> findParticipantIdsByConversationId(@Param("conversationId") Long conversationId);
 }

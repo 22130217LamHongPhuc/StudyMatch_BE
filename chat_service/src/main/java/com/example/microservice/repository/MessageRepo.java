@@ -12,6 +12,8 @@ import java.util.Optional;
 public interface MessageRepo extends JpaRepository<Message, Long> {
     Page<Message> findByConversationIdOrderByCreatedAtDesc(Long conversationId, Pageable pageable);
     Message findMessageById(Long id);
+    Optional<Message> findFirstByConversationIdOrderByCreatedAtDescIdDesc(Long conversationId);
+    boolean existsByConversationIdAndSenderId(Long conversationId, Long senderId);
     List<Message> findByConversationIdAndIdIn(Long conversationId, List<Long> ids);
     Optional<Message> findFirstByConversationIdAndTypeAndContentContaining(Long conversationId, String type, String content);
 

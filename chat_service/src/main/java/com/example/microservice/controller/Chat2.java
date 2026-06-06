@@ -2,9 +2,12 @@ package com.example.microservice.controller;
 
 import com.example.microservice.config.APIResponse;
 import com.example.microservice.config.EnumEvent;
+import com.example.microservice.dto.CreatePrivateConversationRequest;
+import com.example.microservice.dto.MessageRequestDTO;
 import com.example.microservice.dto.MessageStatusData;
 import com.example.microservice.dto.MessDTO;
 import com.example.microservice.dto.SocketEnvelope;
+import com.example.microservice.entity.PrivateConversation;
 import com.example.microservice.handle.ResponseStatus;
 import com.example.microservice.services.ChatService;
 import com.example.microservice.services.MessageService;
@@ -37,7 +40,20 @@ public class Chat2 {
         boolean exist = serivce.checkExistConver2User(currentUser, targetUser);
         APIResponse<  Map> apiResponse;
         if(!exist){
-            apiResponse = new APIResponse<>(ResponseStatus.SUCCESS, null);
+            if (page != 0) {
+                apiResponse = new APIResponse<>(ResponseStatus.SUCCESS, null);
+                return ResponseEntity.ok(apiResponse);
+            }
+
+            CreatePrivateConversationRequest request = new CreatePrivateConversationRequest();
+            request.setUser1Id(currentUser);
+            request.setUser2Id(targetUser);
+            PrivateConversation privateConversation = serivce.createPrivateConversation(request);
+
+            Map<String, Object> map = new HashMap<>();
+            map.put("conversationId", privateConversation.getId());
+            map.put("listMess", List.of());
+            apiResponse = new APIResponse<>(ResponseStatus.SUCCESS, map);
             return ResponseEntity.ok(apiResponse);
         }
 
@@ -50,6 +66,85 @@ public class Chat2 {
             markLoadedIncomingMessagesSeen(conversationId, currentUser, targetUser, list);
         }
         apiResponse = new APIResponse<>(ResponseStatus.SUCCESS, map);
+        return ResponseEntity.ok(apiResponse);
+    }
+
+    @GetMapping("/group")
+    public ResponseEntity<?> getGroupMess(
+            @RequestParam Long currentUser,
+            @RequestParam Long groupId,
+            @RequestParam Long page
+    ) {
+        APIResponse<Map> apiResponse;
+        Long conversationId = serivce.ensureGroupConversation(groupId, currentUser).orElse(null);
+        if (conversationId == null || !serivce.isParticipant(conversationId, currentUser)) {
+            apiResponse = new APIResponse<>(ResponseStatus.SUCCESS, null);
+            return ResponseEntity.ok(apiResponse);
+        }
+
+        Map<String, Object> map = new HashMap<>();
+        map.put("conversationId", conversationId);
+        List<MessDTO> list = messService.getListMess(conversationId, page);
+        map.put("listMess", list);
+
+        if (page == 0) {
+            List<Long> incomingMessageIds = list.stream()
+                    .filter(message -> !currentUser.equals(message.getSenderId()))
+                    .map(MessDTO::getMessageId)
+                    .filter(messageId -> messageId != null && messageId > 0)
+                    .toList();
+            if (!incomingMessageIds.isEmpty()) {
+                messageStatusService.markSeen(conversationId, currentUser, incomingMessageIds);
+            }
+        }
+
+        apiResponse = new APIResponse<>(ResponseStatus.SUCCESS, map);
+        return ResponseEntity.ok(apiResponse);
+    }
+
+    @GetMapping("/by-id")
+    public ResponseEntity<?> getByConversationId(
+            @RequestParam Long currentUser,
+            @RequestParam Long conversationId,
+            @RequestParam Long page
+    ) {
+        APIResponse<Map> apiResponse;
+        if (!serivce.isParticipant(conversationId, currentUser)) {
+            apiResponse = new APIResponse<>(ResponseStatus.SUCCESS, null);
+            return ResponseEntity.ok(apiResponse);
+        }
+
+        Map<String, Object> map = new HashMap<>();
+        map.put("conversationId", conversationId);
+        List<MessDTO> list = messService.getListMess(conversationId, page);
+        map.put("listMess", list);
+
+        if (page == 0) {
+            List<Long> incomingMessageIds = list.stream()
+                    .filter(message -> !currentUser.equals(message.getSenderId()))
+                    .map(MessDTO::getMessageId)
+                    .filter(messageId -> messageId != null && messageId > 0)
+                    .toList();
+            if (!incomingMessageIds.isEmpty()) {
+                messageStatusService.markSeen(conversationId, currentUser, incomingMessageIds);
+            }
+        }
+
+        apiResponse = new APIResponse<>(ResponseStatus.SUCCESS, map);
+        return ResponseEntity.ok(apiResponse);
+    }
+
+    @GetMapping("/message-requests")
+    public ResponseEntity<?> getMessageRequests(@RequestParam Long currentUser) {
+        List<MessageRequestDTO> requests = serivce.getPendingMessageRequests(currentUser);
+        APIResponse<List<MessageRequestDTO>> apiResponse = new APIResponse<>(ResponseStatus.SUCCESS, requests);
+        return ResponseEntity.ok(apiResponse);
+    }
+
+    @GetMapping("/accepted-direct")
+    public ResponseEntity<?> getAcceptedDirectConversations(@RequestParam Long currentUser) {
+        List<MessageRequestDTO> conversations = serivce.getAcceptedDirectConversations(currentUser);
+        APIResponse<List<MessageRequestDTO>> apiResponse = new APIResponse<>(ResponseStatus.SUCCESS, conversations);
         return ResponseEntity.ok(apiResponse);
     }
 

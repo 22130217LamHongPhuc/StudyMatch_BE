@@ -17,7 +17,18 @@ import java.time.Instant;
 public class ConversationParticipant {
     @Id
     @Column(name = "participant_id", nullable = false)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @NotNull
+    @ColumnDefault("b'0'")
+    @Column(name = "is_muted", nullable = false)
+    private Boolean isMuted = false;
+
+    @NotNull
+    @ColumnDefault("b'0'")
+    @Column(name = "is_pinned", nullable = false)
+    private Boolean isPinned = false;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -26,11 +37,7 @@ public class ConversationParticipant {
     private Conversation conversation;
 
     @NotNull
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
-
-    @NotNull
-    @ColumnDefault("current_timestamp()")
+    @ColumnDefault("current_timestamp(6)")
     @Column(name = "joined_at", nullable = false)
     private Instant joinedAt;
 
@@ -38,16 +45,7 @@ public class ConversationParticipant {
     private Instant leftAt;
 
     @NotNull
-    @ColumnDefault("0")
-    @Column(name = "is_muted", nullable = false)
-    private Boolean isMuted = false;
-
-    @NotNull
-    @ColumnDefault("0")
-    @Column(name = "is_pinned", nullable = false)
-    private Boolean isPinned = false;
-
-    @Column(name = "last_read_at")
-    private Instant lastReadAt;
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
 
 }

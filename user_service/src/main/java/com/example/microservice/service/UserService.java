@@ -1,6 +1,7 @@
 package com.example.microservice.service;
 
 import com.example.microservice.dto.respone.*;
+import com.example.microservice.dto.request.UpdateUserProfileRequest;
 import com.example.microservice.entity.User;
 import com.example.microservice.feignAPI.SocialClient;
 import com.example.microservice.repository.UserRepository;
@@ -34,7 +35,7 @@ public class UserService {
         return res;
     }
     public ProfileDto getProfile(Long id, Long targetId){
-        Long friendsCount = getFriendCount(id);
+        Long friendsCount = getFriendCount(targetId);
         MutualFriendsDto mutualDto = getMutualFriends(id, targetId);
         User user = getProfile(targetId);
         ProfileDto  res = new ProfileDto();
@@ -47,6 +48,35 @@ public class UserService {
         res.setNumberFriend(friendsCount);
         System.out.println(res.toString() + "profile nè");
         return res;
+    }
+
+    public ProfileDto updateProfile(Long userId, UpdateUserProfileRequest request) {
+        User user = repo.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        if (request.getFullName() != null) {
+            user.setFullName(normalizeNullable(request.getFullName()));
+        }
+        if (request.getBio() != null) {
+            user.setBio(normalizeNullable(request.getBio()));
+        }
+        if (request.getAvatarUrl() != null) {
+            user.setAvatarUrl(normalizeNullable(request.getAvatarUrl()));
+        }
+        User saved = repo.save(user);
+
+        ProfileDto res = new ProfileDto();
+        res.setAvatarUrl(saved.getAvatarUrl());
+        res.setBio(saved.getBio());
+        res.setFullName(saved.getFullName());
+        res.setMutualFriend(0L);
+        res.setNumberFriend(getFriendCount(userId));
+        res.setFriend(true);
+        return res;
+    }
+
+    private String normalizeNullable(String value) {
+        if (value == null) return null;
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
 

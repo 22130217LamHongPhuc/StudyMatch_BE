@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.concurrent.ThreadLocalRandom;
 
 @Service
@@ -90,8 +91,16 @@ public class VideoCallService {
 
         Instant endedAt = Instant.now();
         session.setEndedAt(endedAt);
-        if (session.getStartedAt() != null) {
-            session.setDurationSeconds((int) Duration.between(session.getStartedAt(), endedAt).getSeconds());
+        Instant durationStartAt = videoCallParticipantRepo.findBySessionId(sessionId).stream()
+                .map(VideoCallParticipant::getJoinedAt)
+                .filter(joinedAt -> joinedAt != null)
+                .max(Comparator.naturalOrder())
+                .orElse(session.getStartedAt());
+        if (durationStartAt != null) {
+            long seconds = Duration.between(durationStartAt, endedAt).getSeconds();
+            session.setDurationSeconds((int) Math.max(0, seconds));
+        } else {
+            session.setDurationSeconds(0);
         }
         videoCallParticipantRepo.findBySessionIdAndUserId(sessionId, userId)
                 .ifPresent(participant -> {

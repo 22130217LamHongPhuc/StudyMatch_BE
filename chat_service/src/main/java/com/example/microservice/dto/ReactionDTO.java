@@ -6,6 +6,8 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class ReactionDTO {
-    Long  messageID;
-    String  emoji;
+    private Long reactionId;
+    private Long messageId;
+    private Long senderId;
+    private String emoji;
 }
