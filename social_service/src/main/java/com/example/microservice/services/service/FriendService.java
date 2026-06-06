@@ -36,7 +36,6 @@ public class FriendService {
 
     public List<FriendDto> getFriendList(Long userId){
         List<Long> friendIds = friendRepo.getFriendListByUserId(userId);
-        
         List<BasicUserResponse> basicUsers = userServiceClient.getBasicUsers(friendIds).getData();
         
         Map<Long, BasicUserResponse> userMap = basicUsers.stream()
