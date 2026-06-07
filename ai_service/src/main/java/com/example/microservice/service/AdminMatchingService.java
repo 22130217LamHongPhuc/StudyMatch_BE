@@ -1,15 +1,11 @@
 package com.example.microservice.service;
 
-import com.example.microservice.dto.admin.matching.MatchingBatchDetailResponse;
-import com.example.microservice.dto.admin.matching.MatchingItemSummaryResponse;
 import com.example.microservice.dto.admin.matching.MatchingActionResponse;
 import com.example.microservice.dto.admin.matching.MatchingStatisticsResponse;
 import com.example.microservice.dto.admin.matching.PageResponse;
-import com.example.microservice.dto.admin.matching.MatchingBatchSummaryResponse;
 import com.example.microservice.dto.admin.matching.StudyFeedbackResponse;
 import com.example.microservice.dto.admin.matching.StudyFeedbackStatisticsResponse;
 import com.example.microservice.enums.MatchingActionStatus;
-import com.example.microservice.enums.MatchingBatchStatus;
 import com.example.microservice.enums.StudySessionType;
 import java.time.LocalDate;
 

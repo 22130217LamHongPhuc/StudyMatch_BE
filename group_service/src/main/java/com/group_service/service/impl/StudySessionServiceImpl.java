@@ -1,29 +1,12 @@
 package com.group_service.service.impl;
 
 import com.group_service.clients.UserClient;
-import com.group_service.dto.ApiResponse;
-import com.group_service.dto.BasicUserResponse;
-import com.group_service.dto.CreateStudySessionRequest;
-import com.group_service.dto.JoinStudySessionResponse;
-import com.group_service.dto.SessionConfirmationStatsResponse;
-import com.group_service.dto.SessionParticipantConfirmationResponse;
-import com.group_service.dto.StudySessionResponse;
-import com.group_service.dto.StudySessionStatsResponse;
-import com.group_service.entity.GroupMember;
-import com.group_service.entity.StudyGroup;
-import com.group_service.entity.StudySession;
-import com.group_service.entity.StudySessionParticipant;
-import com.group_service.entity.enums.GroupMemberStatus;
-import com.group_service.entity.enums.GroupStatus;
-import com.group_service.entity.enums.GroupStudySessionMode;
-import com.group_service.entity.enums.GroupStudySessionStatus;
-import com.group_service.entity.enums.StudySessionParticipantRole;
-import com.group_service.entity.enums.StudySessionParticipantStatus;
-import com.group_service.entity.enums.StudySessionType;
-import com.group_service.repository.GroupMemberRepository;
-import com.group_service.repository.StudyGroupRepository;
-import com.group_service.repository.StudySessionParticipantRepository;
-import com.group_service.repository.StudySessionRepository;
+import com.group_service.dto.*;
+import com.group_service.entity.*;
+import com.group_service.entity.enums.*;
+import com.group_service.enums.StatusCode;
+import com.group_service.exception.AppException;
+import com.group_service.repository.*;
 import com.group_service.service.StudySessionService;
 import com.group_service.service.ZegoCloudTokenService;
 import lombok.RequiredArgsConstructor;
@@ -37,11 +20,13 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.DayOfWeek;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -54,6 +39,7 @@ public class StudySessionServiceImpl implements StudySessionService {
     private final GroupMemberRepository groupMemberRepository;
     private final UserClient userClient;
     private final ZegoCloudTokenService zegoCloudTokenService;
+    private final StudySessionAttendanceLogRepository attendanceLogRepository;
 
     @Override
     @Transactional
@@ -226,49 +212,74 @@ public class StudySessionServiceImpl implements StudySessionService {
         return toResponse(session, userId);
     }
 
-    @Override
     @Transactional
+    @Override
     public JoinStudySessionResponse joinSession(Long sessionId, Long userId) {
-        StudySession session = studySessionRepository.findByIdForUpdate(sessionId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Study session not found"));
+        StudySession session = studySessionRepository.findById(sessionId)
+                .orElseThrow(() -> new AppException("study session not found"));
 
-        if (session.getStatus() == GroupStudySessionStatus.CANCELLED || session.getStatus() == GroupStudySessionStatus.COMPLETED) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Session is not available for joining");
-        }
+        StudySessionParticipant participant = participantRepository
+                .findBySessionIdAndUserId(sessionId, userId)
+                .orElseThrow(() -> new AppException("you are not a participant of this session"));
 
-        if (session.getStudyMode() == GroupStudySessionMode.OFFLINE) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only ONLINE or HYBRID sessions can be joined");
-        }
-
-        StudySessionParticipant participant = participantRepository.findBySessionIdAndUserId(sessionId, userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not a participant of this session"));
-
-        if (participant.getStatus() == StudySessionParticipantStatus.DECLINED) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not allowed to join this session");
+        if (participant.getStatus() != StudySessionParticipantStatus.ACCEPTED
+                && participant.getStatus() != StudySessionParticipantStatus.JOINED) {
+            throw new AppException("you can't joined into session");
         }
 
         LocalDateTime now = LocalDateTime.now();
-        validateJoinWindow(session.getStartTime(), session.getEndTime(), now);
 
-        String roomId = ensureRoomId(session);
-        StudySession savedSession = studySessionRepository.save(session);
+        if (now.isBefore(session.getStartTime().minusMinutes(5))) {
+            throw new AppException("session has not started yet. You can join from 5 minutes before start time");
+        }
 
-        if (participant.getStatus() != StudySessionParticipantStatus.JOINED) {
+        if (now.isAfter(session.getEndTime())) {
+            throw new AppException("session has already ended. You can join until 5 minutes after end time");
+        }
+
+        Optional<StudySessionAttendanceLog> openingLog =
+                attendanceLogRepository.findFirstBySessionIdAndUserIdAndLeftAtIsNullOrderByJoinedAtDesc(
+                        sessionId,
+                        userId
+                );
+
+        StudySessionAttendanceLog log;
+
+        if (openingLog.isPresent()) {
+            log = openingLog.get();
+        } else {
+            log = StudySessionAttendanceLog.builder()
+                    .sessionId(sessionId)
+                    .participantId(participant.getId())
+                    .userId(userId)
+                    .joinedAt(now)
+                    .build();
+
+            log = attendanceLogRepository.save(log);
+
+            if (participant.getFirstJoinedAt() == null) {
+                participant.setFirstJoinedAt(now);
+            }
+
+            participant.setJoinCount(
+                    participant.getJoinCount() == null ? 1 : participant.getJoinCount() + 1
+            );
+
             participant.setStatus(StudySessionParticipantStatus.JOINED);
+            participantRepository.save(participant);
         }
-        if (participant.getJoinedAt() == null) {
-            participant.setJoinedAt(now);
-        }
-        participantRepository.save(participant);
 
-        String token = zegoCloudTokenService.generateToken(userId, roomId);
-
-        return new JoinStudySessionResponse(
-                savedSession.getId(),
-                roomId,
-                token,
-                now
-        );
+        return JoinStudySessionResponse.builder()
+                .sessionId(session.getId())
+                .userId(userId)
+                .attendanceLogId(log.getId())
+                .meetingUrl(session.getMeetingUrl())
+                .roomId(session.getRoomId())
+                .joinedAt(log.getJoinedAt())
+                .joinCount(participant.getJoinCount())
+                .totalDurationSeconds(participant.getTotalDurationSeconds())
+                .attendanceStatus(participant.getAttendanceStatus())
+                .build();
     }
 
     @Override
@@ -299,6 +310,43 @@ public class StudySessionServiceImpl implements StudySessionService {
         return toResponse(session, userId);
     }
 
+
+    @Transactional
+    public void autoCloseAttendanceLogs(Long sessionId) {
+        StudySession session = studySessionRepository.findById(sessionId)
+                .orElseThrow(() -> new AppException(StatusCode.SESSION_NOT_FOUND));
+
+        List<StudySessionAttendanceLog> openingLogs =
+                attendanceLogRepository.findBySessionIdAndLeftAtIsNull(sessionId);
+
+        for (StudySessionAttendanceLog log : openingLogs) {
+            LocalDateTime autoLeftAt = calculateAutoLeftAt(log.getJoinedAt(), session.getEndTime());
+
+            long durationSeconds = Duration.between(log.getJoinedAt(), autoLeftAt).getSeconds();
+
+            if (durationSeconds < 0) {
+                durationSeconds = 0;
+            }
+
+            log.setLeftAt(autoLeftAt);
+            log.setDurationSeconds(durationSeconds);
+            log.setLeaveReason(StudySessionLeaveReason.AUTO_CLOSED);
+            attendanceLogRepository.save(log);
+
+            participantRepository.findBySessionIdAndUserId(sessionId, log.getUserId())
+                    .ifPresent(participant -> {
+                        Long totalDuration = attendanceLogRepository.sumDurationSecondsBySessionIdAndUserId(
+                                sessionId,
+                                log.getUserId()
+                        );
+
+                        participant.setLastLeftAt(autoLeftAt);
+                        participant.setTotalDurationSeconds(totalDuration);
+                        participant.setAttendanceStatus(calculateAttendanceStatus(session, totalDuration));
+                        participantRepository.save(participant);
+                    });
+        }
+    }
     @Override
     @Transactional
     public StudySessionResponse updateSessionStatus(Long sessionId, Long userId, GroupStudySessionStatus newStatus) {
@@ -377,7 +425,7 @@ public class StudySessionServiceImpl implements StudySessionService {
                 .toList();
 
         long acceptedCount = participants.stream()
-                .filter(participant -> participant.status() == StudySessionParticipantStatus.ACCEPTED)
+                .filter(participant -> participant.status() == StudySessionParticipantStatus.ACCEPTED || participant.status() ==  StudySessionParticipantStatus.JOINED)
                 .count();
         long pendingCount = participants.stream()
                 .filter(participant -> participant.status() == StudySessionParticipantStatus.PENDING)
@@ -396,6 +444,91 @@ public class StudySessionServiceImpl implements StudySessionService {
                 declinedCount,
                 anotherParticipants
         );
+    }
+
+    @Transactional
+    @Override
+    public FeedbackEligibilityResponse getFeedbackEligibility(Long sessionId, Long userId) {
+        StudySession session = studySessionRepository.findById(sessionId)
+                .orElseThrow(() -> new AppException(StatusCode.SESSION_NOT_FOUND));
+
+        StudySessionParticipant participant = participantRepository
+                .findBySessionIdAndUserId(sessionId, userId)
+                .orElseThrow(() -> new AppException(StatusCode.PARTICIPANT_NOT_FOUND));
+
+        LocalDateTime now = LocalDateTime.now();
+        boolean sessionEnded = now.isAfter(session.getEndTime());
+
+        if (sessionEnded) {
+            autoCloseAttendanceLogs(sessionId);
+            participant = participantRepository.findBySessionIdAndUserId(sessionId, userId)
+                    .orElseThrow(() -> new AppException(StatusCode.PARTICIPANT_NOT_FOUND));
+        }
+
+        Long totalDuration = participant.getTotalDurationSeconds() == null
+                ? 0L
+                : participant.getTotalDurationSeconds();
+
+        Long minRequiredDuration = calculateMinRequiredDurationSeconds(session);
+
+        StudySessionAttendanceStatus attendanceStatus = calculateAttendanceStatus(session, totalDuration);
+
+        boolean canSubmitFeedback = false;
+        boolean eligibleForModel = false;
+        StudyFeedbackType feedbackType;
+        String message;
+
+        if (!sessionEnded) {
+            feedbackType = null;
+            message = "Buổi học chưa kết thúc";
+        } else if (attendanceStatus == StudySessionAttendanceStatus.COMPLETED) {
+            canSubmitFeedback = true;
+            eligibleForModel = true;
+            feedbackType = StudyFeedbackType.SESSION_FEEDBACK;
+            message = "Bạn có thể đánh giá buổi học";
+        } else if (attendanceStatus == StudySessionAttendanceStatus.NOT_JOINED) {
+            feedbackType = StudyFeedbackType.REPORT_PROBLEM;
+            message = "Bạn chưa tham gia buổi học nên không thể đánh giá chính thức";
+        } else if (attendanceStatus == StudySessionAttendanceStatus.JOINED_SHORT) {
+
+            feedbackType = StudyFeedbackType.EARLY_LEAVE_REASON;
+            message = "Bạn đã rời buổi học khá sớm, vui lòng cho biết lý do";
+        } else {
+
+            feedbackType = StudyFeedbackType.PARTIAL_FEEDBACK;
+            message = "Bạn có thể gửi phản hồi ngắn, nhưng chưa đủ điều kiện đánh giá chính thức";
+        }
+
+        Long targetUserId = null;
+
+        if (session.getSessionType() == StudySessionType.USER_PAIR) {
+            targetUserId = findTargetUserIdForPairSession(sessionId, userId);
+        }
+
+        return FeedbackEligibilityResponse.builder()
+                .sessionId(sessionId)
+                .userId(userId)
+                .sessionType(session.getSessionType())
+                .targetUserId(targetUserId)
+                .groupId(session.getGroupId())
+                .sessionEnded(sessionEnded)
+                .canSubmitFeedback(canSubmitFeedback)
+                .feedbackType(feedbackType)
+                .totalDurationSeconds(totalDuration)
+                .minRequiredDurationSeconds(minRequiredDuration)
+                .attendanceStatus(attendanceStatus)
+                .eligibleForModel(eligibleForModel)
+                .message(message)
+                .build();
+    }
+
+    private Long findTargetUserIdForPairSession(Long sessionId, Long reviewerUserId) {
+        return participantRepository.findBySessionId(sessionId)
+                .stream()
+                .map(StudySessionParticipant::getUserId)
+                .filter(id -> !id.equals(reviewerUserId))
+                .findFirst()
+                .orElse(null);
     }
 
     @Override
@@ -574,4 +707,111 @@ public class StudySessionServiceImpl implements StudySessionService {
         }
         return fallbackUserName(participant.getUserId());
     }
+
+    @Transactional
+    @Override
+    public LeaveStudySessionResponse leaveSession(
+            Long sessionId,
+            Long userId,
+            LeaveStudySessionRequest request
+    ) {
+        StudySession session = studySessionRepository.findById(sessionId)
+                .orElseThrow(() -> new RuntimeException("Study session not found"));
+
+        StudySessionParticipant participant = participantRepository
+                .findBySessionIdAndUserId(sessionId, userId)
+                .orElseThrow(() -> new RuntimeException("You are not a participant of this session"));
+
+        StudySessionAttendanceLog log = attendanceLogRepository
+                .findFirstBySessionIdAndUserIdAndLeftAtIsNullOrderByJoinedAtDesc(sessionId, userId)
+                .orElseThrow(() -> new RuntimeException("No active attendance log found for this session"));
+        LocalDateTime now = LocalDateTime.now();
+
+        LocalDateTime leftAt = now.isAfter(session.getEndTime())
+                ? session.getEndTime()
+                : now;
+
+        long durationSeconds = Duration.between(log.getJoinedAt(), leftAt).getSeconds();
+
+        if (durationSeconds < 0) {
+            durationSeconds = 0;
+        }
+
+        StudySessionLeaveReason reason = StudySessionLeaveReason.USER_LEFT;
+
+        if (request != null && request.getLeaveReason() != null) {
+            reason = request.getLeaveReason();
+        }
+
+        log.setLeftAt(leftAt);
+        log.setDurationSeconds(durationSeconds);
+        log.setLeaveReason(reason);
+        attendanceLogRepository.save(log);
+
+        Long totalDuration = attendanceLogRepository.sumDurationSecondsBySessionIdAndUserId(sessionId, userId);
+
+        participant.setLastLeftAt(leftAt);
+        participant.setTotalDurationSeconds(totalDuration);
+        participant.setAttendanceStatus(calculateAttendanceStatus(session, totalDuration));
+        participantRepository.save(participant);
+
+        return LeaveStudySessionResponse.builder()
+                .sessionId(sessionId)
+                .userId(userId)
+                .attendanceLogId(log.getId())
+                .joinedAt(log.getJoinedAt())
+                .leftAt(leftAt)
+                .durationSeconds(durationSeconds)
+                .totalDurationSeconds(totalDuration)
+                .joinCount(participant.getJoinCount())
+                .attendanceStatus(participant.getAttendanceStatus())
+                .build();
+    }
+
+    private LocalDateTime calculateAutoLeftAt(LocalDateTime joinedAt, LocalDateTime sessionEndTime) {
+        LocalDateTime maxAutoLeftAt = joinedAt.plusMinutes(30);
+
+        if (maxAutoLeftAt.isBefore(sessionEndTime)) {
+            return maxAutoLeftAt;
+        }
+
+        return sessionEndTime;
+    }
+
+    private StudySessionAttendanceStatus calculateAttendanceStatus(
+            StudySession session,
+            Long totalDurationSeconds
+    ) {
+        long total = totalDurationSeconds == null ? 0L : totalDurationSeconds;
+
+        if (total <= 0) {
+            return StudySessionAttendanceStatus.NOT_JOINED;
+        }
+
+        if (total < 5 * 60) {
+            return StudySessionAttendanceStatus.JOINED_SHORT;
+        }
+
+        long minRequired = calculateMinRequiredDurationSeconds(session);
+
+        if (total < minRequired) {
+            return StudySessionAttendanceStatus.JOINED_PARTIAL;
+        }
+
+        return StudySessionAttendanceStatus.COMPLETED;
+    }
+
+    private long calculateMinRequiredDurationSeconds(StudySession session) {
+        long sessionDurationSeconds = Duration.between(
+                session.getStartTime(),
+                session.getEndTime()
+        ).getSeconds();
+
+        long tenMinutes = 10 * 60L;
+        long thirtyPercent = Math.round(sessionDurationSeconds * 0.3);
+
+        return Math.max(tenMinutes, thirtyPercent);
+    }
+
+
 }

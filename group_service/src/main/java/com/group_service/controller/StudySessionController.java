@@ -1,13 +1,6 @@
 package com.group_service.controller;
 
-import com.group_service.dto.ApiResponse;
-import com.group_service.dto.CreateStudySessionRequest;
-import com.group_service.dto.JoinStudySessionResponse;
-import com.group_service.dto.SessionConfirmationStatsResponse;
-import com.group_service.dto.RespondSessionRequest;
-import com.group_service.dto.StudySessionResponse;
-import com.group_service.dto.StudySessionStatsResponse;
-import com.group_service.dto.UpdateSessionStatusRequest;
+import com.group_service.dto.*;
 import com.group_service.entity.enums.GroupStudySessionStatus;
 import com.group_service.entity.enums.StudySessionParticipantStatus;
 import com.group_service.entity.enums.StudySessionType;
@@ -121,6 +114,53 @@ public class StudySessionController {
         ));
     }
 
+    @PostMapping("/{sessionId}/leave")
+    public ResponseEntity<ApiResponse<LeaveStudySessionResponse>> leaveSession(
+            @PathVariable Long sessionId,
+            @RequestParam Long userId,
+            @Valid @RequestBody(required = false) LeaveStudySessionRequest request
+    ) {
+        LeaveStudySessionResponse response = studySessionService.leaveSession(sessionId, userId, request);
+
+        return ResponseEntity.ok(new ApiResponse<>(
+                true,
+                StatusCode.SUCCESS,
+                "Leave session successfully",
+                response
+        ));
+    }
+
+
+    @GetMapping("/{sessionId}/feedback-eligibility")
+    public ResponseEntity<ApiResponse<FeedbackEligibilityResponse>> getFeedbackEligibility(
+            @PathVariable Long sessionId,
+            @RequestParam Long userId
+    ) {
+        FeedbackEligibilityResponse response = studySessionService.getFeedbackEligibility(sessionId, userId);
+
+        return ResponseEntity.ok(new ApiResponse<>(
+                true,
+                StatusCode.SUCCESS,
+                "Get feedback eligibility successfully",
+                response
+        ));
+    }
+
+
+    @PostMapping("/{sessionId}/attendance/auto-close")
+    public ResponseEntity<ApiResponse<Void>> autoCloseAttendanceLogs(
+            @PathVariable Long sessionId
+    ) {
+        studySessionService.autoCloseAttendanceLogs(sessionId);
+
+        return ResponseEntity.ok(new ApiResponse<>(
+                true,
+                StatusCode.SUCCESS,
+                "Auto close attendance logs successfully",
+                null
+        ));
+    }
+
     @GetMapping("/{sessionId}/confirmation-stats")
     public ResponseEntity<ApiResponse<SessionConfirmationStatsResponse>> getConfirmationStats(
             @PathVariable Long sessionId,
@@ -191,4 +231,7 @@ public class StudySessionController {
                 stats
         ));
     }
+
+
+
 }

@@ -1,5 +1,4 @@
 package com.group_service.dto;
-
 import com.group_service.entity.enums.StudySessionAttendanceStatus;
 import lombok.*;
 
@@ -11,7 +10,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class JoinStudySessionResponse {
+public class LeaveStudySessionResponse {
 
     private Long sessionId;
 
@@ -19,15 +18,15 @@ public class JoinStudySessionResponse {
 
     private Long attendanceLogId;
 
-    private String meetingUrl;
-
-    private String roomId;
-
     private LocalDateTime joinedAt;
 
-    private Integer joinCount;
+    private LocalDateTime leftAt;
+
+    private Long durationSeconds;
 
     private Long totalDurationSeconds;
+
+    private Integer joinCount;
 
     private StudySessionAttendanceStatus attendanceStatus;
 }
