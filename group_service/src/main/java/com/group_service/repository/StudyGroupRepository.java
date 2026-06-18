@@ -31,12 +31,15 @@ public interface StudyGroupRepository extends JpaRepository<StudyGroup, Long> {
            g.ownerUserId AS ownerUserId,
            g.maxMembers AS maxMembers,
            g.status AS status,
+           g.visibility AS visibility,
            g.createdAt AS createdAt,
            COUNT(gm.id) AS memberCount
     FROM StudyGroup g
     LEFT JOIN GroupMember gm
            ON gm.groupId = g.id
-    GROUP BY g.id
+    GROUP BY g.id, g.name, g.groupType, g.subjectName,
+             g.termId, g.createdByUserId, g.ownerUserId,
+             g.maxMembers, g.status, g.visibility, g.createdAt
     ORDER BY g.createdAt DESC
 """)
     Page<AdminGroupProjection> findAdminGroups(Pageable pageable);
@@ -65,6 +68,7 @@ SELECT g.id AS id,
        g.ownerUserId AS ownerUserId,
        g.maxMembers AS maxMembers,
        g.status AS status,
+       g.visibility AS visibility,
        g.createdAt AS createdAt,
        COUNT(gm.id) AS memberCount
 FROM StudyGroup g
@@ -78,7 +82,7 @@ WHERE (CAST(:groupType AS string) IS NULL OR g.groupType = :groupType)
       )
 GROUP BY g.id, g.name, g.groupType, g.subjectName,
          g.termId, g.createdByUserId, g.ownerUserId,
-         g.maxMembers, g.status, g.createdAt
+         g.maxMembers, g.status, g.visibility, g.createdAt
 ORDER BY g.createdAt DESC
 """)
     Page<AdminGroupProjection> filterAdminGroups(
@@ -98,6 +102,7 @@ ORDER BY g.createdAt DESC
         g.ownerUserId AS ownerUserId,
         g.maxMembers AS maxMembers,
         g.status AS status,
+        g.visibility AS visibility,
         g.createdAt AS createdAt,
         COUNT(gm.id) AS memberCount
  FROM StudyGroup g
@@ -105,7 +110,9 @@ ORDER BY g.createdAt DESC
         ON gm.groupId = g.id
  WHERE LOWER(g.name) LIKE LOWER(CONCAT('%', :keyWord, '%'))
     OR LOWER(CAST(g.description AS string)) LIKE LOWER(CONCAT('%', :keyWord, '%'))
- GROUP BY g.id
+ GROUP BY g.id, g.name, g.groupType, g.subjectName,
+          g.termId, g.createdByUserId, g.ownerUserId,
+          g.maxMembers, g.status, g.visibility, g.createdAt
 """)
     Page<AdminGroupProjection> searchAdminGroupsByKeyword(
             @Param("keyWord") String keyWord,

@@ -19,6 +19,8 @@ public class AdminGroupResponse {
 
     private String type;
 
+    private String visibility;
+
     private String subjectName;
 
 

@@ -32,6 +32,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 //@CrossOrigin(origins = "*", allowedHeaders = "*")
 @RestController
@@ -87,6 +88,20 @@ public class StudySessionController {
                 true,
                 StatusCode.SUCCESS,
                 "Get sessions successfully",
+                sessions
+        ));
+    }
+
+    @GetMapping("/group/{groupId}")
+    public ResponseEntity<ApiResponse<List<StudySessionResponse>>> getSessionsByGroup(
+            @PathVariable Long groupId,
+            @RequestParam(required = false) Long userId
+    ) {
+        List<StudySessionResponse> sessions = studySessionService.getSessionsByGroupId(groupId, userId);
+        return ResponseEntity.ok(new ApiResponse<>(
+                true,
+                StatusCode.SUCCESS,
+                "Get group sessions successfully",
                 sessions
         ));
     }

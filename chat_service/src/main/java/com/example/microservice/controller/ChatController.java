@@ -2,6 +2,7 @@ package com.example.microservice.controller;
 
 import com.example.microservice.config.EnumEvent;
 import com.example.microservice.dto.FirstPrivateMess;
+import com.example.microservice.dto.ForwardMessageRequest;
 import com.example.microservice.dto.CreatePrivateConversationRequest;
 import com.example.microservice.dto.MessageStatusData;
 import com.example.microservice.dto.MessageStatusRequest;
@@ -21,6 +22,7 @@ import com.example.microservice.entity.Message;
 import com.example.microservice.entity.MessageReaction;
 import com.example.microservice.services.ChatService;
 import com.example.microservice.services.MessageDeliveryService;
+import com.example.microservice.services.MessageModerationService;
 import com.example.microservice.services.MessageService;
 import com.example.microservice.services.MessageStatusService;
 import com.example.microservice.services.ReactionService;
@@ -56,6 +58,8 @@ public class ChatController {
     @Autowired
     MessageDeliveryService messageDeliveryService;
     @Autowired
+    MessageModerationService messageModerationService;
+    @Autowired
     ReactionService reactionService;
     @Autowired
     WebSocketSessionManager sessionManager;
@@ -87,6 +91,14 @@ public class ChatController {
                     RecallRequest.class
             );
             recallMess(request, Long.valueOf(userId));
+        }
+
+        if (mess.getEvent().equals("FORWARD_MESSAGE")) {
+            ForwardMessageRequest request = objectMapper.convertValue(
+                    mess.getData(),
+                    ForwardMessageRequest.class
+            );
+            forwardMessage(request, Long.valueOf(userId));
         }
 
         if (mess.getEvent().equals("REACTION_ADD")) {
@@ -144,7 +156,10 @@ public class ChatController {
             NewMessageData newMessageData = new NewMessageData(conversationId, messDTO);
 
             List<Long> participants = chatService.findConversationParticipants(conversationId);
-            if (participants.isEmpty()) return;
+            if (participants.isEmpty()) {
+                messageModerationService.moderateMessageAsync(message.getId());
+                return;
+            }
 
             MessageStatusData statusData = new MessageStatusData(
                     conversationId,
@@ -170,6 +185,7 @@ public class ChatController {
                 }
                 messagingTemplate.convertAndSendToUser(String.valueOf(participantId), "/queue/chat", receiverResponse);
             }
+            messageModerationService.moderateMessageAsync(message.getId());
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -247,6 +263,55 @@ public class ChatController {
                 continue;
             }
             messagingTemplate.convertAndSendToUser(String.valueOf(participantId), "/queue/chat", receiverEvent);
+        }
+        messageModerationService.moderateMessageAsync(dto.getMessageId());
+    }
+
+    public void forwardMessage(ForwardMessageRequest request, Long userId) {
+        Long sourceMessageId = request.resolveSourceMessageId();
+        Long targetConversationId = request.resolveTargetConversationId();
+        if (sourceMessageId == null || targetConversationId == null) return;
+        if (!chatService.isParticipant(targetConversationId, userId)) return;
+
+        try {
+            Message sourceMessage = messageService.findMessById(sourceMessageId);
+            if (sourceMessage.getConversation() == null
+                    || !chatService.isParticipant(sourceMessage.getConversation().getId(), userId)) {
+                return;
+            }
+            Message forwardedMessage = messageService.forwardMessage(sourceMessageId, targetConversationId, userId);
+            messageStatusService.markSenderSeen(targetConversationId, userId, forwardedMessage);
+
+            MessDTO messDTO = new MessDTO(forwardedMessage);
+            NewMessageData newMessageData = new NewMessageData(targetConversationId, messDTO);
+
+            MessageStatusData statusData = new MessageStatusData(
+                    targetConversationId,
+                    userId,
+                    "SENT",
+                    List.of(forwardedMessage.getId()),
+                    Instant.now()
+            );
+            SocketEnvelope<MessageStatusData> senderStatus =
+                    new SocketEnvelope<>(EnumEvent.MESSAGE_SENT.toString(), statusData);
+            messagingTemplate.convertAndSendToUser(String.valueOf(userId), "/queue/chat", senderStatus);
+
+            SocketEnvelope<NewMessageData> senderAck =
+                    new SocketEnvelope<>(EnumEvent.MESSAGE_ACK.toString(), newMessageData);
+            messagingTemplate.convertAndSendToUser(String.valueOf(userId), "/queue/chat", senderAck);
+
+            SocketEnvelope<NewMessageData> receiverEvent =
+                    new SocketEnvelope<>(EnumEvent.NEW_MESSAGE.toString(), newMessageData);
+            List<Long> participants = chatService.findConversationParticipants(targetConversationId);
+            for (Long participantId : participants) {
+                if (participantId == null || participantId.equals(userId)) {
+                    continue;
+                }
+                messagingTemplate.convertAndSendToUser(String.valueOf(participantId), "/queue/chat", receiverEvent);
+            }
+            messageModerationService.moderateMessageAsync(forwardedMessage.getId());
+        } catch (Exception ex) {
+            ex.printStackTrace();
         }
     }
 
@@ -359,6 +424,7 @@ public class ChatController {
                 "/queue/chat",
                 new SocketEnvelope<>(EnumEvent.NEW_MESSAGE.toString(), newMessageData)
         );
+        messageModerationService.moderateMessageAsync(message.getId());
     }
 
     public void socketSendMess(String currentUID, String otherUID, SocketEnvelope<?> currResponse, SocketEnvelope<?> otherResponse) {
