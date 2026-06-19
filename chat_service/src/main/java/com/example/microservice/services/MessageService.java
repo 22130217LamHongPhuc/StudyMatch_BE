@@ -127,6 +127,7 @@ public class MessageService {
         }
         mess.setDeletedAt(LocalDateTime.now());
         mess.setIsDeleted(true);
+        mess.setPinned("N");
         Message result =  messageRepo.save(mess);
         result.setContent(null);
         System.out.println(result.toString() + "result reacall nè");
@@ -150,6 +151,7 @@ public class MessageService {
         mess.setContent(null);
         mess.setMediaUrl(null);
         mess.setFileName(null);
+        mess.setPinned("N");
         Message result = messageRepo.save(mess);
         return new MessDTO(result);
     }
@@ -223,6 +225,16 @@ public class MessageService {
             throw new ResourceNotFoundException("message không tồn tại");
         }
         return mess;
+    }
+
+    public List<MessDTO> getMediaAndFiles(Long conversationId) {
+        List<Message> messages = messageRepo.findMediaAndFilesByConversationId(conversationId);
+        List<MessDTO> list = new ArrayList<>();
+        for (Message mess : messages) {
+            list.add(new MessDTO(mess));
+        }
+        attachReactions(list);
+        return list;
     }
 
 }

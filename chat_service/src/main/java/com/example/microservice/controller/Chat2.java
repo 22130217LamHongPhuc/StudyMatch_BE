@@ -63,6 +63,7 @@ public class Chat2 {
         map.put("conversationId", conversationId);
         Conversation conv = serivce.checkConversation(conversationId).orElse(null);
         map.put("color", conv != null ? conv.getColor() : null);
+        map.put("font", conv != null ? conv.getFont() : null);
         List<MessDTO> list = messService.getListMessWithStatus(conversationId, currentUser, targetUser, page);
         map.put("listMess", list);
         if (page == 0) {
@@ -89,6 +90,7 @@ public class Chat2 {
         map.put("conversationId", conversationId);
         Conversation conv = serivce.checkConversation(conversationId).orElse(null);
         map.put("color", conv != null ? conv.getColor() : null);
+        map.put("font", conv != null ? conv.getFont() : null);
         List<MessDTO> list = messService.getListMess(conversationId, page);
         map.put("listMess", list);
 
@@ -123,6 +125,7 @@ public class Chat2 {
         map.put("conversationId", conversationId);
         Conversation conv = serivce.checkConversation(conversationId).orElse(null);
         map.put("color", conv != null ? conv.getColor() : null);
+        map.put("font", conv != null ? conv.getFont() : null);
         List<MessDTO> list = messService.getListMess(conversationId, page);
         map.put("listMess", list);
 
@@ -155,6 +158,19 @@ public class Chat2 {
         return ResponseEntity.ok(apiResponse);
     }
 
+    @GetMapping("/{conversationId}/media-files")
+    public ResponseEntity<?> getMediaAndFiles(
+            @PathVariable Long conversationId,
+            @RequestParam Long currentUser
+    ) {
+        if (!serivce.isParticipant(conversationId, currentUser)) {
+            return ResponseEntity.ok(new APIResponse<>(ResponseStatus.SUCCESS, List.of()));
+        }
+
+        List<MessDTO> list = messService.getMediaAndFiles(conversationId);
+        return ResponseEntity.ok(new APIResponse<>(ResponseStatus.SUCCESS, list));
+    }
+
     @PutMapping("/{conversationId}/color")
     public ResponseEntity<?> updateConversationColor(
             @PathVariable Long conversationId,
@@ -179,6 +195,32 @@ public class Chat2 {
         }
 
         return ResponseEntity.ok(new APIResponse<>(ResponseStatus.SUCCESS, "Color updated"));
+    }
+
+    @PutMapping("/{conversationId}/font")
+    public ResponseEntity<?> updateConversationFont(
+            @PathVariable Long conversationId,
+            @RequestParam String font
+    ) {
+        Conversation conv = serivce.checkConversation(conversationId).orElse(null);
+        if (conv == null) {
+            return ResponseEntity.badRequest().body(new APIResponse<>(ResponseStatus.NOT_FOUND, "Conversation not found"));
+        }
+        conv.setFont(font);
+        serivce.save(conv);
+
+        // Broadcast font change to all participants
+        List<Long> participants = serivce.findConversationParticipants(conversationId);
+        Map<String, Object> data = new HashMap<>();
+        data.put("conversationId", conversationId);
+        data.put("font", font);
+        SocketEnvelope<Map<String, Object>> response = new SocketEnvelope<>("CONVERSATION_FONT_CHANGED", data);
+        
+        for (Long participantId : participants) {
+            messagingTemplate.convertAndSendToUser(String.valueOf(participantId), "/queue/chat", response);
+        }
+
+        return ResponseEntity.ok(new APIResponse<>(ResponseStatus.SUCCESS, "Font updated"));
     }
 
     private void markLoadedIncomingMessagesSeen(

@@ -33,4 +33,7 @@ public class Conversation {
     @Column(name = "color", length = 50)
     private String color;
 
+    @Column(name = "font", length = 50)
+    private String font;
+
 }

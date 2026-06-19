@@ -29,4 +29,13 @@ public interface FriendRequestRepo extends JpaRepository< FriendRequest, Long> {
     List<FriendRequest> findBySenderIdOrderByUpdatedAtDesc(Long senderId, Pageable pageable);
     List<FriendRequest> findByReceiverIdOrderByUpdatedAtDesc(Long receiverId, Pageable pageable);
 
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.transaction.annotation.Transactional
+    @Query(value = """
+    delete from friend_requests
+    where (sender_id = :u1 and receiver_id = :u2) or (sender_id = :u2 and receiver_id = :u1)
+    """, nativeQuery = true)
+    void deleteFriendRequests(@Param("u1") Long u1, @Param("u2") Long u2);
+
 }
+

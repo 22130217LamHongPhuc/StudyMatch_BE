@@ -68,4 +68,11 @@ public class FriendsController {
         System.out.println(dto + "dto nè");
         return dto;
     }
+
+    @DeleteMapping("/friends/unfriend")
+    public ResponseEntity<?> unfriend(@RequestParam Long userId, @RequestParam Long friendId) {
+        friendService.unfriend(userId, friendId);
+        return ResponseEntity.ok(new APIResponse<>(ResponseStatus.SUCCESS, "Hủy kết bạn thành công"));
+    }
 }
+

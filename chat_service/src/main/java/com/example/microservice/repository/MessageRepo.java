@@ -21,6 +21,15 @@ public interface MessageRepo extends JpaRepository<Message, Long> {
 
         List<Message> findByConversationIdAndIdIn(Long conversationId, List<Long> ids);
 
+        @Query("""
+                        select m from Message m
+                        where m.conversation.id = :conversationId
+                          and (m.mediaUrl is not null or m.fileName is not null)
+                          and (m.isDeleted = false or m.isDeleted is null)
+                        order by m.createdAt desc
+                        """)
+        List<Message> findMediaAndFilesByConversationId(@Param("conversationId") Long conversationId);
+
         Optional<Message> findFirstByConversationIdAndTypeAndContentContaining(Long conversationId, String type,
                         String content);
 
