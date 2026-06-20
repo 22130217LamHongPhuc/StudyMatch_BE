@@ -1,33 +1,14 @@
 package com.group_service.dto;
 
-import com.group_service.entity.enums.StudySessionAttendanceStatus;
-import lombok.*;
+
 
 import java.time.LocalDateTime;
 
 
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class JoinStudySessionResponse {
-
-    private Long sessionId;
-
-    private Long userId;
-
-    private Long attendanceLogId;
-
-    private String meetingUrl;
-
-    private String roomId;
-
-    private LocalDateTime joinedAt;
-
-    private Integer joinCount;
-
-    private Long totalDurationSeconds;
-
-    private StudySessionAttendanceStatus attendanceStatus;
+public record JoinStudySessionResponse(
+        Long sessionId,
+        String roomId,
+        String token,
+        LocalDateTime joinedAt
+) {
 }

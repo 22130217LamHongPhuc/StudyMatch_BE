@@ -117,10 +117,9 @@ public class StudySessionController {
     @PostMapping("/{sessionId}/leave")
     public ResponseEntity<ApiResponse<LeaveStudySessionResponse>> leaveSession(
             @PathVariable Long sessionId,
-            @RequestParam Long userId,
             @Valid @RequestBody(required = false) LeaveStudySessionRequest request
     ) {
-        LeaveStudySessionResponse response = studySessionService.leaveSession(sessionId, userId, request);
+        LeaveStudySessionResponse response = studySessionService.leaveSession(sessionId, request.getUserId(), request);
 
         return ResponseEntity.ok(new ApiResponse<>(
                 true,

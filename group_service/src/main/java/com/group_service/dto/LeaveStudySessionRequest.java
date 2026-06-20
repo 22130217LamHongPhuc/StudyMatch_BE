@@ -11,4 +11,5 @@ import lombok.*;
 public class LeaveStudySessionRequest {
 
     private StudySessionLeaveReason leaveReason;
+    private long userId;
 }

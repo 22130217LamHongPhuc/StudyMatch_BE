@@ -268,18 +268,30 @@ public class StudySessionServiceImpl implements StudySessionService {
             participant.setStatus(StudySessionParticipantStatus.JOINED);
             participantRepository.save(participant);
         }
+        String roomId = ensureRoomId(session);
 
-        return JoinStudySessionResponse.builder()
-                .sessionId(session.getId())
-                .userId(userId)
-                .attendanceLogId(log.getId())
-                .meetingUrl(session.getMeetingUrl())
-                .roomId(session.getRoomId())
-                .joinedAt(log.getJoinedAt())
-                .joinCount(participant.getJoinCount())
-                .totalDurationSeconds(participant.getTotalDurationSeconds())
-                .attendanceStatus(participant.getAttendanceStatus())
-                .build();
+
+        String token = zegoCloudTokenService.generateToken(userId, roomId);
+
+
+//        return JoinStudySessionResponse.builder()
+//                .sessionId(session.getId())
+//                .userId(userId)
+//                .attendanceLogId(log.getId())
+//                .meetingUrl(session.getMeetingUrl())
+//                .roomId(session.getRoomId())
+//                .joinedAt(log.getJoinedAt())
+//                .joinCount(participant.getJoinCount())
+//                .totalDurationSeconds(participant.getTotalDurationSeconds())
+//                .attendanceStatus(participant.getAttendanceStatus())
+//                .build();
+
+        return new JoinStudySessionResponse(
+                session.getId(),
+                roomId,
+                token,
+                now
+        );
     }
 
     @Override
@@ -486,15 +498,10 @@ public class StudySessionServiceImpl implements StudySessionService {
             eligibleForModel = true;
             feedbackType = StudyFeedbackType.SESSION_FEEDBACK;
             message = "Bạn có thể đánh giá buổi học";
-        } else if (attendanceStatus == StudySessionAttendanceStatus.NOT_JOINED) {
-            feedbackType = StudyFeedbackType.REPORT_PROBLEM;
-            message = "Bạn chưa tham gia buổi học nên không thể đánh giá chính thức";
-        } else if (attendanceStatus == StudySessionAttendanceStatus.JOINED_SHORT) {
-
+        }  else if (attendanceStatus == StudySessionAttendanceStatus.JOINED_SHORT) {
             feedbackType = StudyFeedbackType.EARLY_LEAVE_REASON;
             message = "Bạn đã rời buổi học khá sớm, vui lòng cho biết lý do";
         } else {
-
             feedbackType = StudyFeedbackType.PARTIAL_FEEDBACK;
             message = "Bạn có thể gửi phản hồi ngắn, nhưng chưa đủ điều kiện đánh giá chính thức";
         }
@@ -788,7 +795,7 @@ public class StudySessionServiceImpl implements StudySessionService {
             return StudySessionAttendanceStatus.NOT_JOINED;
         }
 
-        if (total < 5 * 60) {
+        if (total < 1 * 60) {
             return StudySessionAttendanceStatus.JOINED_SHORT;
         }
 
@@ -807,7 +814,7 @@ public class StudySessionServiceImpl implements StudySessionService {
                 session.getEndTime()
         ).getSeconds();
 
-        long tenMinutes = 10 * 60L;
+        long tenMinutes = 1 * 60L;
         long thirtyPercent = Math.round(sessionDurationSeconds * 0.3);
 
         return Math.max(tenMinutes, thirtyPercent);
