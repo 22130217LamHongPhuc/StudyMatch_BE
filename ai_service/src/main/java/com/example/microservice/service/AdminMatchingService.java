@@ -7,7 +7,10 @@ import com.example.microservice.dto.admin.matching.StudyFeedbackResponse;
 import com.example.microservice.dto.admin.matching.StudyFeedbackStatisticsResponse;
 import com.example.microservice.enums.MatchingActionStatus;
 import com.example.microservice.enums.StudySessionType;
+import com.example.microservice.dto.admin.matching.MatchingTrendResponse;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
 
 public interface AdminMatchingService {
 
@@ -38,5 +41,9 @@ public interface AdminMatchingService {
     StudyFeedbackResponse getFeedbackDetail(Long feedbackId);
 
     StudyFeedbackStatisticsResponse getFeedbackStatistics(LocalDate fromDate, LocalDate toDate);
+
+    Map<String, Long> getActionDistribution(LocalDate fromDate, LocalDate toDate);
+
+    List<MatchingTrendResponse> getTrend(LocalDate fromDate, LocalDate toDate);
 }
 

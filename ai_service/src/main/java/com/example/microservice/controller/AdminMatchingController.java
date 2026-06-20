@@ -8,7 +8,10 @@ import com.example.microservice.dto.admin.matching.StudyFeedbackStatisticsRespon
 import com.example.microservice.enums.MatchingActionStatus;
 import com.example.microservice.enums.StudySessionType;
 import com.example.microservice.service.AdminMatchingService;
+import com.example.microservice.dto.admin.matching.MatchingTrendResponse;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,15 +33,25 @@ public class AdminMatchingController {
 
     @GetMapping("/statistics")
     public MatchingStatisticsResponse getStatistics(
-            @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-            LocalDate fromDate,
-            @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-            LocalDate toDate
-    ) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate) {
         return adminMatchingService.getStatistics(fromDate, toDate);
     }
+
+    @GetMapping("/action-distribution")
+    public Map<String, Long> getActionDistribution(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate) {
+        return adminMatchingService.getActionDistribution(fromDate, toDate);
+    }
+
+    @GetMapping("/trend")
+    public List<MatchingTrendResponse> getTrend(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate) {
+        return adminMatchingService.getTrend(fromDate, toDate);
+    }
+
     @GetMapping("/actions")
     public PageResponse<MatchingActionResponse> getActions(
             @RequestParam(defaultValue = "0") int page,
@@ -46,13 +59,8 @@ public class AdminMatchingController {
             @RequestParam(required = false) Long userId,
             @RequestParam(required = false) Long recommendedUserId,
             @RequestParam(required = false) MatchingActionStatus actionStatus,
-            @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-            LocalDate fromDate,
-            @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-            LocalDate toDate
-    ) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate) {
         return adminMatchingService.getActions(
                 page,
                 size,
@@ -60,10 +68,8 @@ public class AdminMatchingController {
                 recommendedUserId,
                 actionStatus,
                 fromDate,
-                toDate
-        );
+                toDate);
     }
-
 
     @GetMapping("/feedbacks")
     public PageResponse<StudyFeedbackResponse> getFeedbacks(
@@ -74,14 +80,10 @@ public class AdminMatchingController {
             @RequestParam(required = false) Long targetUserId,
             @RequestParam(required = false) Long groupId,
             @RequestParam(required = false) Integer minRating,
-            @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-            LocalDate fromDate,
-            @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-            LocalDate toDate
-    ) {
-        return adminMatchingService.getFeedbacks(page, size, sessionType, reviewerUserId, targetUserId, groupId, minRating, fromDate, toDate);
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate) {
+        return adminMatchingService.getFeedbacks(page, size, sessionType, reviewerUserId, targetUserId, groupId,
+                minRating, fromDate, toDate);
     }
 
     @GetMapping("/feedbacks/{feedbackId}")
@@ -91,14 +93,8 @@ public class AdminMatchingController {
 
     @GetMapping("/feedbacks/statistics")
     public StudyFeedbackStatisticsResponse getFeedbackStatistics(
-            @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-            LocalDate fromDate,
-            @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-            LocalDate toDate
-    ) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate) {
         return adminMatchingService.getFeedbackStatistics(fromDate, toDate);
     }
 }
-
