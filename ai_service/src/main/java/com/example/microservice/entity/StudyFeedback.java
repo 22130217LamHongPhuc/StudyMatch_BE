@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @Entity
@@ -50,14 +51,14 @@ public class StudyFeedback {
     @Column(name = "rating", nullable = false)
     private Integer rating;
 
-    @Column(name = "compatibility_rating")
-    private Integer compatibilityRating;
+    @Column(name = "matched_quality_score")
+    private Integer matchedQualityScore;
 
-    @Column(name = "want_study_again")
-    private Boolean wantStudyAgain;
+    @Column(name = "communication_score")
+    private Integer communicationScore;
 
-    @Column(name = "actual_duration_seconds")
-    private Long actualDurationSeconds;
+    @Column(name = "study_effectiveness_score")
+    private Integer studyEffectivenessScore;
 
     @Column(name = "eligible_for_model")
     private Boolean eligibleForModel = false;
@@ -73,6 +74,7 @@ public class StudyFeedback {
         if (this.createdAt == null) {
             this.createdAt = LocalDateTime.now();
         }
+
         if (this.eligibleForModel == null) {
             this.eligibleForModel = false;
         }

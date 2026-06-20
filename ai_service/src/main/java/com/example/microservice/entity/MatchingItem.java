@@ -5,18 +5,14 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -25,28 +21,18 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @Entity
-@Table(
-        name = "matching_items",
-        indexes = {
-                @Index(name = "idx_matching_items_batch_id", columnList = "batch_id"),
-                @Index(name = "idx_matching_items_user_id", columnList = "user_id"),
-                @Index(name = "idx_matching_items_recommended_user_id", columnList = "recommended_user_id"),
-                @Index(name = "idx_matching_items_action_status", columnList = "action_status")
-        },
-        uniqueConstraints = {
-                @UniqueConstraint(
-                        name = "uk_batch_recommended_user",
-                        columnNames = {"batch_id", "recommended_user_id"}
-                )
-        }
+@Table(name = "matching_items", indexes = {
+        @Index(name = "idx_matching_items_user_id", columnList = "user_id"),
+        @Index(name = "idx_matching_items_recommended_user_id", columnList = "recommended_user_id"),
+        @Index(name = "idx_matching_items_action_status", columnList = "action_status")
+}
+
 )
 public class MatchingItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-
 
     @Column(name = "user_id", nullable = false)
     private Long userId;
@@ -62,13 +48,22 @@ public class MatchingItem {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "action_status", nullable = false)
-    private MatchingActionStatus actionStatus = MatchingActionStatus.NONE;
+    private MatchingActionStatus actionStatus = MatchingActionStatus.VIEWED;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    @Column(name = "viewed_at")
+    private LocalDateTime viewedAt;
+
+    @Column(name = "request_sent_at")
+    private LocalDateTime requestSentAt;
+
+    @Column(name = "responded_at")
+    private LocalDateTime respondedAt;
 
     @PrePersist
     public void prePersist() {
@@ -79,9 +74,6 @@ public class MatchingItem {
         this.updatedAt = now;
         if (this.finalScore == null) {
             this.finalScore = 0.0;
-        }
-        if (this.actionStatus == null) {
-            this.actionStatus = MatchingActionStatus.NONE;
         }
     }
 
