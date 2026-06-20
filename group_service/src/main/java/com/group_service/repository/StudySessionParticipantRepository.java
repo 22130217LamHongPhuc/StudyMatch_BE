@@ -22,4 +22,6 @@ public interface StudySessionParticipantRepository extends JpaRepository<StudySe
     boolean existsBySessionIdAndUserId(Long sessionId, Long userId);
 
     List<StudySessionParticipant> findByUserIdAndStatus(Long userId, StudySessionParticipantStatus status);
+
+
 }
