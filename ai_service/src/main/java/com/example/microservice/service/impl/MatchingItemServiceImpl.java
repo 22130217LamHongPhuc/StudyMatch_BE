@@ -1,0 +1,198 @@
+package com.example.microservice.service.impl;
+
+import com.example.microservice.dto.CreateMatchingItemRequest;
+import com.example.microservice.dto.MatchingItemResponse;
+import com.example.microservice.dto.UpdateMatchingItemStatusRequest;
+import com.example.microservice.entity.MatchingItem;
+import com.example.microservice.enums.MatchingActionStatus;
+import com.example.microservice.enums.StatusCode;
+import com.example.microservice.exception.AppException;
+import com.example.microservice.repository.MatchingItemRepository;
+import com.example.microservice.service.MatchingItemService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+
+@Service
+@RequiredArgsConstructor
+public class MatchingItemServiceImpl implements MatchingItemService {
+
+    private final MatchingItemRepository matchingItemRepository;
+
+    @Override
+    @Transactional
+    public MatchingItemResponse recordAction(CreateMatchingItemRequest request) {
+        validateRequest(request.getUserId(), request.getRecommendedUserId());
+
+        MatchingActionStatus actionStatus = request.getActionStatus();
+
+        if (actionStatus == MatchingActionStatus.ACCEPTED ||
+                actionStatus == MatchingActionStatus.REJECTED) {
+
+            MatchingItem firstSide = upsertOneSide(
+                    request.getUserId(),
+                    request.getRecommendedUserId(),
+                    actionStatus,
+                    request.getFinalScore(),
+                    request.getReasonText());
+
+            upsertOneSide(
+                    request.getRecommendedUserId(),
+                    request.getUserId(),
+                    actionStatus,
+                    request.getFinalScore(),
+                    request.getReasonText());
+
+            return mapToResponse(firstSide);
+        }
+
+        MatchingItem saved = upsertOneSide(
+                request.getUserId(),
+                request.getRecommendedUserId(),
+                actionStatus,
+                request.getFinalScore(),
+                request.getReasonText());
+
+        return mapToResponse(saved);
+    }
+
+    @Override
+    @Transactional
+    public MatchingItemResponse updateMatchingItemStatus(UpdateMatchingItemStatusRequest request) {
+        validateRequest(request.getUserId(), request.getRecommendedUserId());
+
+        MatchingActionStatus actionStatus = request.getActionStatus();
+
+        if (actionStatus == MatchingActionStatus.ACCEPTED ||
+                actionStatus == MatchingActionStatus.REJECTED) {
+
+            MatchingItem firstSide = upsertOneSide(
+                    request.getUserId(),
+                    request.getRecommendedUserId(),
+                    actionStatus,
+                    null,
+                    null);
+
+            upsertOneSide(
+                    request.getRecommendedUserId(),
+                    request.getUserId(),
+                    actionStatus,
+                    null,
+                    null);
+
+            return mapToResponse(firstSide);
+        }
+
+        MatchingItem saved = upsertOneSide(
+                request.getUserId(),
+                request.getRecommendedUserId(),
+                actionStatus,
+                null,
+                null);
+
+        return mapToResponse(saved);
+    }
+
+    private MatchingItem upsertOneSide(
+            Long userId,
+            Long recommendedUserId,
+            MatchingActionStatus newStatus,
+            Double finalScore,
+            String reasonText) {
+        MatchingItem matchingItem = matchingItemRepository
+                .findByUserIdAndRecommendedUserId(userId, recommendedUserId)
+                .orElseGet(() -> {
+                    MatchingItem item = new MatchingItem();
+                    item.setUserId(userId);
+                    item.setRecommendedUserId(recommendedUserId);
+                    item.setFinalScore(0.0);
+                    return item;
+                });
+
+        LocalDateTime now = LocalDateTime.now();
+
+        updateActionTime(matchingItem, newStatus, now);
+
+        if (shouldUpdateStatus(matchingItem.getActionStatus(), newStatus)) {
+            matchingItem.setActionStatus(newStatus);
+        }
+
+        if (finalScore != null) {
+            matchingItem.setFinalScore(finalScore);
+        }
+
+        if (reasonText != null) {
+            matchingItem.setReasonText(reasonText);
+        }
+
+        return matchingItemRepository.save(matchingItem);
+    }
+
+    private void updateActionTime(
+            MatchingItem matchingItem,
+            MatchingActionStatus status,
+            LocalDateTime now) {
+        if (status == MatchingActionStatus.VIEWED) {
+            matchingItem.setViewedAt(now);
+        } else if (status == MatchingActionStatus.FRIEND_REQUEST_SENT) {
+            matchingItem.setRequestSentAt(now);
+        } else if (status == MatchingActionStatus.ACCEPTED ||
+                status == MatchingActionStatus.REJECTED) {
+            matchingItem.setRespondedAt(now);
+        }
+    }
+
+    private boolean shouldUpdateStatus(
+            MatchingActionStatus currentStatus,
+            MatchingActionStatus newStatus) {
+        if (currentStatus == null) {
+            return true;
+        }
+
+        if (isFinalStatus(currentStatus)) {
+            return false;
+        }
+
+        return getStatusPriority(newStatus) > getStatusPriority(currentStatus);
+    }
+
+    private boolean isFinalStatus(MatchingActionStatus status) {
+        return status == MatchingActionStatus.ACCEPTED ||
+                status == MatchingActionStatus.REJECTED;
+    }
+
+    private int getStatusPriority(MatchingActionStatus status) {
+        return switch (status) {
+            case VIEWED -> 1;
+            case FRIEND_REQUEST_SENT -> 2;
+            case REJECTED -> 3;
+            case ACCEPTED -> 3;
+        };
+    }
+
+    private void validateRequest(Long userId, Long recommendedUserId) {
+        if (userId.equals(recommendedUserId)) {
+            throw new AppException(
+                    "User cannot match with themselves",
+                    StatusCode.BAD_REQUEST);
+        }
+    }
+
+    private MatchingItemResponse mapToResponse(MatchingItem matchingItem) {
+        return MatchingItemResponse.builder()
+                .id(matchingItem.getId())
+                .userId(matchingItem.getUserId())
+                .recommendedUserId(matchingItem.getRecommendedUserId())
+                .finalScore(matchingItem.getFinalScore())
+                .reasonText(matchingItem.getReasonText())
+                .actionStatus(matchingItem.getActionStatus())
+                .viewedAt(matchingItem.getViewedAt())
+                .requestSentAt(matchingItem.getRequestSentAt())
+                .respondedAt(matchingItem.getRespondedAt())
+                .createdAt(matchingItem.getCreatedAt())
+                .updatedAt(matchingItem.getUpdatedAt())
+                .build();
+    }
+}
