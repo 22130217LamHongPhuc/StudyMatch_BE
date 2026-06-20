@@ -5,9 +5,15 @@ public record MatchingStatisticsResponse(
         long totalViewed,
         long totalFriendRequestSent,
         long totalRejected,
+        long totalAccepted,
+        double viewRate,
+        double friendRequestRate,
+        double acceptRate,
+        double rejectRate,
+        double averageFinalScore,
         long totalFeedbacks,
-        double averageRating,
-        double averageCompatibilityRating
+        double averageRating
 ) {
 }
+
 
