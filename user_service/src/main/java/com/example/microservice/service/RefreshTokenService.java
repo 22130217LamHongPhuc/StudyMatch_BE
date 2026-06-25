@@ -46,6 +46,7 @@ public class RefreshTokenService {
     }
 
     public void revokeRefreshToken(String token){
+        System.out.println(token);
         RefreshToken refreshToken = refreshTokenRepository.findByToken(token)
                 .orElseThrow(
                         () -> new AppException("Invalid refresh token", StatusCode.INVALID_REFRESH_TOKEN)

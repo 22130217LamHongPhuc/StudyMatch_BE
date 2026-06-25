@@ -7,6 +7,8 @@ import com.example.microservice.repositories.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.client.RestTemplate;
 
 @Service
@@ -39,6 +41,9 @@ public class OnboardingService {
     @Autowired
     private  RestTemplate restTemplate;
 
+    @Autowired
+    private com.example.microservice.clients.UserClient userClient;
+
 
     @Transactional
     public OnboardingSubmitResponse submitOnboarding(Long userId, OnboardingSubmitRequest request) {
@@ -56,7 +61,26 @@ public class OnboardingService {
 
             studentProfile.setUserId(userId);
             studentProfile.setStudentCode(request.getStudentCode());
-            studentProfile.setFullName(request.getFullName());
+            
+            String fullName = null;
+            try {
+                com.example.microservice.dto.response.ApiResponse<String> nameResponse = userClient.getFullName(userId);
+                if (nameResponse != null && nameResponse.isSuccess()) {
+                    fullName = nameResponse.getData();
+                }
+            } catch (Exception e) {
+                System.err.println("Lỗi khi lấy tên từ USER-SERVICE: " + e.getMessage());
+            }
+
+            if (fullName == null || fullName.trim().isEmpty()) {
+                fullName = request.getFullName();
+            }
+
+            if (fullName == null || fullName.trim().isEmpty()) {
+                throw new RuntimeException("Họ tên không được để trống");
+            }
+
+            studentProfile.setFullName(fullName);
             studentProfile.setGender(request.getGender());
             studentProfile.setAgeGroup(request.getAgeGroup());
             studentProfile.setRegion(request.getRegion());
@@ -139,8 +163,14 @@ public class OnboardingService {
                 }
             }
 
-            reloadAiRecommender();
-
+            TransactionSynchronizationManager.registerSynchronization(
+                    new TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                            reloadAiRecommender(userId);
+                        }
+                    }
+            );
 
             // 8. Return success response
             OnboardingSubmitResponse response = new OnboardingSubmitResponse(
@@ -164,9 +194,6 @@ public class OnboardingService {
         if (request.getStudentCode() == null || request.getStudentCode().isEmpty()) {
             throw new RuntimeException("Mã sinh viên không được để trống");
         }
-        if (request.getFullName() == null || request.getFullName().isEmpty()) {
-            throw new RuntimeException("Họ tên không được để trống");
-        }
         if (request.getCohortId() == null) {
             throw new RuntimeException("ID khóa học không được để trống");
         }
@@ -181,14 +208,15 @@ public class OnboardingService {
         }
     }
 
-    private void reloadAiRecommender() {
+    private void reloadAiRecommender(Long userId) {
         try {
+            String url = "http://localhost:8000/api/reload-recommender?userId=" + userId;
+
             String response = restTemplate.postForObject(
-                    "http://localhost:8000/api/reload-recommender",
+                    url,
                     null,
                     String.class
             );
-
             System.out.println("AI reload response: " + response);
         } catch (Exception e) {
             System.err.println("Không thể reload AI recommender: " + e.getMessage());

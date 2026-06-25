@@ -65,5 +65,11 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping("/{userId}/fullname")
+    public ResponseEntity<ApiResponse<String>> getFullName(@PathVariable Long userId) {
+        String fullName = userService.getFullName(userId);
+        return ResponseEntity.ok(new ApiResponse<>(true, StatusCode.SUCCESS, "Get fullname successfully", fullName));
+    }
+
 }
 

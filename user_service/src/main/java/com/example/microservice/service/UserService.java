@@ -26,6 +26,12 @@ public class UserService {
     public User getProfile (Long userId ){
         return repo.findUsersByUserId(userId);
     }
+
+    public String getFullName(Long userId) {
+        User user = repo.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return user.getFullName();
+    }
     public Long getFriendCount(Long userId) {
         return socialClient.getTotalFriends(userId);
     }
