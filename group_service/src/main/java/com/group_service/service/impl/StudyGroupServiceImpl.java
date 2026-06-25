@@ -292,6 +292,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 .id(group.getId())
                 .name(group.getName())
                 .type(group.getGroupType().name())
+                .visibility(group.getVisibility() != null ? group.getVisibility().name() : null)
                 .subjectName(group.getSubjectName())
                 .status(group.getStatus())
                 .createdAt(group.getCreatedAt())

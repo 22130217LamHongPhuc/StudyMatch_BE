@@ -201,6 +201,9 @@ public class ChatService {
     public Optional<Conversation> checkConversation(Long id){
        return conversationRepo.findById(id);
     }
+    public Conversation save(Conversation conversation) {
+        return conversationRepo.save(conversation);
+    }
 
     public Optional<Long> findUserOther(Long conversationId, Long userCurrent){
         return  privateConversationRepo.findOtherUserId(conversationId, userCurrent);

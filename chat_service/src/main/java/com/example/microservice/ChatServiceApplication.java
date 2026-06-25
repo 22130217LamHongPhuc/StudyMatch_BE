@@ -14,11 +14,13 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.EnableAsync;
 
 
 @SpringBootApplication
 @EnableDiscoveryClient
 @EnableFeignClients
+@EnableAsync
 public class ChatServiceApplication {
 	private  MessageRepo messageRepo;
 	private  PrivateConversationRepo conversationRepo;

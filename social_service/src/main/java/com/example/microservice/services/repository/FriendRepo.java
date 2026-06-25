@@ -60,4 +60,13 @@ where  (user1_id =:user1 and user2_id =:user2) or (user1_id =:user2 and user2_id
     """, nativeQuery = true)
     java.util.List<Long> getFriendListByUserId(@Param("userId") Long userId);
 
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.transaction.annotation.Transactional
+    @Query(value = """
+    delete from friends
+    where (user1_id = :u1 and user2_id = :u2) or (user1_id = :u2 and user2_id = :u1)
+    """, nativeQuery = true)
+    void deleteFriendship(@Param("u1") Long u1, @Param("u2") Long u2);
+
 }
+

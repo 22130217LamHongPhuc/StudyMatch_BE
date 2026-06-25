@@ -9,6 +9,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public interface StudySessionService {
 
@@ -25,6 +26,8 @@ public interface StudySessionService {
             LocalDateTime startTo,
             Pageable pageable
     );
+
+    List<StudySessionResponse> getSessionsByGroupId(Long groupId, Long userId);
 
     StudySessionResponse getSessionById(Long sessionId, Long userId);
 

@@ -2,12 +2,14 @@ package com.example.microservice.services;
 
 import com.example.microservice.dto.MessDTO;
 import com.example.microservice.dto.ReactionDTO;
+import com.example.microservice.entity.Conversation;
 import com.example.microservice.entity.Message;
 import com.example.microservice.entity.MessageReaction;
 import com.example.microservice.entity.MessageStatus;
 import com.example.microservice.exception.ResourceNotFoundException;
 import com.example.microservice.repository.MessageRepo;
 import com.example.microservice.repository.ReactionRepo;
+import com.example.microservice.repository.ConversationRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -28,6 +30,8 @@ public class MessageService {
     MessageStatusService messageStatusService;
     @Autowired
     ReactionRepo reactionRepo;
+    @Autowired
+    ConversationRepo conversationRepo;
 
     public Page<Message> getConversation(Long conversationId, Pageable pageable){
         return messageRepo.findByConversationIdOrderByCreatedAtDesc(conversationId, pageable);
@@ -123,6 +127,7 @@ public class MessageService {
         }
         mess.setDeletedAt(LocalDateTime.now());
         mess.setIsDeleted(true);
+        mess.setPinned("N");
         Message result =  messageRepo.save(mess);
         result.setContent(null);
         System.out.println(result.toString() + "result reacall nè");
@@ -146,6 +151,24 @@ public class MessageService {
         mess.setContent(null);
         mess.setMediaUrl(null);
         mess.setFileName(null);
+        mess.setPinned("N");
+        Message result = messageRepo.save(mess);
+        return new MessDTO(result);
+    }
+
+    public MessDTO setMessagePinned(Long conversationId, Long messageId, boolean pinned) {
+        Message mess = messageRepo.findMessageById(messageId);
+        if (mess == null) {
+            throw new ResourceNotFoundException("message khong ton tai");
+        }
+        if (mess.getConversation() == null || !conversationId.equals(mess.getConversation().getId())) {
+            throw new ResourceNotFoundException("message khong thuoc conversation");
+        }
+        if (Boolean.TRUE.equals(mess.getIsDeleted())) {
+            throw new IllegalArgumentException("Khong the ghim tin nhan da thu hoi");
+        }
+
+        mess.setPinned(pinned ? "Y" : "N");
         Message result = messageRepo.save(mess);
         return new MessDTO(result);
     }
@@ -165,9 +188,34 @@ public class MessageService {
         newMess.setSenderId(senderId);
         newMess.setContent(content);
         newMess.setReplyTo(mess);
+        newMess.setModerationStatus("NONE");
         newMess.setCreatedAt(LocalDateTime.now());
         Message res = messageRepo.save(newMess);
         return  new MessDTO(res);
+    }
+
+    public Message forwardMessage(Long sourceMessageId, Long targetConversationId, Long senderId) {
+        Message source = findMessById(sourceMessageId);
+        if (Boolean.TRUE.equals(source.getIsDeleted())) {
+            throw new IllegalArgumentException("Khong the chuyen tiep tin nhan da thu hoi");
+        }
+
+        Conversation targetConversation = conversationRepo.findById(targetConversationId)
+                .orElseThrow(() -> new ResourceNotFoundException("conversation khong ton tai"));
+
+        Message forwarded = new Message();
+        forwarded.setConversation(targetConversation);
+        forwarded.setSenderId(senderId);
+        forwarded.setType(source.getType());
+        forwarded.setContent(source.getContent());
+        forwarded.setMediaUrl(source.getMediaUrl());
+        forwarded.setFileName(source.getFileName());
+        forwarded.setFileSize(source.getFileSize());
+        forwarded.setIsDeleted(false);
+        forwarded.setIsEdited(false);
+        forwarded.setModerationStatus("NONE");
+        forwarded.setCreatedAt(LocalDateTime.now());
+        return messageRepo.save(forwarded);
     }
 
     public Message findMessById (Long messageId){
@@ -177,6 +225,16 @@ public class MessageService {
             throw new ResourceNotFoundException("message không tồn tại");
         }
         return mess;
+    }
+
+    public List<MessDTO> getMediaAndFiles(Long conversationId) {
+        List<Message> messages = messageRepo.findMediaAndFilesByConversationId(conversationId);
+        List<MessDTO> list = new ArrayList<>();
+        for (Message mess : messages) {
+            list.add(new MessDTO(mess));
+        }
+        attachReactions(list);
+        return list;
     }
 
 }

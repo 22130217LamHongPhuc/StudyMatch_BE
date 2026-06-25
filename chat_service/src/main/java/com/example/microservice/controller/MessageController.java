@@ -1,5 +1,6 @@
 package com.example.microservice.controller;
 
+import com.example.microservice.config.APIResponse;
 import com.example.microservice.config.EnumEvent;
 import com.example.microservice.dto.MessageStatusData;
 import com.example.microservice.dto.MessDTO;
@@ -15,9 +16,13 @@ import com.example.microservice.services.CloudinaryService;
 import com.example.microservice.services.ConversationService;
 import com.example.microservice.services.NotificationService;
 import com.example.microservice.services.MessageStatusService;
+import com.example.microservice.services.MessageService;
+import com.example.microservice.services.MessageModerationService;
 import com.example.microservice.socket.WebSocketSessionManager;
+import com.example.microservice.handle.ResponseStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -52,6 +57,10 @@ public class MessageController {
     WebSocketSessionManager sessionManager;
     @Autowired
     NotificationService notificationService;
+    @Autowired
+    MessageService messageService;
+    @Autowired
+    MessageModerationService messageModerationService;
 
     @GetMapping("/presence/online")
     public Map<String, Boolean> getOnlineStatuses(@RequestParam(name = "userIds", required = false) String userIds) {
@@ -112,6 +121,7 @@ public class MessageController {
         mess.setIsEdited(false);
         mess.setFileName(fileName);
         mess.setFileSize(fileSize);
+        mess.setModerationStatus("NONE");
         Message res = messageRepo.save(mess);
         messageStatusService.markSenderSeen(conversationId, userId, res);
         MessDTO dto = new MessDTO(res);
@@ -119,6 +129,7 @@ public class MessageController {
         SocketEnvelope<NewMessageData> re = new SocketEnvelope<NewMessageData>(EnumEvent.NEW_MESSAGE.toString(), newMess);
         List<Long> participants = chatService.findConversationParticipants(conversationId);
         if (participants.isEmpty()) {
+            messageModerationService.moderateMessageAsync(res.getId());
             return ;
         }
 
@@ -144,6 +155,37 @@ public class MessageController {
             }
             messagingTemplate.convertAndSendToUser(String.valueOf(participantId), "/queue/chat", re);
         }
+        messageModerationService.moderateMessageAsync(res.getId());
+    }
+
+    @PatchMapping("/{messageId}/pin")
+    public ResponseEntity<?> setMessagePinned(
+            @PathVariable Long messageId,
+            @RequestParam Long conversationId,
+            @RequestParam String pinned
+    ) {
+        boolean nextPinned = isPinnedValue(pinned);
+        MessDTO dto = messageService.setMessagePinned(conversationId, messageId, nextPinned);
+        NewMessageData data = new NewMessageData(conversationId, dto);
+        SocketEnvelope<NewMessageData> envelope = new SocketEnvelope<>(
+                nextPinned ? EnumEvent.MESSAGE_PIN.toString() : EnumEvent.MESSAGE_UNPIN.toString(),
+                data
+        );
+
+        List<Long> participants = chatService.findConversationParticipants(conversationId);
+        for (Long participantId : participants) {
+            if (participantId == null) {
+                continue;
+            }
+            messagingTemplate.convertAndSendToUser(String.valueOf(participantId), "/queue/chat", envelope);
+        }
+
+        APIResponse<MessDTO> apiResponse = new APIResponse<>(ResponseStatus.SUCCESS, dto);
+        return ResponseEntity.ok(apiResponse);
+    }
+
+    private boolean isPinnedValue(String pinned) {
+        return "Y".equalsIgnoreCase(pinned) || "true".equalsIgnoreCase(pinned);
     }
 
 

@@ -30,4 +30,10 @@ public class Conversation {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @Column(name = "color", length = 50)
+    private String color;
+
+    @Column(name = "font", length = 50)
+    private String font;
+
 }
