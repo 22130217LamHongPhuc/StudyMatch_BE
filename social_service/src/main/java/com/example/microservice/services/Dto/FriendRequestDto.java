@@ -12,6 +12,5 @@ public class FriendRequestDto {
     private String status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-
 }
 

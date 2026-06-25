@@ -29,4 +29,13 @@ public interface FriendRequestRepo extends JpaRepository< FriendRequest, Long> {
     List<FriendRequest> findBySenderIdOrderByUpdatedAtDesc(Long senderId, Pageable pageable);
     List<FriendRequest> findByReceiverIdOrderByUpdatedAtDesc(Long receiverId, Pageable pageable);
 
+    @Query(value = """
+    select * from friend_requests
+    where (sender_id = :senderId and receiver_id = :receiverId)
+       or (sender_id = :receiverId and receiver_id = :senderId)
+    order by updated_at desc, created_at desc, id desc
+    limit 1
+""", nativeQuery = true)
+    FriendRequest findBySenderIdAndReceiverId(@Param("senderId") Long senderId, @Param("receiverId") Long receiverId);
+
 }

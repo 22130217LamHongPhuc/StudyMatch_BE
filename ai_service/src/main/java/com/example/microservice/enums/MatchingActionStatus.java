@@ -4,5 +4,6 @@ public enum MatchingActionStatus {
     VIEWED,
     FRIEND_REQUEST_SENT,
     REJECTED,
-    ACCEPTED
+    ACCEPTED,
+    SKIPPED
 }
