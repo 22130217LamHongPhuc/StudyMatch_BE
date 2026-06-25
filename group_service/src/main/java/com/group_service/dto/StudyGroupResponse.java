@@ -35,4 +35,6 @@ public class StudyGroupResponse {
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+
+    private boolean isMember;
 }

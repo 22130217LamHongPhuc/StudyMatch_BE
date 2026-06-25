@@ -28,6 +28,7 @@ public interface StudyGroupService {
     Page<StudyGroupResponse> getGroupsByTypeAndSubject(
             com.group_service.entity.enums.GroupType groupType,
             Long mainSubjectId,
+            Long currentUserId,
             int page,
             int limit
     );

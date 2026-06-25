@@ -1,9 +1,11 @@
 package com.group_service.repository;
 
+import com.group_service.dto.StudyGroupResponse;
 import com.group_service.dto.projection.AdminGroupProjection;
 import com.group_service.dto.projection.GroupStats;
 import com.group_service.entity.StudyGroup;
 
+import com.group_service.entity.enums.GroupMemberStatus;
 import com.group_service.entity.enums.GroupStatus;
 import com.group_service.entity.enums.GroupType;
 import org.springframework.data.domain.Page;
@@ -11,6 +13,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+
+import java.util.Collection;
 
 public interface StudyGroupRepository extends JpaRepository<StudyGroup, Long> {
 
@@ -113,16 +117,38 @@ ORDER BY g.createdAt DESC
     );
 
     @Query("""
-        SELECT g
-        FROM StudyGroup g
-        WHERE g.status = :status
-          AND (:groupType IS NULL OR g.groupType = :groupType)
-          AND (:mainSubjectId IS NULL OR g.mainSubjectId = :mainSubjectId)
-    """)
-    Page<StudyGroup> findByFiltersForBrowse(
+    SELECT new com.group_service.dto.StudyGroupResponse(
+        g.id,
+        g.name,
+        g.description,
+        g.ownerUserId,
+        g.termId,
+        g.mainSubjectId,
+        g.subjectName,
+        g.maxMembers,
+        g.visibility,
+        g.status,
+        g.createdAt,
+        g.updatedAt,
+        CASE WHEN EXISTS (
+            SELECT 1
+            FROM GroupMember gm
+            WHERE gm.groupId = g.id
+              AND gm.userId = :currentUserId
+              AND gm.status IN :memberStatuses
+        ) THEN true ELSE false END
+    )
+    FROM StudyGroup g
+    WHERE g.status = :status
+      AND (:groupType IS NULL OR g.groupType = :groupType)
+      AND (:mainSubjectId IS NULL OR g.mainSubjectId = :mainSubjectId)
+""")
+    Page<StudyGroupResponse> findByFiltersForBrowse(
             @Param("status") GroupStatus status,
             @Param("groupType") GroupType groupType,
             @Param("mainSubjectId") Long mainSubjectId,
+            @Param("currentUserId") Long currentUserId,
+            @Param("memberStatuses") Collection<GroupMemberStatus> memberStatuses,
             Pageable pageable
     );
 }

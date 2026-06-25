@@ -35,6 +35,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     private final StudyGroupRepository studyGroupRepository;
     private final GroupMemberRepository groupMemberRepository;
     private final GroupFreeTimeSlotRepository groupFreeTimeSlotRepository;
+    private StudyGroup studyGroup;
 
     @Override
     @Transactional
@@ -87,7 +88,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
             groupFreeTimeSlotRepository.saveAll(slots);
         }
 
-        return toResponse(savedStudyGroup);
+        return toResponse(savedStudyGroup,false);
     }
 
     @Override
@@ -122,7 +123,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
 
         addInvitedMembers(savedStudyGroup.getId(), ownerUserId, request.getMaxMembers(), request.getInvitedUserIds());
 
-        return toResponse(savedStudyGroup);
+        return toResponse(savedStudyGroup,false);
     }
 
     @Override
@@ -215,22 +216,24 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     }
 
     @Override
-    public Page<StudyGroupResponse> getGroupsByTypeAndSubject(GroupType groupType, Long mainSubjectId, int page, int limit) {
+    public Page<StudyGroupResponse> getGroupsByTypeAndSubject(GroupType groupType, Long mainSubjectId,Long currentUserId, int page, int limit) {
         Pageable pageable = PageRequest.of(
                 page,
                 limit,
                 Sort.by(Sort.Direction.DESC, "createdAt")
         );
 
-        Page<StudyGroup> groups = studyGroupRepository.findByFiltersForBrowse(
+        return studyGroupRepository.findByFiltersForBrowse(
                 GroupStatus.ACTIVE,
                 groupType,
                 mainSubjectId,
+                currentUserId,
+                List.of(GroupMemberStatus.ACTIVE),
                 pageable
         );
-
-        return groups.map(this::toResponse);
     }
+
+
 
     @Override
     @Transactional
@@ -320,7 +323,8 @@ public class StudyGroupServiceImpl implements StudyGroupService {
         );
     }
 
-    private StudyGroupResponse toResponse(StudyGroup studyGroup) {
+    private StudyGroupResponse toResponse(StudyGroup studyGroup,boolean isMember) {
+        this.studyGroup = studyGroup;
         return new StudyGroupResponse(
                 studyGroup.getId(),
                 studyGroup.getName(),
@@ -329,12 +333,12 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 studyGroup.getTermId(),
                 studyGroup.getMainSubjectId(),
                 studyGroup.getSubjectName(),
-
                 studyGroup.getMaxMembers(),
                 studyGroup.getVisibility(),
                 studyGroup.getStatus(),
                 studyGroup.getCreatedAt(),
-                studyGroup.getUpdatedAt()
+                studyGroup.getUpdatedAt(),
+                isMember
         );
     }
 

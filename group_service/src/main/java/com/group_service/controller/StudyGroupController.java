@@ -73,16 +73,18 @@ public class StudyGroupController {
         ));
     }
 
-    @GetMapping("/browse")
+    @GetMapping("/browse/{userId}")
     public ResponseEntity<ApiResponse<Page<StudyGroupResponse>>> browseGroups(
             @RequestParam(required = false) GroupType type,
             @RequestParam(required = false) Long subject,
+            @PathVariable Long userId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int limit
     ) {
         Page<StudyGroupResponse> response = studyGroupService.getGroupsByTypeAndSubject(
                 type,
                 subject,
+                userId,
                 page,
                 limit
         );
