@@ -1,5 +1,6 @@
 package com.group_service.entity;
 
+import com.group_service.entity.enums.StudySessionAttendanceStatus;
 import com.group_service.entity.enums.StudySessionParticipantRole;
 import com.group_service.entity.enums.StudySessionParticipantStatus;
 import jakarta.persistence.*;
@@ -68,4 +69,20 @@ public class StudySessionParticipant {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "session_id", insertable = false, updatable = false)
     private StudySession studySession;
+
+    @Column(name = "first_joined_at")
+    private LocalDateTime firstJoinedAt;
+
+    @Column(name = "last_left_at")
+    private LocalDateTime lastLeftAt;
+
+    @Column(name = "total_duration_seconds")
+    private Long totalDurationSeconds = 0L;
+
+    @Column(name = "join_count")
+    private Integer joinCount = 0;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "attendance_status", length = 30)
+    private StudySessionAttendanceStatus attendanceStatus;
 }

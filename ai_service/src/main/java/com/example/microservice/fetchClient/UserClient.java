@@ -1,0 +1,21 @@
+package com.example.microservice.fetchClient;
+
+
+import com.example.microservice.dto.BasicUserResponse;
+import com.example.microservice.dto.admin.matching.ApiResponse;
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+
+import java.util.List;
+
+@FeignClient(name = "USER-SERVICE")
+public interface UserClient {
+
+    @PostMapping(
+            value = "/api/users/basic-info",
+            consumes = MediaType.APPLICATION_JSON_VALUE
+    )
+    ApiResponse<List<BasicUserResponse>> getBasicUsers(@RequestBody List<Long> userIds);
+}

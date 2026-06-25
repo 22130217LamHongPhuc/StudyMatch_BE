@@ -1,13 +1,10 @@
 package com.group_service.service;
 
-import com.group_service.dto.CreateStudySessionRequest;
-import com.group_service.dto.JoinStudySessionResponse;
-import com.group_service.dto.SessionConfirmationStatsResponse;
-import com.group_service.dto.StudySessionResponse;
-import com.group_service.dto.StudySessionStatsResponse;
+import com.group_service.dto.*;
 import com.group_service.entity.enums.GroupStudySessionStatus;
 import com.group_service.entity.enums.StudySessionParticipantStatus;
 import com.group_service.entity.enums.StudySessionType;
+import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -45,4 +42,10 @@ public interface StudySessionService {
     StudySessionStatsResponse getSessionStats(Long userId);
 
     SessionConfirmationStatsResponse getConfirmationStats(Long sessionId, Long userId);
+
+    FeedbackEligibilityResponse getFeedbackEligibility(Long sessionId, Long userId);
+
+    void autoCloseAttendanceLogs(Long sessionId);
+
+    LeaveStudySessionResponse leaveSession(Long sessionId, Long userId, @Valid LeaveStudySessionRequest request);
 }
