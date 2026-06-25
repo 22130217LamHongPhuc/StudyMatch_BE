@@ -19,6 +19,16 @@ public class MessDTO {
     private String status;
     private List<ReactionDTO> reactions;
     private Boolean isDeleted;
+    private Boolean pinned;
+    private Boolean isPinned;
+    private String moderationStatus;
+    private Long replyToMessageId;
+    private Long replyToSenderId;
+    private String replyToType;
+    private String replyToContent;
+    private String replyToMediaURL;
+    private String replyToFileName;
+    private Boolean replyToDeleted;
 
     public MessDTO (Message message){
         boolean deleted = Boolean.TRUE.equals(message.getIsDeleted());
@@ -30,6 +40,21 @@ public class MessDTO {
         this.setSenderId(message.getSenderId());
         this.setMessageId(message.getId());
         this.setIsDeleted(deleted);
+        this.setModerationStatus(message.getModerationStatus());
+        boolean messagePinned = "Y".equalsIgnoreCase(message.getPinned());
+        this.setPinned(messagePinned);
+        this.setIsPinned(messagePinned);
+        if (message.getReplyTo() != null) {
+            Message replyTo = message.getReplyTo();
+            boolean replyDeleted = Boolean.TRUE.equals(replyTo.getIsDeleted());
+            this.setReplyToMessageId(replyTo.getId());
+            this.setReplyToSenderId(replyTo.getSenderId());
+            this.setReplyToType(replyTo.getType());
+            this.setReplyToContent(replyDeleted ? null : replyTo.getContent());
+            this.setReplyToMediaURL(replyDeleted ? null : replyTo.getMediaUrl());
+            this.setReplyToFileName(replyDeleted ? null : replyTo.getFileName());
+            this.setReplyToDeleted(replyDeleted);
+        }
     }
     public MessDTO(){
 

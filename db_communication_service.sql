@@ -172,6 +172,8 @@ CREATE TABLE `messages`  (
   `edited_at` datetime NULL DEFAULT NULL,
   `is_deleted` tinyint(1) NOT NULL DEFAULT 0,
   `deleted_at` datetime NULL DEFAULT NULL,
+  `pinned` enum('Y','N') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'N',
+  `moderation_status` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'NONE',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`message_id`) USING BTREE,
   INDEX `idx_messages_conversation_created_at`(`conversation_id` ASC, `created_at` ASC) USING BTREE,

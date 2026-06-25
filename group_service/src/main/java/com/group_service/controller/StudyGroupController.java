@@ -14,8 +14,10 @@ import com.group_service.service.StudyGroupService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -123,6 +125,25 @@ public class StudyGroupController {
                 StatusCode.SUCCESS,
                 "Get active group members successfully",
                 userIds
+        ));
+    }
+
+    @PostMapping("/{groupId}/members/{userId}/kick")
+    public ResponseEntity<ApiResponse<Void>> kickMember(
+            @PathVariable Long groupId,
+            @PathVariable Long userId
+    ) {
+        var member = groupMemberRepository
+                .findByGroupIdAndUserIdAndStatus(groupId, userId, GroupMemberStatus.ACTIVE)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Active group member not found"));
+        member.setStatus(GroupMemberStatus.REMOVED);
+        groupMemberRepository.save(member);
+
+        return ResponseEntity.ok(new ApiResponse<>(
+                true,
+                StatusCode.SUCCESS,
+                "Kick member successfully",
+                null
         ));
     }
 

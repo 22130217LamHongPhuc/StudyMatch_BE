@@ -1,0 +1,27 @@
+# Target build directory
+target/
+**/target/
+
+# Compiled class files
+*.class
+**/classes/
+
+# Log files
+*.log
+**/hs_err_pid*.log
+
+# IDEs and editors
+.idea/
+.vscode/
+*.usr
+*.placeholder
+.metadata
+.classpath
+.project
+.settings/
+bin/
+**/bin/
+
+# OS generated files
+.DS_Store
+Thumbs.db

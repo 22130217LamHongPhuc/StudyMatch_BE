@@ -2,7 +2,9 @@ package com.example.microservice.services.service;
 
 
 import com.example.microservice.services.repository.FriendRepo;
+import com.example.microservice.services.repository.FriendRequestRepo;
 import com.example.microservice.services.Dto.FriendDto;
+
 import com.example.microservice.services.Dto.BasicUserResponse;
 import com.example.microservice.services.client.UserServiceClient;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,11 +18,21 @@ import java.util.stream.Collectors;
 public class FriendService {
     @Autowired
     FriendRepo friendRepo;
+
+    @Autowired
+    FriendRequestRepo friendRequestRepo;
     
     @Autowired
     UserServiceClient userServiceClient;
 
+    @org.springframework.transaction.annotation.Transactional
+    public void unfriend(Long userId, Long friendId) {
+        friendRepo.deleteFriendship(userId, friendId);
+        friendRequestRepo.deleteFriendRequests(userId, friendId);
+    }
+
     public Long totalFriend(Long userId){
+
         return friendRepo.countTotalFriend(userId);
     }
 

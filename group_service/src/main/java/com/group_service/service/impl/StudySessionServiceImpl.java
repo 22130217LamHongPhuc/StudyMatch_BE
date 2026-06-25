@@ -205,6 +205,30 @@ public class StudySessionServiceImpl implements StudySessionService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<StudySessionResponse> getSessionsByGroupId(Long groupId, Long userId) {
+        StudyGroup group = studyGroupRepository.findById(groupId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Study group not found"));
+
+        if (group.getStatus() == GroupStatus.DELETED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Group is deleted");
+        }
+
+        if (userId != null && !groupMemberRepository.existsByGroupIdAndUserIdAndStatus(
+                groupId,
+                userId,
+                GroupMemberStatus.ACTIVE
+        )) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not an active member of this group");
+        }
+
+        return studySessionRepository.findByGroupIdOrderByStartTimeAsc(groupId)
+                .stream()
+                .map(session -> toResponse(session, userId))
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public StudySessionResponse getSessionById(Long sessionId, Long userId) {
         StudySession session = studySessionRepository.findById(sessionId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Study session not found"));

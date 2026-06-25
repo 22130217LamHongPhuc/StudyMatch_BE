@@ -76,6 +76,16 @@ public class Message {
     @Column(name = "is_deleted", nullable = false)
     private Boolean isDeleted = false;
 
+    @NotNull
+    @ColumnDefault("'N'")
+    @Column(name = "pinned", nullable = false, length = 1)
+    private String pinned = "N";
+
+    @NotNull
+    @ColumnDefault("'NONE'")
+    @Column(name = "moderation_status", nullable = false, length = 50)
+    private String moderationStatus = "NONE";
+
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
