@@ -50,6 +50,15 @@ public class FriendsController {
         return ResponseEntity.ok(new APIResponse<>(ResponseStatus.SUCCESS, res));
     }
 
+    @PatchMapping("/friend-requests/sender/{senderId}/receiver/{receiverId}/status")
+    public ResponseEntity<?> updateFriendRequestStatusBySenderAndReceiver(
+            @PathVariable Long senderId,
+            @PathVariable Long receiverId,
+            @RequestBody @Valid UpdateFriendRequestStatusRequest req){
+        FriendRequestDto res = service.updateStatusBySenderAndReceiver(senderId, receiverId, req.getStatus());
+        return ResponseEntity.ok(new APIResponse<>(ResponseStatus.SUCCESS, res));
+    }
+
     @GetMapping("/friends/{userId}/list")
     public ResponseEntity<?> getFriendList(@PathVariable Long userId){
         List<FriendDto> res = friendService.getFriendList(userId);

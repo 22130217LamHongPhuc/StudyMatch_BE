@@ -1,9 +1,12 @@
 package com.example.microservice.service.impl;
 
 import com.example.microservice.dto.CreateMatchingItemRequest;
+import com.example.microservice.dto.DecidedMatchingItemsDto;
 import com.example.microservice.dto.MatchingItemResponse;
 import com.example.microservice.dto.UpdateMatchingItemStatusRequest;
 import com.example.microservice.entity.MatchingItem;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import com.example.microservice.enums.MatchingActionStatus;
 import com.example.microservice.enums.StatusCode;
 import com.example.microservice.exception.AppException;
@@ -14,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -72,15 +76,15 @@ public class MatchingItemServiceImpl implements MatchingItemService {
                     request.getUserId(),
                     request.getRecommendedUserId(),
                     actionStatus,
-                    null,
-                    null);
+                    request.getFinalScore(),
+                    request.getReasonText());
 
             upsertOneSide(
                     request.getRecommendedUserId(),
                     request.getUserId(),
                     actionStatus,
-                    null,
-                    null);
+                    request.getFinalScore(),
+                    request.getReasonText());
 
             return mapToResponse(firstSide);
         }
@@ -89,8 +93,8 @@ public class MatchingItemServiceImpl implements MatchingItemService {
                 request.getUserId(),
                 request.getRecommendedUserId(),
                 actionStatus,
-                null,
-                null);
+                request.getFinalScore(),
+                request.getReasonText());
 
         return mapToResponse(saved);
     }
@@ -169,6 +173,7 @@ public class MatchingItemServiceImpl implements MatchingItemService {
             case FRIEND_REQUEST_SENT -> 2;
             case REJECTED -> 3;
             case ACCEPTED -> 3;
+            case SKIPPED -> 4;
         };
     }
 
@@ -193,6 +198,49 @@ public class MatchingItemServiceImpl implements MatchingItemService {
                 .respondedAt(matchingItem.getRespondedAt())
                 .createdAt(matchingItem.getCreatedAt())
                 .updatedAt(matchingItem.getUpdatedAt())
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DecidedMatchingItemsDto getDecidedMatchingItems(Long userId, Integer page, Integer size) {
+        Pageable pageable = PageRequest.of(page, size);
+
+        List<MatchingActionStatus> acceptedStatuses = List.of(
+                MatchingActionStatus.ACCEPTED,
+                MatchingActionStatus.FRIEND_REQUEST_SENT);
+
+        List<MatchingItemResponse> accepted = matchingItemRepository
+                .findRelatedByUserIdAndActionStatusInOrderByUpdatedAtDesc(
+                        userId,
+                        acceptedStatuses,
+                        pageable)
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+
+        List<MatchingItemResponse> rejected = matchingItemRepository
+                .findRelatedByUserIdAndActionStatusOrderByUpdatedAtDesc(
+                        userId,
+                        MatchingActionStatus.REJECTED,
+                        pageable)
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+
+        List<MatchingItemResponse> skipped = matchingItemRepository
+                .findRelatedByUserIdAndActionStatusOrderByUpdatedAtDesc(
+                        userId,
+                        MatchingActionStatus.SKIPPED,
+                        pageable)
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+
+        return DecidedMatchingItemsDto.builder()
+                .accepted(accepted)
+                .rejected(rejected)
+                .skipped(skipped)
                 .build();
     }
 }

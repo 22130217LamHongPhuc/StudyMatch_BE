@@ -125,4 +125,29 @@ public class FriendRequestService {
         return toDto(saved);
     }
 
+    @Transactional
+    public FriendRequestDto updateStatusBySenderAndReceiver(Long senderId, Long receiverId, String status){
+        FriendRequest req = repo.findBySenderIdAndReceiverId(senderId, receiverId);
+        if (req == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Friend request not found");
+        }
+
+        req.setStatus(status.toUpperCase());
+        req.setUpdatedAt(getTimeZone());
+        FriendRequest saved = repo.save(req);
+
+        if ("APPROVED".equalsIgnoreCase(status)) {
+            Long friendCount = friendRepo.isFriends(req.getSenderId(), req.getReceiverId());
+            if (friendCount == null || friendCount == 0) {
+                Friend friend = new Friend();
+                friend.setUser1Id(req.getSenderId());
+                friend.setUser2Id(req.getReceiverId());
+                friend.setCreatedAt(Instant.now());
+                friendRepo.save(friend);
+            }
+        }
+
+        return toDto(saved);
+    }
+
 }

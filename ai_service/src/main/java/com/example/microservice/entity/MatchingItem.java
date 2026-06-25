@@ -1,6 +1,7 @@
 package com.example.microservice.entity;
 
 import com.example.microservice.enums.MatchingActionStatus;
+import com.example.microservice.enums.MatchingRejectType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -49,6 +50,11 @@ public class MatchingItem {
     @Enumerated(EnumType.STRING)
     @Column(name = "action_status", nullable = false)
     private MatchingActionStatus actionStatus = MatchingActionStatus.VIEWED;
+
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "reject_type")
+    private MatchingRejectType rejectType;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
