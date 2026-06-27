@@ -254,7 +254,8 @@ public class StudyGroupServiceImpl implements StudyGroupService {
         }
 
         Long userId = request.getUserId();
-        if (groupMemberRepository.existsByGroupIdAndUserId(groupId, userId)) {
+        var existingMember = groupMemberRepository.findByGroupIdAndUserId(groupId, userId);
+        if (existingMember.isPresent() && existingMember.get().getStatus() == GroupMemberStatus.ACTIVE) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "User already joined this group");
         }
 
@@ -264,6 +265,22 @@ public class StudyGroupServiceImpl implements StudyGroupService {
             if (activeMembers >= maxMembers) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Group has reached max members");
             }
+        }
+
+        if (existingMember.isPresent()) {
+            GroupMember member = existingMember.get();
+            member.setRole(GroupMemberRole.MEMBER);
+            member.setStatus(GroupMemberStatus.ACTIVE);
+            GroupMember saved = groupMemberRepository.save(member);
+
+            return new JoinGroupResponse(
+                    saved.getId(),
+                    saved.getGroupId(),
+                    saved.getUserId(),
+                    saved.getRole(),
+                    saved.getStatus(),
+                    saved.getJoinedAt()
+            );
         }
 
         GroupMember member = GroupMember.builder()
