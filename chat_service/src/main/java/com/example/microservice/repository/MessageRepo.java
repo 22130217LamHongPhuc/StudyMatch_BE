@@ -45,6 +45,17 @@ public interface MessageRepo extends JpaRepository<Message, Long> {
                         @Param("userId") Long userId,
                         @Param("lastDeliveredMessageId") Long lastDeliveredMessageId);
 
+        @Query("""
+                select count(m) from Message m
+                where m.conversation.id = :conversationId
+                  and m.senderId <> :userId
+                  and (:lastSeenMessageId is null or m.id > :lastSeenMessageId)
+                """)
+        long countUnreadMessages(
+                @Param("conversationId") Long conversationId,
+                @Param("userId") Long userId,
+                @Param("lastSeenMessageId") Long lastSeenMessageId);
+
         Page<Message> findByModerationStatusNotOrderByCreatedAtDesc(String status, Pageable pageable);
 
         Page<Message> findByModerationStatusOrderByCreatedAtDesc(String status, Pageable pageable);

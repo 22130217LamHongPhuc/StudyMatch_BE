@@ -29,4 +29,22 @@ public class NotificationController {
         notificationService.sendSessionReminder(request);
         return ResponseEntity.ok().build();
     }
+
+    @PostMapping("/notify-group-invitation")
+    public ResponseEntity<Void> sendGroupInvitationNotification(@RequestBody com.example.microservice.dto.GroupInvitationNotificationRequest request) {
+        notificationService.sendGroupInvitationNotification(request);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/notify-group-invitation-status")
+    public ResponseEntity<Void> sendGroupInvitationStatusNotification(@RequestBody com.example.microservice.dto.GroupInvitationNotificationRequest request) {
+        notificationService.sendGroupInvitationStatusNotification(request);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/notify-group-kick")
+    public ResponseEntity<Void> sendGroupKickNotification(@RequestBody com.example.microservice.dto.GroupKickNotificationRequest request) {
+        notificationService.sendGroupKickNotification(request);
+        return ResponseEntity.ok().build();
+    }
 }

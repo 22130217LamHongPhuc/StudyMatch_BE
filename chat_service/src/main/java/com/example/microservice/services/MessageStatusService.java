@@ -88,6 +88,10 @@ public class MessageStatusService {
         return messageStatusRepo.findByConversationIdAndUserId(conversationId, userId);
     }
 
+    public List<MessageStatus> getStatusesByConversation(Long conversationId) {
+        return messageStatusRepo.findAllByConversationId(conversationId);
+    }
+
     private MessageStatus createStatus(Long conversationId, Long userId) {
         Conversation conversation = conversationRepo.findById(conversationId)
                 .orElseThrow(() -> new RuntimeException("Khong tim thay conversation"));

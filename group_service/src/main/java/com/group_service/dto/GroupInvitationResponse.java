@@ -1,0 +1,27 @@
+package com.group_service.dto;
+
+import com.group_service.entity.enums.GroupInvitationStatus;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.time.LocalDateTime;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class GroupInvitationResponse {
+    private Long invitationId;
+    private Long groupId;
+    private String groupName;
+    private Long inviterUserId;
+    private Long inviteeUserId;
+    private String inviterName;
+    private String inviterAvatar;
+    private GroupInvitationStatus status;
+    private LocalDateTime createdAt;
+}

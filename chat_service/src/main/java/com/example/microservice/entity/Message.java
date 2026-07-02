@@ -38,7 +38,7 @@ public class Message {
     private Long senderId;
 
     @Lob
-    @Column(name = "content")
+    @Column(name = "content", columnDefinition = "LONGTEXT")
     private String content;
 
     @Size(max = 50)

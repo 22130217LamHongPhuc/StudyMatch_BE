@@ -35,6 +35,14 @@ public interface StudyGroupService {
 
     JoinGroupResponse joinGroup(Long groupId, JoinGroupRequest request);
 
+    com.group_service.dto.GroupInvitationResponse sendInvitation(Long groupId, Long inviteeUserId, String token);
+
+    List<com.group_service.dto.GroupInvitationResponse> getPendingInvitations(String token);
+
+    List<com.group_service.dto.GroupInvitationResponse> getGroupInvitations(Long groupId, String token);
+
+    void acceptInvitation(Long invitationId, String token);
+
+    void rejectInvitation(Long invitationId, String token);
 
 }
-
