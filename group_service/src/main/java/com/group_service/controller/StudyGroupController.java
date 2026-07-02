@@ -23,6 +23,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 import java.util.Map;
 
+
 @CrossOrigin(origins = "*", allowedHeaders = "*")
 @RestController
 @RequestMapping("/api/groups")
@@ -31,6 +32,7 @@ public class StudyGroupController {
 
     private final StudyGroupService studyGroupService;
     private final GroupMemberRepository groupMemberRepository;
+    private final com.group_service.clients.ChatClient chatClient;
 //    private final ProfileClient profileClient;
 //
 //    @GetMapping("/test")
@@ -169,6 +171,32 @@ public class StudyGroupController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Active group member not found"));
         member.setStatus(GroupMemberStatus.REMOVED);
         groupMemberRepository.save(member);
+
+        try {
+            chatClient.syncGroupParticipants(groupId);
+        } catch (Exception e) {
+            System.err.println("Failed to sync group participants on kickMember: " + e.getMessage());
+        }
+
+        String groupName = null;
+        try {
+            com.group_service.dto.StudyGroupDetailResponse groupDetail = studyGroupService.getGroupById(groupId);
+            if (groupDetail != null) {
+                groupName = groupDetail.getName();
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to fetch group details on kickMember: " + e.getMessage());
+        }
+
+        try {
+            chatClient.sendGroupKickNotification(com.group_service.dto.GroupKickNotificationRequest.builder()
+                    .userId(userId)
+                    .groupId(groupId)
+                    .groupName(groupName)
+                    .build());
+        } catch (Exception e) {
+            System.err.println("Failed to send WebSocket kick notification on kickMember: " + e.getMessage());
+        }
 
         return ResponseEntity.ok(new ApiResponse<>(
                 true,
