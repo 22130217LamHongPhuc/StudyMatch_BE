@@ -71,5 +71,19 @@ public class UserController {
         return ResponseEntity.ok(new ApiResponse<>(true, StatusCode.SUCCESS, "Get fullname successfully", fullName));
     }
 
+    @GetMapping("/{userId}")
+    public ResponseEntity<java.util.Map<String, Object>> getUserById(@PathVariable Long userId) {
+        com.example.microservice.entity.User user = userService.getProfile(userId);
+        java.util.Map<String, Object> response = new java.util.HashMap<>();
+        if (user != null) {
+            response.put("userId", user.getUserId());
+            response.put("fullName", user.getFullName());
+            response.put("avatarUrl", user.getAvatarUrl());
+            response.put("email", user.getEmail());
+            response.put("username", user.getFullName());
+        }
+        return ResponseEntity.ok(response);
+    }
+
 }
 

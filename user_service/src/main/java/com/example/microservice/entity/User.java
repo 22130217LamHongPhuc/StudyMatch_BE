@@ -43,6 +43,9 @@ public class User {
     @Column(name = "avatar_url", length = 500)
     private String avatarUrl;
 
+    @Column(name = "banner", length = 500)
+    private String banner;
+
     @Column(nullable = false, length = 30)
     private String role = "student";
 
