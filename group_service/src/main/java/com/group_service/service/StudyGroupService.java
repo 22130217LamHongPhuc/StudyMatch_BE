@@ -8,9 +8,9 @@ import java.util.List;
 
 public interface StudyGroupService {
 
-    StudyGroupResponse createStudyGroup(CreateStudyGroupRequest request);
+    StudyGroupResponse createStudyGroup(CreateStudyGroupRequest request, org.springframework.web.multipart.MultipartFile avatar);
 
-    StudyGroupResponse createCommunityGroup(CreateStudyGroupRequest request);
+    StudyGroupResponse createCommunityGroup(CreateStudyGroupRequest request, org.springframework.web.multipart.MultipartFile avatar);
 
     StudyGroupDetailResponse getGroupById(Long groupId);
 

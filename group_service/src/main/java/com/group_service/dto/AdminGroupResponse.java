@@ -17,6 +17,8 @@ public class AdminGroupResponse {
 
     private String name;
 
+    private String avatarUrl;
+
     private String type;
 
     private String visibility;

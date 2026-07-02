@@ -15,6 +15,8 @@ public class StudyGroupResponse {
 
     private String name;
 
+    private String avatarUrl;
+
     private String description;
 
     private Long ownerUserId;
