@@ -19,9 +19,9 @@ import org.springframework.web.bind.annotation.*;
 import com.example.microservice.entity.Conversation;
 
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
+import com.example.microservice.entity.MessageStatus;
 
 @RestController
 @RequestMapping("/conversation")
@@ -35,6 +35,8 @@ public class Chat2 {
     MessageStatusService messageStatusService;
     @Autowired
     SimpMessagingTemplate messagingTemplate;
+    @Autowired
+    com.example.microservice.repository.MessageRepo messageRepo;
 
     @GetMapping
     public ResponseEntity<?> getMess(@RequestParam Long currentUser, @RequestParam Long targetUser, @RequestParam Long page){
@@ -66,6 +68,7 @@ public class Chat2 {
         map.put("font", conv != null ? conv.getFont() : null);
         List<MessDTO> list = messService.getListMessWithStatus(conversationId, currentUser, targetUser, page);
         map.put("listMess", list);
+        map.put("seenStatus", getConversationSeenStatus(conversationId));
         if (page == 0) {
             markLoadedIncomingMessagesSeen(conversationId, currentUser, targetUser, list);
         }
@@ -93,6 +96,7 @@ public class Chat2 {
         map.put("font", conv != null ? conv.getFont() : null);
         List<MessDTO> list = messService.getListMess(conversationId, page);
         map.put("listMess", list);
+        map.put("seenStatus", getConversationSeenStatus(conversationId));
 
         if (page == 0) {
             List<Long> incomingMessageIds = list.stream()
@@ -108,6 +112,46 @@ public class Chat2 {
         apiResponse = new APIResponse<>(ResponseStatus.SUCCESS, map);
         return ResponseEntity.ok(apiResponse);
     }
+
+    @PostMapping("/group/{groupId}/sync-participants")
+    public ResponseEntity<Void> syncGroupParticipants(@PathVariable Long groupId) {
+        serivce.syncGroupConversationParticipants(groupId);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/group/pins")
+    public ResponseEntity<?> getGroupPins(@RequestParam Long currentUser, @RequestParam List<Long> groupIds) {
+        List<Map<String, Object>> list = new java.util.ArrayList<>();
+        for (Long groupId : groupIds) {
+            Optional<Long> convId = serivce.findGroupConversationId(groupId);
+            if (convId.isPresent()) {
+                Map<String, Object> map = new HashMap<>();
+                map.put("groupId", groupId);
+                map.put("conversationId", convId.get());
+                map.put("pinned", false);
+
+                com.example.microservice.entity.Message latestMessage = serivce.getLatestMessage(convId.get()).orElse(null);
+                if (latestMessage != null) {
+                    map.put("lastMessage", new MessDTO(latestMessage));
+                }
+
+                Long conversationId = convId.get();
+                Long lastSeenMessageId = messageStatusService.findStatus(conversationId, currentUser)
+                        .map(status -> status.getLastSeenMessage() != null ? status.getLastSeenMessage().getId() : null)
+                        .orElse(null);
+
+                long unreadCount = 0;
+                if (latestMessage != null && !currentUser.equals(latestMessage.getSenderId())) {
+                    unreadCount = messageRepo.countUnreadMessages(conversationId, currentUser, lastSeenMessageId);
+                }
+                map.put("unreadCount", unreadCount);
+
+                list.add(map);
+            }
+        }
+        return ResponseEntity.ok(new APIResponse<>(ResponseStatus.SUCCESS, list));
+    }
+
 
     @GetMapping("/by-id")
     public ResponseEntity<?> getByConversationId(
@@ -252,7 +296,15 @@ public class Chat2 {
         messagingTemplate.convertAndSendToUser(String.valueOf(targetUser), "/queue/chat", response);
     }
 
-
-
-
+    private List<Map<String, Object>> getConversationSeenStatus(Long conversationId) {
+        List<MessageStatus> statuses = messageStatusService.getStatusesByConversation(conversationId);
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (MessageStatus status : statuses) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("userId", status.getUserId());
+            map.put("lastSeenMessageId", status.getLastSeenMessage() != null ? status.getLastSeenMessage().getId() : null);
+            result.add(map);
+        }
+        return result;
+    }
 }

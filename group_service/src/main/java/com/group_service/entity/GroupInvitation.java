@@ -33,6 +33,7 @@ public class GroupInvitation {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Long id;
 
     @Column(name = "group_id", nullable = false)
@@ -60,5 +61,3 @@ public class GroupInvitation {
     @Column(name = "expired_at")
     private LocalDateTime expiredAt;
 }
-
-

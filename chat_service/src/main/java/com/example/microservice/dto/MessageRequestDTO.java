@@ -11,4 +11,5 @@ public class MessageRequestDTO {
     private Long conversationId;
     private Long otherUserId;
     private MessDTO lastMessage;
+    private Long unreadCount;
 }

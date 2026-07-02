@@ -102,3 +102,73 @@ public class NotificationService {
         }
     }
 }
+    public void sendGroupInvitationNotification(com.example.microservice.dto.GroupInvitationNotificationRequest request) {
+        Long userId = request.getUserId();
+        if (userId == null || !sessionManager.isOnline(userId)) {
+            return;
+        }
+
+        Map<String, Object> data = new java.util.HashMap<>();
+        data.put("groupId", request.getGroupId());
+        data.put("groupName", request.getGroupName());
+        data.put("inviterName", request.getInviterName());
+        data.put("invitationId", request.getInvitationId());
+
+        SocketEnvelope<Map<String, Object>> envelope = new SocketEnvelope<>(
+                EnumEvent.GROUP_INVITATION_RECEIVE.toString(),
+                data
+        );
+
+        messagingTemplate.convertAndSendToUser(
+                String.valueOf(userId),
+                "/queue/chat",
+                envelope
+        );
+    }
+    public void sendGroupInvitationStatusNotification(com.example.microservice.dto.GroupInvitationNotificationRequest request) {
+        Long userId = request.getUserId();
+        if (userId == null || !sessionManager.isOnline(userId)) {
+            return;
+        }
+
+        Map<String, Object> data = new java.util.HashMap<>();
+        data.put("groupId", request.getGroupId());
+        data.put("groupName", request.getGroupName());
+        data.put("invitationId", request.getInvitationId());
+        data.put("inviteeUserId", request.getInviteeUserId());
+        data.put("status", request.getStatus());
+
+        SocketEnvelope<Map<String, Object>> envelope = new SocketEnvelope<>(
+                EnumEvent.GROUP_INVITATION_REJECTED.toString(),
+                data
+        );
+
+        messagingTemplate.convertAndSendToUser(
+                String.valueOf(userId),
+                "/queue/chat",
+                envelope
+        );
+    }
+
+    public void sendGroupKickNotification(com.example.microservice.dto.GroupKickNotificationRequest request) {
+        Long userId = request.getUserId();
+        if (userId == null || !sessionManager.isOnline(userId)) {
+            return;
+        }
+
+        Map<String, Object> data = new java.util.HashMap<>();
+        data.put("groupId", request.getGroupId());
+        data.put("groupName", request.getGroupName());
+
+        SocketEnvelope<Map<String, Object>> envelope = new SocketEnvelope<>(
+                EnumEvent.GROUP_MEMBER_KICKED.toString(),
+                data
+        );
+
+        messagingTemplate.convertAndSendToUser(
+                String.valueOf(userId),
+                "/queue/chat",
+                envelope
+        );
+    }
+}

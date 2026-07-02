@@ -21,5 +21,12 @@ public class DatabaseInitializer implements CommandLineRunner {
             // Column already exists or other error
             System.out.println("[ChatService] Column 'font' in 'conversations' might already exist: " + e.getMessage());
         }
+
+        try {
+            jdbcTemplate.execute("ALTER TABLE messages MODIFY COLUMN content LONGTEXT");
+            System.out.println("[ChatService] Successfully modified column 'content' to LONGTEXT in 'messages' table.");
+        } catch (Exception e) {
+            System.out.println("[ChatService] Failed to modify column 'content' to LONGTEXT: " + e.getMessage());
+        }
     }
 }

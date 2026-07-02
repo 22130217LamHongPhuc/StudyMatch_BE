@@ -23,4 +23,9 @@ public interface UserClient {
 
     @PostMapping("/api/users/send-session-reminder")
     void sendSessionReminderEmail(@RequestBody SessionReminderEmailRequest request);
+
+    @GetMapping("/api/auth/validate-token")
+    com.group_service.dto.TokenValidateResponse validateToken(
+            @org.springframework.web.bind.annotation.RequestHeader("Authorization") String authorization
+    );
 }
