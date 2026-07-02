@@ -17,6 +17,7 @@ public class AdminGroupDetailResponse {
 
     private Long id;
     private String name;
+    private String avatarUrl;
     private String description;
 
     private GroupType groupType;

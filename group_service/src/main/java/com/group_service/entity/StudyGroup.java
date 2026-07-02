@@ -43,6 +43,9 @@ public class StudyGroup {
     @Column(nullable = false, length = 150)
     private String name;
 
+    @Column(name = "avatar_url")
+    private String avatarUrl;
+
     @Lob
     @Column(columnDefinition = "TEXT")
     private String description;

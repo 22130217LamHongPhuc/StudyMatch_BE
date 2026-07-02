@@ -28,6 +28,7 @@ public interface StudyGroupRepository extends JpaRepository<StudyGroup, Long> {
     @Query("""
     SELECT g.id AS id,
            g.name AS name,
+           g.avatarUrl AS avatarUrl,
            g.groupType AS groupType,
            g.subjectName AS subjectName,
            g.termId AS termId,
@@ -41,7 +42,7 @@ public interface StudyGroupRepository extends JpaRepository<StudyGroup, Long> {
     FROM StudyGroup g
     LEFT JOIN GroupMember gm
            ON gm.groupId = g.id
-    GROUP BY g.id, g.name, g.groupType, g.subjectName,
+    GROUP BY g.id, g.name, g.avatarUrl, g.groupType, g.subjectName,
              g.termId, g.createdByUserId, g.ownerUserId,
              g.maxMembers, g.status, g.visibility, g.createdAt
     ORDER BY g.createdAt DESC
@@ -65,6 +66,7 @@ public interface StudyGroupRepository extends JpaRepository<StudyGroup, Long> {
     @Query("""
 SELECT g.id AS id,
        g.name AS name,
+       g.avatarUrl AS avatarUrl,
        g.groupType AS groupType,
        g.subjectName AS subjectName,
        g.termId AS termId,
@@ -84,7 +86,7 @@ WHERE (CAST(:groupType AS string) IS NULL OR g.groupType = :groupType)
         :keyWord IS NULL OR
         LOWER(g.name) LIKE LOWER(CONCAT('%', :keyWord, '%'))
       )
-GROUP BY g.id, g.name, g.groupType, g.subjectName,
+GROUP BY g.id, g.name, g.avatarUrl, g.groupType, g.subjectName,
          g.termId, g.createdByUserId, g.ownerUserId,
          g.maxMembers, g.status, g.visibility, g.createdAt
 ORDER BY g.createdAt DESC
@@ -99,6 +101,7 @@ ORDER BY g.createdAt DESC
     @Query("""
  SELECT g.id AS id,
         g.name AS name,
+        g.avatarUrl AS avatarUrl,
         g.groupType AS groupType,
         g.subjectName AS subjectName,
         g.termId AS termId,
@@ -114,7 +117,7 @@ ORDER BY g.createdAt DESC
         ON gm.groupId = g.id
  WHERE LOWER(g.name) LIKE LOWER(CONCAT('%', :keyWord, '%'))
     OR LOWER(CAST(g.description AS string)) LIKE LOWER(CONCAT('%', :keyWord, '%'))
- GROUP BY g.id, g.name, g.groupType, g.subjectName,
+ GROUP BY g.id, g.name, g.avatarUrl, g.groupType, g.subjectName,
           g.termId, g.createdByUserId, g.ownerUserId,
           g.maxMembers, g.status, g.visibility, g.createdAt
 """)
@@ -127,6 +130,7 @@ ORDER BY g.createdAt DESC
     SELECT new com.group_service.dto.StudyGroupResponse(
         g.id,
         g.name,
+        g.avatarUrl,
         g.description,
         g.ownerUserId,
         g.termId,

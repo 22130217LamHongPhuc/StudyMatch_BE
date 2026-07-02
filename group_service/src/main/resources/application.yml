@@ -46,3 +46,8 @@ app:
 
 google:
   client-id: 714586252342-f47e1oar4i153si4gp61i15v7lg625ft.apps.googleusercontent.com
+
+cloudinary:
+  cloud-name: dx2prhbqh
+  api-key: 174824789952654
+  api-secret: sQ-ju5OkJXRzniGUoVCa-68ao8o

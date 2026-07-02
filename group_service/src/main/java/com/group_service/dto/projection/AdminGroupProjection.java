@@ -12,6 +12,8 @@ public interface AdminGroupProjection {
 
     String getName();
 
+    String getAvatarUrl();
+
     GroupType getGroupType();
 
     GroupVisibility getVisibility();

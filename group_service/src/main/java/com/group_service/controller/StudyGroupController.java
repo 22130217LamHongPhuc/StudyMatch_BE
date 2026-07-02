@@ -40,11 +40,13 @@ public class StudyGroupController {
 //        return profileClient.getActiveTerm();
 //    }
 
-    @PostMapping
-    public ResponseEntity<ApiResponse<StudyGroupResponse>> createGroup(@Valid @RequestBody CreateStudyGroupRequest request) {
+    @PostMapping(consumes = {"multipart/form-data"})
+    public ResponseEntity<ApiResponse<StudyGroupResponse>> createGroup(
+            @RequestPart("request") @Valid CreateStudyGroupRequest request,
+            @RequestPart(value = "avatar", required = false) org.springframework.web.multipart.MultipartFile avatar) {
 //        Long termId = profileClient.getActiveTerm();
         request.setTermId(8L);
-        StudyGroupResponse response = studyGroupService.createStudyGroup(request);
+        StudyGroupResponse response = studyGroupService.createStudyGroup(request, avatar);
         return ResponseEntity.ok(new ApiResponse<>(
                true,
                StatusCode.SUCCESS,
@@ -54,11 +56,13 @@ public class StudyGroupController {
     }
 
 
-    @PostMapping("/community")
-    public ResponseEntity<ApiResponse<StudyGroupResponse>> createCommunityGroup(@Valid @RequestBody CreateStudyGroupRequest request) {
+    @PostMapping(value = "/community", consumes = {"multipart/form-data"})
+    public ResponseEntity<ApiResponse<StudyGroupResponse>> createCommunityGroup(
+            @RequestPart("request") @Valid CreateStudyGroupRequest request,
+            @RequestPart(value = "avatar", required = false) org.springframework.web.multipart.MultipartFile avatar) {
 //        Long termId = profileClient.getActiveTerm();
         request.setTermId(8L);
-        StudyGroupResponse response = studyGroupService.createCommunityGroup(request);
+        StudyGroupResponse response = studyGroupService.createCommunityGroup(request, avatar);
         return ResponseEntity.ok(new ApiResponse<>(
                 true,
                 StatusCode.SUCCESS,

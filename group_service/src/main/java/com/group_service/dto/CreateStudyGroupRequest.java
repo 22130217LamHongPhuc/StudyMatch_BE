@@ -38,6 +38,8 @@ public class CreateStudyGroupRequest {
         @Size(max = 100)
         private List<@NotNull Long> invitedUserIds;
 
+        private String avatarUrl;
+
         private List<FreeTimeSlotRequest> freeTimeSlots;
 }
 
