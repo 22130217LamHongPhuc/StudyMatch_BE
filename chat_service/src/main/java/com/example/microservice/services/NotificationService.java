@@ -2,6 +2,7 @@ package com.example.microservice.services;
 
 import com.example.microservice.config.EnumEvent;
 import com.example.microservice.dto.SessionReminderRequest;
+import com.example.microservice.dto.StudySessionCreatedRequest;
 import com.example.microservice.dto.SocketEnvelope;
 import com.example.microservice.socket.WebSocketSessionManager;
 import lombok.RequiredArgsConstructor;
@@ -69,6 +70,38 @@ public class NotificationService {
         );
     }
 
+    public void sendSessionCreatedNotification(StudySessionCreatedRequest request) {
+        if (request.getUserIds() == null || request.getUserIds().isEmpty()) {
+            return;
+        }
+
+        for (Long userId : request.getUserIds()) {
+            if (userId == null || !sessionManager.isOnline(userId)) {
+                continue;
+            }
+
+            Map<String, Object> data = new HashMap<>();
+            data.put("sessionId", request.getSessionId());
+            data.put("sessionTitle", request.getSessionTitle());
+            data.put("startTime", request.getStartTime());
+            data.put("meetingUrl", request.getMeetingUrl());
+            data.put("groupName", request.getGroupName());
+            data.put("sessionType", request.getSessionType());
+            data.put("creatorName", request.getCreatorName());
+
+            SocketEnvelope<Map<String, Object>> envelope = new SocketEnvelope<>(
+                    EnumEvent.STUDY_SESSION_CREATED.toString(),
+                    data
+            );
+
+            messagingTemplate.convertAndSendToUser(
+                    String.valueOf(userId),
+                    "/queue/chat",
+                    envelope
+            );
+        }
+    }
+}
     public void sendGroupInvitationNotification(com.example.microservice.dto.GroupInvitationNotificationRequest request) {
         Long userId = request.getUserId();
         if (userId == null || !sessionManager.isOnline(userId)) {

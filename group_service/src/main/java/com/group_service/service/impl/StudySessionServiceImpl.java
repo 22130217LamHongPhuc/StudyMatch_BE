@@ -1,5 +1,6 @@
 package com.group_service.service.impl;
 
+import com.group_service.clients.ChatClient;
 import com.group_service.clients.UserClient;
 import com.group_service.dto.*;
 import com.group_service.entity.*;
@@ -23,6 +24,7 @@ import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +42,9 @@ public class StudySessionServiceImpl implements StudySessionService {
     private final UserClient userClient;
     private final ZegoCloudTokenService zegoCloudTokenService;
     private final StudySessionAttendanceLogRepository attendanceLogRepository;
+    private final ChatClient chatClient;
+
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy");
 
     @Override
     @Transactional
@@ -109,6 +114,27 @@ public class StudySessionServiceImpl implements StudySessionService {
                 .toList();
 
         participantRepository.saveAll(participants);
+
+        try {
+            List<Long> recipients = userIds.stream()
+                    .filter(id -> !id.equals(request.getCreatedByUserId()))
+                    .toList();
+            if (!recipients.isEmpty()) {
+                StudySessionCreatedRequest notificationReq = StudySessionCreatedRequest.builder()
+                        .sessionId(saved.getId())
+                        .sessionTitle(saved.getTitle())
+                        .startTime(saved.getStartTime().format(FORMATTER))
+                        .meetingUrl(saved.getMeetingUrl())
+                        .groupName(group.getName())
+                        .sessionType(saved.getSessionType().name())
+                        .creatorName(userNames.getOrDefault(request.getCreatedByUserId(), fallbackUserName(request.getCreatedByUserId())))
+                        .userIds(recipients)
+                        .build();
+                chatClient.sendSessionCreatedNotification(notificationReq);
+            }
+        } catch (Exception e) {
+            log.error("Failed to send session created notification: {}", e.getMessage());
+        }
 
         return toResponse(saved, request.getCreatedByUserId());
     }
@@ -181,6 +207,22 @@ public class StudySessionServiceImpl implements StudySessionService {
 
         participantRepository.save(host);
         participantRepository.save(partner);
+
+        try {
+            StudySessionCreatedRequest notificationReq = StudySessionCreatedRequest.builder()
+                    .sessionId(saved.getId())
+                    .sessionTitle(saved.getTitle())
+                    .startTime(saved.getStartTime().format(FORMATTER))
+                    .meetingUrl(saved.getMeetingUrl())
+                    .groupName("Buổi học cá nhân")
+                    .sessionType(saved.getSessionType().name())
+                    .creatorName(hostUserName)
+                    .userIds(List.of(request.getPartnerUserId()))
+                    .build();
+            chatClient.sendSessionCreatedNotification(notificationReq);
+        } catch (Exception e) {
+            log.error("Failed to send session created notification: {}", e.getMessage());
+        }
 
         return toResponse(saved, request.getCreatedByUserId());
     }
