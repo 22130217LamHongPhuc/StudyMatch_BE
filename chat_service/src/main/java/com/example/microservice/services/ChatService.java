@@ -137,6 +137,22 @@ public class ChatService {
         return Optional.of(conversationId);
     }
 
+    @Transactional
+    public void syncGroupConversationParticipants(Long groupId) {
+        if (groupId == null) {
+            return;
+        }
+        List<Long> memberIds = fetchActiveGroupMemberIds(groupId);
+        Long conversationId = findGroupConversationId(groupId).orElse(null);
+        if (conversationId != null) {
+            Conversation conversation = conversationRepo.findById(conversationId).orElse(null);
+            if (conversation != null) {
+                syncGroupParticipants(conversation, memberIds);
+            }
+        }
+    }
+
+
     private List<Long> fetchActiveGroupMemberIds(Long groupId) {
         return fetchActiveGroupMemberIdsSafely(groupId).orElse(List.of());
     }
@@ -203,6 +219,10 @@ public class ChatService {
     }
     public Conversation save(Conversation conversation) {
         return conversationRepo.save(conversation);
+    }
+
+    public Optional<Message> getLatestMessage(Long conversationId) {
+        return messageRepo.findFirstByConversationIdOrderByCreatedAtDescIdDesc(conversationId);
     }
 
     public Optional<Long> findUserOther(Long conversationId, Long userCurrent){
@@ -272,10 +292,17 @@ public class ChatService {
                         return null;
                     }
 
+                    Long lastSeenMessageId = messageStatusService.findStatus(conversationId, currentUserId)
+                            .map(status -> status.getLastSeenMessage() != null ? status.getLastSeenMessage().getId() : null)
+                            .orElse(null);
+
+                    long unread = messageRepo.countUnreadMessages(conversationId, currentUserId, lastSeenMessageId);
+
                     return new MessageRequestDTO(
                             conversationId,
                             otherUserId,
-                            new com.example.microservice.dto.MessDTO(latestMessage)
+                            new com.example.microservice.dto.MessDTO(latestMessage),
+                            unread
                     );
                 })
                 .filter(request -> request != null)
@@ -295,18 +322,32 @@ public class ChatService {
                 .map(entry -> {
                     Long conversationId = entry.getKey();
                     Long otherUserId = entry.getValue();
-                    if (otherUserId == null || friendIds.contains(otherUserId)) return null;
-                    if (!messageRepo.existsByConversationIdAndSenderId(conversationId, currentUserId)) return null;
+                    if (otherUserId == null) return null;
+
+                    boolean isFriend = friendIds.contains(otherUserId);
+                    if (!isFriend) {
+                        if (!messageRepo.existsByConversationIdAndSenderId(conversationId, currentUserId)) return null;
+                    }
 
                     Message latestMessage = messageRepo
                             .findFirstByConversationIdOrderByCreatedAtDescIdDesc(conversationId)
                             .orElse(null);
                     if (latestMessage == null) return null;
 
+                    Long lastSeenMessageId = messageStatusService.findStatus(conversationId, currentUserId)
+                            .map(status -> status.getLastSeenMessage() != null ? status.getLastSeenMessage().getId() : null)
+                            .orElse(null);
+
+                    long unread = 0;
+                    if (latestMessage != null && !currentUserId.equals(latestMessage.getSenderId())) {
+                        unread = messageRepo.countUnreadMessages(conversationId, currentUserId, lastSeenMessageId);
+                    }
+
                     return new MessageRequestDTO(
                             conversationId,
                             otherUserId,
-                            new com.example.microservice.dto.MessDTO(latestMessage)
+                            new com.example.microservice.dto.MessDTO(latestMessage),
+                            unread
                     );
                 })
                 .filter(request -> request != null)
