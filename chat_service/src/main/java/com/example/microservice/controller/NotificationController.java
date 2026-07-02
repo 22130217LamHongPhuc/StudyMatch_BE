@@ -1,5 +1,7 @@
 package com.example.microservice.controller;
 
+import com.example.microservice.dto.GroupInvitationNotificationRequest;
+import com.example.microservice.dto.GroupKickNotificationRequest;
 import com.example.microservice.dto.SessionReminderRequest;
 import com.example.microservice.dto.StudySessionCreatedRequest;
 import com.example.microservice.services.NotificationService;
@@ -34,20 +36,23 @@ public class NotificationController {
     @PostMapping("/notify-session-created")
     public ResponseEntity<Void> sendSessionCreatedNotification(@RequestBody StudySessionCreatedRequest request) {
         notificationService.sendSessionCreatedNotification(request);
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping("/notify-group-invitation")
-    public ResponseEntity<Void> sendGroupInvitationNotification(@RequestBody com.example.microservice.dto.GroupInvitationNotificationRequest request) {
+    public ResponseEntity<Void> sendGroupInvitationNotification(@RequestBody GroupInvitationNotificationRequest request) {
         notificationService.sendGroupInvitationNotification(request);
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/notify-group-invitation-status")
-    public ResponseEntity<Void> sendGroupInvitationStatusNotification(@RequestBody com.example.microservice.dto.GroupInvitationNotificationRequest request) {
+    public ResponseEntity<Void> sendGroupInvitationStatusNotification(@RequestBody GroupInvitationNotificationRequest request) {
         notificationService.sendGroupInvitationStatusNotification(request);
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/notify-group-kick")
-    public ResponseEntity<Void> sendGroupKickNotification(@RequestBody com.example.microservice.dto.GroupKickNotificationRequest request) {
+    public ResponseEntity<Void> sendGroupKickNotification(@RequestBody GroupKickNotificationRequest request) {
         notificationService.sendGroupKickNotification(request);
         return ResponseEntity.ok().build();
     }

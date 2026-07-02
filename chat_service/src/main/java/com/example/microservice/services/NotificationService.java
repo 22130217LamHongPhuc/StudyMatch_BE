@@ -1,9 +1,11 @@
 package com.example.microservice.services;
 
 import com.example.microservice.config.EnumEvent;
+import com.example.microservice.dto.GroupInvitationNotificationRequest;
+import com.example.microservice.dto.GroupKickNotificationRequest;
 import com.example.microservice.dto.SessionReminderRequest;
-import com.example.microservice.dto.StudySessionCreatedRequest;
 import com.example.microservice.dto.SocketEnvelope;
+import com.example.microservice.dto.StudySessionCreatedRequest;
 import com.example.microservice.socket.WebSocketSessionManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -55,8 +57,7 @@ public class NotificationService {
         data.put("startTime", request.getStartTime());
         data.put("groupName", request.getGroupName());
         data.put("sessionId", request.getSessionId());
-        data.put("meetingUrl",request.getSessionId());
-
+        data.put("meetingUrl", request.getMeetingUrl());
 
         SocketEnvelope<Map<String, Object>> envelope = new SocketEnvelope<>(
                 EnumEvent.STUDY_SESSION_REMINDER.toString(),
@@ -101,14 +102,14 @@ public class NotificationService {
             );
         }
     }
-}
-    public void sendGroupInvitationNotification(com.example.microservice.dto.GroupInvitationNotificationRequest request) {
+
+    public void sendGroupInvitationNotification(GroupInvitationNotificationRequest request) {
         Long userId = request.getUserId();
         if (userId == null || !sessionManager.isOnline(userId)) {
             return;
         }
 
-        Map<String, Object> data = new java.util.HashMap<>();
+        Map<String, Object> data = new HashMap<>();
         data.put("groupId", request.getGroupId());
         data.put("groupName", request.getGroupName());
         data.put("inviterName", request.getInviterName());
@@ -125,13 +126,14 @@ public class NotificationService {
                 envelope
         );
     }
-    public void sendGroupInvitationStatusNotification(com.example.microservice.dto.GroupInvitationNotificationRequest request) {
+
+    public void sendGroupInvitationStatusNotification(GroupInvitationNotificationRequest request) {
         Long userId = request.getUserId();
         if (userId == null || !sessionManager.isOnline(userId)) {
             return;
         }
 
-        Map<String, Object> data = new java.util.HashMap<>();
+        Map<String, Object> data = new HashMap<>();
         data.put("groupId", request.getGroupId());
         data.put("groupName", request.getGroupName());
         data.put("invitationId", request.getInvitationId());
@@ -150,13 +152,13 @@ public class NotificationService {
         );
     }
 
-    public void sendGroupKickNotification(com.example.microservice.dto.GroupKickNotificationRequest request) {
+    public void sendGroupKickNotification(GroupKickNotificationRequest request) {
         Long userId = request.getUserId();
         if (userId == null || !sessionManager.isOnline(userId)) {
             return;
         }
 
-        Map<String, Object> data = new java.util.HashMap<>();
+        Map<String, Object> data = new HashMap<>();
         data.put("groupId", request.getGroupId());
         data.put("groupName", request.getGroupName());
 
