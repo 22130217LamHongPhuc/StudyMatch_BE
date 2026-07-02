@@ -1,6 +1,7 @@
 package com.example.microservice.controller;
 
 import com.example.microservice.dto.SessionReminderRequest;
+import com.example.microservice.dto.StudySessionCreatedRequest;
 import com.example.microservice.services.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +28,12 @@ public class NotificationController {
     @PostMapping("/notify-session-reminder")
     public ResponseEntity<Void> sendSessionReminder(@RequestBody SessionReminderRequest request) {
         notificationService.sendSessionReminder(request);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/notify-session-created")
+    public ResponseEntity<Void> sendSessionCreatedNotification(@RequestBody StudySessionCreatedRequest request) {
+        notificationService.sendSessionCreatedNotification(request);
         return ResponseEntity.ok().build();
     }
 }
