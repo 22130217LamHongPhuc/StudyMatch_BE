@@ -29,4 +29,6 @@ public class CreateMatchingItemRequest {
 
     @NotNull
     private MatchingActionStatus actionStatus;
+
+    private Boolean isRecommendation;
 }
