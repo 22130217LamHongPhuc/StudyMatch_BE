@@ -35,6 +35,16 @@ public class PostController {
         return ResponseEntity.ok(new APIResponse<>(ResponseStatus.SUCCESS, response));
     }
 
+    @GetMapping("/posts/feed")
+    public ResponseEntity<?> getFeed(
+            @RequestParam Long viewerId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        PageResponse<PostResponse> response = postService.getFeed(viewerId, page, size);
+        return ResponseEntity.ok(new APIResponse<>(ResponseStatus.SUCCESS, response));
+    }
+
     @PutMapping("/posts/{postId}")
     public ResponseEntity<?> updatePost(@PathVariable Long postId, @RequestBody UpdatePostRequest request) {
         PostResponse response = postService.updatePost(postId, request);
@@ -78,6 +88,14 @@ public class PostController {
     public ResponseEntity<?> uploadPostMedia(@RequestParam("file") MultipartFile file) {
         Map result = mediaUploadService.uploadPostMedia(file);
         String url = String.valueOf(result.get("secure_url"));
+        String originalName = file.getOriginalFilename();
+        if (originalName != null) {
+            try {
+                url = url + "?filename=" + java.net.URLEncoder.encode(originalName, "UTF-8");
+            } catch (java.io.UnsupportedEncodingException e) {
+                // Ignore encoding error
+            }
+        }
         String resourceType = String.valueOf(result.get("resource_type"));
         String mediaType = "video".equalsIgnoreCase(resourceType) ? "VIDEO" : "IMAGE";
         return ResponseEntity.ok(new APIResponse<>(ResponseStatus.SUCCESS, Map.of(

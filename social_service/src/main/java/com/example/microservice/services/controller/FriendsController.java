@@ -35,6 +35,12 @@ public class FriendsController {
         return friendService.totalFriend(id);
     }
 
+    @GetMapping("/friends/{userId}/stats")
+    public ResponseEntity<?> getFriendStats(@PathVariable Long userId){
+        FriendStatsResponse res = friendService.getFriendStats(userId);
+        return ResponseEntity.ok(new APIResponse<>(ResponseStatus.SUCCESS, res));
+    }
+
     @GetMapping("/friend-requests/{userId}")
     public ResponseEntity<?> getAllFriendRequests(@PathVariable Long userId,
                                                   @RequestParam(required = false) Integer page,
