@@ -4,6 +4,7 @@ package com.example.microservice.services.service;
 import com.example.microservice.services.repository.FriendRepo;
 import com.example.microservice.services.repository.FriendRequestRepo;
 import com.example.microservice.services.Dto.FriendDto;
+import com.example.microservice.services.Dto.FriendStatsResponse;
 
 import com.example.microservice.services.Dto.BasicUserResponse;
 import com.example.microservice.services.client.UserServiceClient;
@@ -34,6 +35,13 @@ public class FriendService {
     public Long totalFriend(Long userId){
 
         return friendRepo.countTotalFriend(userId);
+    }
+
+    public FriendStatsResponse getFriendStats(Long userId) {
+        return new FriendStatsResponse(
+                friendRepo.countTotalFriend(userId),
+                friendRequestRepo.countByReceiverIdAndStatus(userId, "PENDING")
+        );
     }
 
     public Long countMutualFriends(Long id, Long targetId){

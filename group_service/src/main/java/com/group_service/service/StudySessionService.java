@@ -41,6 +41,8 @@ public interface StudySessionService {
 
     StudySessionStatsResponse getSessionStats(Long userId);
 
+    List<StudySessionResponse> getTopUpcomingSessions(Long userId);
+
     SessionConfirmationStatsResponse getConfirmationStats(Long sessionId, Long userId);
 
     FeedbackEligibilityResponse getFeedbackEligibility(Long sessionId, Long userId);

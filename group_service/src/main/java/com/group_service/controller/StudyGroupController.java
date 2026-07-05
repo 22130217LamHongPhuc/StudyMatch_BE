@@ -7,6 +7,7 @@ import com.group_service.dto.JoinGroupRequest;
 import com.group_service.dto.JoinGroupResponse;
 import com.group_service.dto.StudyGroupDetailResponse;
 import com.group_service.dto.StudyGroupResponse;
+import com.group_service.dto.UserGroupStatsResponse;
 import com.group_service.entity.enums.GroupType;
 import com.group_service.entity.enums.GroupMemberStatus;
 import com.group_service.enums.StatusCode;
@@ -79,6 +80,19 @@ public class StudyGroupController {
                 true,
                 StatusCode.SUCCESS,
                 "create group successfully",
+                response
+        ));
+    }
+
+    @GetMapping("/user/{userId}/stats")
+    public ResponseEntity<ApiResponse<UserGroupStatsResponse>> getCurrentUserGroupStats(
+            @PathVariable Long userId
+    ) {
+        UserGroupStatsResponse response = studyGroupService.getCurrentUserGroupStats(userId);
+        return ResponseEntity.ok(new ApiResponse<>(
+                true,
+                StatusCode.SUCCESS,
+                "Get current user group stats successfully",
                 response
         ));
     }

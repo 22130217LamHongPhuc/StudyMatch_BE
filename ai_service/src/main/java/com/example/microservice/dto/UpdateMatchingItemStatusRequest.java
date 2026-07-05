@@ -30,4 +30,6 @@ public class UpdateMatchingItemStatusRequest {
     private String reasonText;
 
     private MatchingRejectType rejectType;
+
+    private Boolean isRecommendation;
 }

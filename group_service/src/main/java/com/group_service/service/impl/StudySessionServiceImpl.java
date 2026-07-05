@@ -13,6 +13,7 @@ import com.group_service.service.ZegoCloudTokenService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -243,6 +244,18 @@ public class StudySessionServiceImpl implements StudySessionService {
         );
 
         return sessions.map(session -> toResponse(session, userId));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<StudySessionResponse> getTopUpcomingSessions(Long userId) {
+        return studySessionRepository.findTopUpcomingSessionsByUserId(
+                userId,
+                LocalDateTime.now(),
+                PageRequest.of(0, 3)
+        ).stream()
+                .map(session -> toResponse(session, userId))
+                .toList();
     }
 
     @Override

@@ -39,4 +39,18 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
             @Param("memberStatus") GroupMemberStatus memberStatus,
             @Param("groupStatus") GroupStatus groupStatus
     );
+
+    @Query("""
+        select count(gm)
+        from GroupMember gm
+        join gm.studyGroup g
+        where gm.userId = :userId
+          and gm.status = :memberStatus
+          and g.status = :groupStatus
+    """)
+    long countGroupsByUserId(
+            @Param("userId") Long userId,
+            @Param("memberStatus") GroupMemberStatus memberStatus,
+            @Param("groupStatus") GroupStatus groupStatus
+    );
 }

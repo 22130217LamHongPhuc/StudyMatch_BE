@@ -40,14 +40,18 @@ public class MatchingItemServiceImpl implements MatchingItemService {
                     request.getRecommendedUserId(),
                     actionStatus,
                     request.getFinalScore(),
-                    request.getReasonText());
+                    request.getReasonText(),
+                    false,
+                    false);
 
             upsertOneSide(
                     request.getRecommendedUserId(),
                     request.getUserId(),
                     actionStatus,
                     request.getFinalScore(),
-                    request.getReasonText());
+                    request.getReasonText(),
+                    false,
+                    false);
 
             return mapToResponse(firstSide);
         }
@@ -57,7 +61,11 @@ public class MatchingItemServiceImpl implements MatchingItemService {
                 request.getRecommendedUserId(),
                 actionStatus,
                 request.getFinalScore(),
-                request.getReasonText());
+                request.getReasonText(),
+                true,
+                request.getIsRecommendation()
+
+        );
 
         return mapToResponse(saved);
     }
@@ -77,14 +85,18 @@ public class MatchingItemServiceImpl implements MatchingItemService {
                     request.getRecommendedUserId(),
                     actionStatus,
                     request.getFinalScore(),
-                    request.getReasonText());
+                    request.getReasonText(),
+                    false,
+                    false);
 
             upsertOneSide(
                     request.getRecommendedUserId(),
                     request.getUserId(),
                     actionStatus,
                     request.getFinalScore(),
-                    request.getReasonText());
+                    request.getReasonText(),
+                    false,
+                    false);
 
             return mapToResponse(firstSide);
         }
@@ -94,7 +106,11 @@ public class MatchingItemServiceImpl implements MatchingItemService {
                 request.getRecommendedUserId(),
                 actionStatus,
                 request.getFinalScore(),
-                request.getReasonText());
+                request.getReasonText(),
+                true,
+                request.getIsRecommendation()
+
+        );
 
         return mapToResponse(saved);
     }
@@ -104,7 +120,9 @@ public class MatchingItemServiceImpl implements MatchingItemService {
             Long recommendedUserId,
             MatchingActionStatus newStatus,
             Double finalScore,
-            String reasonText) {
+            String reasonText,
+            Boolean isUpdate,
+            Boolean isRecommendation) {
         MatchingItem matchingItem = matchingItemRepository
                 .findByUserIdAndRecommendedUserId(userId, recommendedUserId)
                 .orElseGet(() -> {
@@ -112,6 +130,7 @@ public class MatchingItemServiceImpl implements MatchingItemService {
                     item.setUserId(userId);
                     item.setRecommendedUserId(recommendedUserId);
                     item.setFinalScore(0.0);
+                    item.setIsRecommendation(isRecommendation);
                     return item;
                 });
 

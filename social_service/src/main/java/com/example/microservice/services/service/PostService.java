@@ -11,6 +11,8 @@ import com.example.microservice.services.repository.PostCommentRepo;
 import com.example.microservice.services.repository.PostReactionRepo;
 import com.example.microservice.services.repository.PostRepo;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -54,6 +56,34 @@ public class PostService {
                 .filter(post -> canViewPost(post, viewerId))
                 .map(post -> toResponse(post, viewerId, users))
                 .toList();
+    }
+
+    public PageResponse<PostResponse> getFeed(Long viewerId, int page, int size) {
+        if (viewerId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "viewerId is required");
+        }
+        if (page < 0 || size < 1) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "page must be >= 0 and size must be > 0");
+        }
+
+        Page<Post> posts = postRepo.findVisibleFeedPosts(viewerId, PageRequest.of(page, size));
+        Map<Long, BasicUserResponse> users = userMap(
+                posts.getContent().stream()
+                        .map(Post::getAuthorId)
+                        .distinct()
+                        .toList()
+        );
+
+        return new PageResponse<>(
+                posts.getContent().stream()
+                        .map(post -> toResponse(post, viewerId, users))
+                        .toList(),
+                posts.getNumber(),
+                posts.getSize(),
+                posts.getTotalElements(),
+                posts.getTotalPages(),
+                posts.hasNext()
+        );
     }
 
     @Transactional

@@ -56,6 +56,9 @@ public class MatchingItem {
     @Column(name = "reject_type")
     private MatchingRejectType rejectType;
 
+    @Column(name = "is_recommendation", nullable = false, columnDefinition = "boolean default false")
+    private Boolean isRecommendation = false;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

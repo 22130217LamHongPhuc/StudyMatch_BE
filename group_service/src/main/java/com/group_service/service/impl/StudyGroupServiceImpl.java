@@ -15,6 +15,7 @@ import com.group_service.dto.JoinGroupResponse;
 import com.group_service.dto.StudyGroupDetailResponse;
 import com.group_service.dto.StudyGroupResponse;
 import com.group_service.dto.TokenValidateResponse;
+import com.group_service.dto.UserGroupStatsResponse;
 import com.group_service.dto.UpdateGroupStatusRequest;
 import com.group_service.dto.projection.AdminGroupProjection;
 import com.group_service.dto.projection.GroupStats;
@@ -534,6 +535,22 @@ public class StudyGroupServiceImpl implements StudyGroupService {
         } catch (Exception e) {
             System.err.println("Failed to send WebSocket notification on rejectInvitation: " + e.getMessage());
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserGroupStatsResponse getCurrentUserGroupStats(Long userId) {
+        long joinedGroupCount = groupMemberRepository.countGroupsByUserId(
+                userId,
+                GroupMemberStatus.ACTIVE,
+                GroupStatus.ACTIVE
+        );
+        long pendingInvitationCount = groupInvitationRepository.countByInviteeUserIdAndStatus(
+                userId,
+                GroupInvitationStatus.PENDING
+        );
+
+        return new UserGroupStatsResponse(joinedGroupCount, pendingInvitationCount);
     }
 
     private StudyGroup findGroupOrThrow(Long groupId) {

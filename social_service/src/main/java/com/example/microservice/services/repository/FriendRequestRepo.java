@@ -26,6 +26,8 @@ public interface FriendRequestRepo extends JpaRepository<FriendRequest, Long> {
 
     List<FriendRequest> findByReceiverIdOrderByUpdatedAtDesc(Long receiverId);
 
+    Long countByReceiverIdAndStatus(Long receiverId, String status);
+
     List<FriendRequest> findBySenderIdOrderByUpdatedAtDesc(Long senderId, Pageable pageable);
 
     List<FriendRequest> findByReceiverIdOrderByUpdatedAtDesc(Long receiverId, Pageable pageable);
