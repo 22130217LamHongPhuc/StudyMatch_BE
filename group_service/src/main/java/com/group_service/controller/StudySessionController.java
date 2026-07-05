@@ -85,6 +85,19 @@ public class StudySessionController {
         ));
     }
 
+    @GetMapping("/user/{userId}/upcoming")
+    public ResponseEntity<ApiResponse<List<StudySessionResponse>>> getTopUpcomingSessions(
+            @PathVariable Long userId
+    ) {
+        List<StudySessionResponse> sessions = studySessionService.getTopUpcomingSessions(userId);
+        return ResponseEntity.ok(new ApiResponse<>(
+                true,
+                StatusCode.SUCCESS,
+                "Get upcoming sessions successfully",
+                sessions
+        ));
+    }
+
     @GetMapping("/group/{groupId}")
     public ResponseEntity<ApiResponse<List<StudySessionResponse>>> getSessionsByGroup(
             @PathVariable Long groupId,

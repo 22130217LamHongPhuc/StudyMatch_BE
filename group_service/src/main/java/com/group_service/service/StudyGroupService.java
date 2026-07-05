@@ -45,4 +45,6 @@ public interface StudyGroupService {
 
     void rejectInvitation(Long invitationId, String token);
 
+    UserGroupStatsResponse getCurrentUserGroupStats(Long userId);
+
 }

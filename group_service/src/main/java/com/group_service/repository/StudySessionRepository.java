@@ -99,6 +99,21 @@ public interface StudySessionRepository extends JpaRepository<StudySession, Long
     );
 
     @Query("""
+        SELECT DISTINCT s FROM StudySession s
+        JOIN StudySessionParticipant p ON p.sessionId = s.id
+        WHERE p.userId = :userId
+          AND p.status <> com.group_service.entity.enums.StudySessionParticipantStatus.DECLINED
+          AND s.status = com.group_service.entity.enums.GroupStudySessionStatus.SCHEDULED
+          AND s.startTime >= :now
+        ORDER BY s.startTime ASC, s.id ASC
+    """)
+    List<StudySession> findTopUpcomingSessionsByUserId(
+            @Param("userId") Long userId,
+            @Param("now") LocalDateTime now,
+            Pageable pageable
+    );
+
+    @Query("""
         SELECT s FROM StudySession s
         LEFT JOIN StudyGroup g ON s.groupId = g.id
         LEFT JOIN StudySessionParticipant p ON p.sessionId = s.id AND p.role = com.group_service.entity.enums.StudySessionParticipantRole.HOST
