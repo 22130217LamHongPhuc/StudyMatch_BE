@@ -167,6 +167,20 @@ public class ChatController {
                 ex.printStackTrace();
             }
         }
+
+        if (mess.getEvent().equals("FRIEND_REQUEST_CANCEL")) {
+            try {
+                java.util.Map<?, ?> map = objectMapper.convertValue(mess.getData(), java.util.Map.class);
+                Object receiverIdObj = map.get("receiverId");
+                if (receiverIdObj != null) {
+                    String receiverIdStr = String.valueOf(receiverIdObj);
+                    SocketEnvelope<?> envelope = new SocketEnvelope<>("FRIEND_REQUEST_CANCEL_RECEIVE", mess.getData());
+                    messagingTemplate.convertAndSendToUser(receiverIdStr, "/queue/chat", envelope);
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        }
     }
 
 
