@@ -58,9 +58,18 @@ public class PostController {
     }
 
     @PostMapping("/posts/{postId}/like")
-    public ResponseEntity<?> toggleLike(@PathVariable Long postId, @RequestParam Long userId) {
-        PostResponse response = postService.toggleReaction(postId, userId);
+    public ResponseEntity<?> toggleLike(
+            @PathVariable Long postId,
+            @RequestParam Long userId,
+            @RequestParam(required = false, defaultValue = "LIKE") String reactionType
+    ) {
+        PostResponse response = postService.toggleReaction(postId, userId, reactionType);
         return ResponseEntity.ok(new APIResponse<>(ResponseStatus.SUCCESS, response));
+    }
+
+    @GetMapping("/posts/{postId}/reactions")
+    public ResponseEntity<?> getReactions(@PathVariable Long postId, @RequestParam(required = false) Long viewerId) {
+        return ResponseEntity.ok(new APIResponse<>(ResponseStatus.SUCCESS, postService.getPostReactions(postId, viewerId)));
     }
 
     @PostMapping("/posts/{postId}/comments")
