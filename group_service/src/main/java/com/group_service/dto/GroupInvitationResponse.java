@@ -22,6 +22,7 @@ public class GroupInvitationResponse {
     private Long inviteeUserId;
     private String inviterName;
     private String inviterAvatar;
+    private String message;
     private GroupInvitationStatus status;
     private LocalDateTime createdAt;
 }

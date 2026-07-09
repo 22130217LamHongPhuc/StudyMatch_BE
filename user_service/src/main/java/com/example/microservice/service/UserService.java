@@ -109,6 +109,30 @@ public class UserService {
                 .build();
     }
 
+    public PageResponse<StudentSearchResponse> searchStudents(int page, int size, String keyword) {
+        Pageable pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by(Sort.Direction.ASC, "fullName")
+        );
+        Page<User> userPage = repo.findUsersForAdmin(
+                keyword != null ? keyword.toLowerCase() : null,
+                "ACTIVE", "student", pageable);
+        List<StudentSearchResponse> items = userPage.getContent().stream()
+                .map(StudentSearchResponse::from)
+                .toList();
+
+        return PageResponse.<StudentSearchResponse>builder()
+                .content(items)
+                .page(page)
+                .limit(size)
+                .totalPages(userPage.getTotalPages())
+                .totalElements(userPage.getTotalElements())
+                .hasNext(userPage.hasNext())
+                .hasPrevious(userPage.hasPrevious())
+                .build();
+    }
+
     public List<BasicUserResponse> getBasicUsers(List<Long> userIds) {
         if (userIds == null || userIds.isEmpty()) return List.of();
         List<User> users = repo.findAllByUserIdIn(userIds);

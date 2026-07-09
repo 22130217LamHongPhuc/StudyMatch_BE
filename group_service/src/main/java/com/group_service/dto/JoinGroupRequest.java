@@ -8,7 +8,8 @@ import lombok.Setter;
 @Setter
 public class JoinGroupRequest {
 
-    @NotNull()
+    @NotNull
     private Long userId;
-}
 
+    private String message;
+}
