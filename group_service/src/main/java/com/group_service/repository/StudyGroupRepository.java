@@ -151,6 +151,7 @@ ORDER BY g.createdAt DESC
     )
     FROM StudyGroup g
     WHERE g.status = :status
+      AND g.visibility <> com.group_service.entity.enums.GroupVisibility.PRIVATE
       AND (:groupType IS NULL OR g.groupType = :groupType)
       AND (:mainSubjectId IS NULL OR g.mainSubjectId = :mainSubjectId)
 """)

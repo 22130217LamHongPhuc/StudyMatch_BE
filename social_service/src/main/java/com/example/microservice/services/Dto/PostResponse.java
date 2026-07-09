@@ -23,4 +23,5 @@ public class PostResponse {
     private boolean likedByViewer;
     private String reactionType;
     private List<String> topReactions;
+    private PostResponse sharedPost;
 }
