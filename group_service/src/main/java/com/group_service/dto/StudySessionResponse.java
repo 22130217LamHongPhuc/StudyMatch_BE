@@ -25,6 +25,7 @@ public record StudySessionResponse(
         String partnerName,
         String partnerUserName,
         String groupName,
+        String groupAvatarUrl,
         Long membersCount,
         String subjectName,
         LocalDateTime createdAt,

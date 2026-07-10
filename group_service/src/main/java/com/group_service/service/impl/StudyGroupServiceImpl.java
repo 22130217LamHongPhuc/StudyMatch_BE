@@ -7,6 +7,7 @@ import com.group_service.dto.AdminGroupResponse;
 import com.group_service.dto.CreateStudyGroupRequest;
 import com.group_service.dto.FreeTimeSlotRequest;
 import com.group_service.dto.FreeTimeSlotResponse;
+import com.group_service.dto.CommonGroupResponse;
 import com.group_service.dto.GroupFilterRequest;
 import com.group_service.dto.GroupInvitationNotificationRequest;
 import com.group_service.dto.GroupInvitationResponse;
@@ -378,6 +379,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 .invitationId(savedInvitation.getId())
                 .groupId(groupId)
                 .groupName(studyGroup.getName())
+                .groupAvatarUrl(studyGroup.getAvatarUrl())
                 .inviterUserId(inviterUserId)
                 .inviteeUserId(inviteeUserId)
                 .inviterName(inviterName)
@@ -415,6 +417,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                     .invitationId(invitation.getId())
                     .groupId(invitation.getGroupId())
                     .groupName(group != null ? group.getName() : "Unknown Group")
+                    .groupAvatarUrl(group != null ? group.getAvatarUrl() : null)
                     .inviterUserId(invitation.getInviterUserId())
                     .inviteeUserId(invitation.getInviteeUserId())
                     .inviterName(inviterName)
@@ -445,6 +448,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                         .invitationId(invitation.getId())
                         .groupId(invitation.getGroupId())
                         .groupName(group.getName())
+                        .groupAvatarUrl(group.getAvatarUrl())
                         .inviterUserId(invitation.getInviterUserId())
                         .inviteeUserId(invitation.getInviteeUserId())
                         .status(invitation.getStatus())
@@ -779,5 +783,22 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                     "Visibility must be PUBLIC or PRIVATE for study groups"
             );
         }
+    }
+
+    @Override
+    public List<CommonGroupResponse> getCommonGroups(Long userId, Long otherUserId) {
+        List<StudyGroup> commonGroups = groupMemberRepository.findCommonGroups(
+                userId,
+                otherUserId,
+                GroupMemberStatus.ACTIVE,
+                GroupStatus.ACTIVE
+        );
+        return commonGroups.stream()
+                .map(group -> CommonGroupResponse.builder()
+                        .id(group.getId())
+                        .name(group.getName())
+                        .avatarUrl(group.getAvatarUrl())
+                        .build())
+                .toList();
     }
 }

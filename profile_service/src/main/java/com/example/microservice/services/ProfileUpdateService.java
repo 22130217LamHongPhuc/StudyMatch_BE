@@ -250,4 +250,17 @@ public class ProfileUpdateService {
             System.err.println("Không thể reload AI recommender: " + e.getMessage());
         }
     }
+
+    @Transactional
+    public void updateStudentProfileInfo(Long userId, String fullName, String avatarUrl) {
+        studentProfileRepository.findByUserId(userId).ifPresent(studentProfile -> {
+            if (fullName != null) {
+                studentProfile.setFullName(fullName);
+            }
+            if (avatarUrl != null) {
+                studentProfile.setAvatarUrl(avatarUrl);
+            }
+            studentProfileRepository.save(studentProfile);
+        });
+    }
 }

@@ -15,105 +15,123 @@ import org.springframework.data.repository.query.Param;
 
 public interface MatchingItemRepository extends JpaRepository<MatchingItem, Long> {
 
-        Optional<MatchingItem> findByUserIdAndRecommendedUserId(
-                        Long userId,
-                        Long recommendedUserId);
+  Optional<MatchingItem> findByUserIdAndRecommendedUserId(
+      Long userId,
+      Long recommendedUserId);
 
-        Optional<MatchingItem> findByUserIdAndRecommendedUserIdAndActionStatus(
-                        Long userId,
-                        Long recommendedUserId,
-                        MatchingActionStatus status);
+  Optional<MatchingItem> findByUserIdAndRecommendedUserIdAndActionStatus(
+      Long userId,
+      Long recommendedUserId,
+      MatchingActionStatus status);
 
-        @Query(value = """
-                        select i
-                        from MatchingItem i
-                        where (:userId is null or i.userId = :userId)
-                          and (:recommendedUserId is null or i.recommendedUserId = :recommendedUserId)
-                          and (:actionStatus is null or i.actionStatus = :actionStatus)
-                          and (:fromDate is null or i.updatedAt >= :fromDate)
-                          and (:toDate is null or i.updatedAt < :toDate)
-                          and i.isRecommendation = true
-                        """, countQuery = """
-                        select count(i)
-                        from MatchingItem i
-                        where (:userId is null or i.userId = :userId)
-                          and (:recommendedUserId is null or i.recommendedUserId = :recommendedUserId)
-                          and (:actionStatus is null or i.actionStatus = :actionStatus)
-                          and (:fromDate is null or i.updatedAt >= :fromDate)
-                          and (:toDate is null or i.updatedAt < :toDate)
-                          and i.isRecommendation = true
-                        """)
-        Page<MatchingItem> findActionsPage(
-                        @Param("userId") Long userId,
-                        @Param("recommendedUserId") Long recommendedUserId,
-                        @Param("actionStatus") MatchingActionStatus actionStatus,
-                        @Param("fromDate") LocalDateTime fromDate,
-                        @Param("toDate") LocalDateTime toDate,
-                        Pageable pageable);
+  Optional<MatchingItem> findFirstByUserIdAndRecommendedUserIdAndActionStatusOrderByUpdatedAtDesc(
+      Long userId,
+      Long recommendedUserId,
+      MatchingActionStatus status);
 
-        long countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(LocalDateTime fromDate, LocalDateTime toDate);
+  @Query("""
+      select i
+      from MatchingItem i
+      where ((i.userId = :userId and i.recommendedUserId = :recommendedUserId)
+         or (i.userId = :recommendedUserId and i.recommendedUserId = :userId))
+        and i.actionStatus = :status
+      order by i.updatedAt desc
+      """)
+  List<MatchingItem> findBidirectionalByActionStatus(
+      @Param("userId") Long userId,
+      @Param("recommendedUserId") Long recommendedUserId,
+      @Param("status") MatchingActionStatus status);
 
-        long countByActionStatusAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
-                        MatchingActionStatus actionStatus,
-                        LocalDateTime fromDate,
-                        LocalDateTime toDate);
+  @Query(value = """
+      select i
+      from MatchingItem i
+      where (:userId is null or i.userId = :userId)
+        and (:recommendedUserId is null or i.recommendedUserId = :recommendedUserId)
+        and (:actionStatus is null or i.actionStatus = :actionStatus)
+        and (:fromDate is null or i.updatedAt >= :fromDate)
+        and (:toDate is null or i.updatedAt < :toDate)
+        and i.isRecommendation = true
+      """, countQuery = """
+      select count(i)
+      from MatchingItem i
+      where (:userId is null or i.userId = :userId)
+        and (:recommendedUserId is null or i.recommendedUserId = :recommendedUserId)
+        and (:actionStatus is null or i.actionStatus = :actionStatus)
+        and (:fromDate is null or i.updatedAt >= :fromDate)
+        and (:toDate is null or i.updatedAt < :toDate)
+        and i.isRecommendation = true
+      """)
+  Page<MatchingItem> findActionsPage(
+      @Param("userId") Long userId,
+      @Param("recommendedUserId") Long recommendedUserId,
+      @Param("actionStatus") MatchingActionStatus actionStatus,
+      @Param("fromDate") LocalDateTime fromDate,
+      @Param("toDate") LocalDateTime toDate,
+      Pageable pageable);
 
-        @Query("select count(i) from MatchingItem i where (:fromDate is null or i.createdAt >= :fromDate) and (:toDate is null or i.createdAt < :toDate) and i.isRecommendation = true")
-        long countFiltered(
-                        @Param("fromDate") LocalDateTime fromDate,
-                        @Param("toDate") LocalDateTime toDate);
+  long countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(LocalDateTime fromDate, LocalDateTime toDate);
 
-        @Query("select count(i) from MatchingItem i where i.actionStatus = :actionStatus and (:fromDate is null or i.createdAt >= :fromDate) and (:toDate is null or i.createdAt < :toDate) and i.isRecommendation = true")
-        long countByActionStatusFiltered(
-                        @Param("actionStatus") MatchingActionStatus actionStatus,
-                        @Param("fromDate") LocalDateTime fromDate,
-                        @Param("toDate") LocalDateTime toDate);
+  long countByActionStatusAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+      MatchingActionStatus actionStatus,
+      LocalDateTime fromDate,
+      LocalDateTime toDate);
 
-        @Query("select avg(i.finalScore) from MatchingItem i where (:fromDate is null or i.createdAt >= :fromDate) and (:toDate is null or i.createdAt < :toDate) and i.isRecommendation = true")
-        Double averageFinalScoreFiltered(
-                        @Param("fromDate") LocalDateTime fromDate,
-                        @Param("toDate") LocalDateTime toDate);
+  @Query("select count(i) from MatchingItem i where (:fromDate is null or i.createdAt >= :fromDate) and (:toDate is null or i.createdAt < :toDate) and i.isRecommendation = true")
+  long countFiltered(
+      @Param("fromDate") LocalDateTime fromDate,
+      @Param("toDate") LocalDateTime toDate);
 
-        @Query("select i.createdAt, i.actionStatus from MatchingItem i where (:fromDate is null or i.createdAt >= :fromDate) and (:toDate is null or i.createdAt < :toDate) and i.isRecommendation = true")
-        List<Object[]> findTrendData(
-                        @Param("fromDate") LocalDateTime fromDate,
-                        @Param("toDate") LocalDateTime toDate);
+  @Query("select count(i) from MatchingItem i where i.actionStatus = :actionStatus and (:fromDate is null or i.createdAt >= :fromDate) and (:toDate is null or i.createdAt < :toDate) and i.isRecommendation = true")
+  long countByActionStatusFiltered(
+      @Param("actionStatus") MatchingActionStatus actionStatus,
+      @Param("fromDate") LocalDateTime fromDate,
+      @Param("toDate") LocalDateTime toDate);
 
-        List<MatchingItem> findByUserIdAndActionStatusAndIsRecommendationTrueOrderByUpdatedAtDesc(Long userId,
-                        MatchingActionStatus actionStatus);
+  @Query("select avg(i.finalScore) from MatchingItem i where (:fromDate is null or i.createdAt >= :fromDate) and (:toDate is null or i.createdAt < :toDate) and i.isRecommendation = true")
+  Double averageFinalScoreFiltered(
+      @Param("fromDate") LocalDateTime fromDate,
+      @Param("toDate") LocalDateTime toDate);
 
-        List<MatchingItem> findByUserIdAndActionStatusAndIsRecommendationTrueOrderByUpdatedAtDesc(Long userId,
-                        MatchingActionStatus actionStatus, Pageable pageable);
+  @Query("select i.createdAt, i.actionStatus from MatchingItem i where (:fromDate is null or i.createdAt >= :fromDate) and (:toDate is null or i.createdAt < :toDate) and i.isRecommendation = true")
+  List<Object[]> findTrendData(
+      @Param("fromDate") LocalDateTime fromDate,
+      @Param("toDate") LocalDateTime toDate);
 
-        List<MatchingItem> findByUserIdAndActionStatusInAndIsRecommendationTrueOrderByUpdatedAtDesc(Long userId,
-                        List<MatchingActionStatus> actionStatuses);
+  List<MatchingItem> findByUserIdAndActionStatusAndIsRecommendationTrueOrderByUpdatedAtDesc(Long userId,
+      MatchingActionStatus actionStatus);
 
-        List<MatchingItem> findByUserIdAndActionStatusInAndIsRecommendationTrueOrderByUpdatedAtDesc(Long userId,
-                        List<MatchingActionStatus> actionStatuses, Pageable pageable);
+  List<MatchingItem> findByUserIdAndActionStatusAndIsRecommendationTrueOrderByUpdatedAtDesc(Long userId,
+      MatchingActionStatus actionStatus, Pageable pageable);
 
-        @Query("""
-                            select i
-                            from MatchingItem i
-                            where (i.userId = :userId or i.recommendedUserId = :userId)
-                              and i.actionStatus in :statuses
-                              and i.isRecommendation = true
-                            order by i.updatedAt desc
-                        """)
-        List<MatchingItem> findRelatedByUserIdAndActionStatusInOrderByUpdatedAtDesc(
-                        @Param("userId") Long userId,
-                        @Param("statuses") Collection<MatchingActionStatus> statuses,
-                        Pageable pageable);
+  List<MatchingItem> findByUserIdAndActionStatusInAndIsRecommendationTrueOrderByUpdatedAtDesc(Long userId,
+      List<MatchingActionStatus> actionStatuses);
 
-        @Query("""
-                            select i
-                            from MatchingItem i
-                            where (i.userId = :userId or i.recommendedUserId = :userId)
-                              and i.actionStatus = :status
-                              and i.isRecommendation = true
-                            order by i.updatedAt desc
-                        """)
-        List<MatchingItem> findRelatedByUserIdAndActionStatusOrderByUpdatedAtDesc(
-                        @Param("userId") Long userId,
-                        @Param("status") MatchingActionStatus status,
-                        Pageable pageable);
+  List<MatchingItem> findByUserIdAndActionStatusInAndIsRecommendationTrueOrderByUpdatedAtDesc(Long userId,
+      List<MatchingActionStatus> actionStatuses, Pageable pageable);
+
+  @Query("""
+          select i
+          from MatchingItem i
+          where (i.userId = :userId or i.recommendedUserId = :userId)
+            and i.actionStatus in :statuses
+            and i.isRecommendation = true
+          order by i.updatedAt desc
+      """)
+  List<MatchingItem> findRelatedByUserIdAndActionStatusInOrderByUpdatedAtDesc(
+      @Param("userId") Long userId,
+      @Param("statuses") Collection<MatchingActionStatus> statuses,
+      Pageable pageable);
+
+  @Query("""
+          select i
+          from MatchingItem i
+          where (i.userId = :userId or i.recommendedUserId = :userId)
+            and i.actionStatus = :status
+            and i.isRecommendation = true
+          order by i.updatedAt desc
+      """)
+  List<MatchingItem> findRelatedByUserIdAndActionStatusOrderByUpdatedAtDesc(
+      @Param("userId") Long userId,
+      @Param("status") MatchingActionStatus status,
+      Pageable pageable);
 }

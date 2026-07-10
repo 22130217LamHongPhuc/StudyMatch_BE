@@ -27,7 +27,6 @@ public class FriendRequestService {
     @Autowired
     FriendRepo friendRepo;
 
-
     public FriendRequest friendRequest(Long senderId,Long reveiverId){
         FriendRequest req = new FriendRequest();
         req.setSenderId(senderId);

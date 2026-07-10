@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -24,6 +25,8 @@ public class MatchingItemResponse {
     private Double finalScore;
 
     private String reasonText;
+
+    private Integer count;
 
     private MatchingActionStatus actionStatus;
 

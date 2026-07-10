@@ -21,6 +21,7 @@ public class AdminStudySessionResponse {
     private String title;
     private String subjectName;
     private String groupName;
+    private String groupAvatarUrl;
     private StudySessionType sessionType;
     private String creatorName;
     private LocalDateTime startTime;

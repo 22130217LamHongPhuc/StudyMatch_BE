@@ -1,0 +1,144 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Run Eureka Server",
+            "type": "shell",
+            "command": "./mvnw spring-boot:run",
+            "options": {
+                "cwd": "${workspaceFolder}/eureka_server"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "focus": false,
+                "clear": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Run API Gateway",
+            "type": "shell",
+            "command": "./mvnw spring-boot:run",
+            "options": {
+                "cwd": "${workspaceFolder}/api-gateway"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "focus": false,
+                "clear": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Run User Service",
+            "type": "shell",
+            "command": "./mvnw spring-boot:run",
+            "options": {
+                "cwd": "${workspaceFolder}/user_service"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "focus": false,
+                "clear": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Run Profile Service",
+            "type": "shell",
+            "command": "./mvnw spring-boot:run",
+            "options": {
+                "cwd": "${workspaceFolder}/profile_service"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "focus": false,
+                "clear": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Run Social Service",
+            "type": "shell",
+            "command": "./mvnw spring-boot:run",
+            "options": {
+                "cwd": "${workspaceFolder}/social_service"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "focus": false,
+                "clear": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Run Group Service",
+            "type": "shell",
+            "command": "./mvnw spring-boot:run",
+            "options": {
+                "cwd": "${workspaceFolder}/group_service"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "focus": false,
+                "clear": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Run Chat Service",
+            "type": "shell",
+            "command": "./mvnw spring-boot:run",
+            "options": {
+                "cwd": "${workspaceFolder}/chat_service"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "focus": false,
+                "clear": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Run AI Service",
+            "type": "shell",
+            "command": "./mvnw spring-boot:run",
+            "options": {
+                "cwd": "${workspaceFolder}/ai_service"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "focus": false,
+                "clear": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Run All Services",
+            "dependsOrder": "parallel",
+            "dependsOn": [
+                "Run Eureka Server",
+                "Run API Gateway",
+                "Run User Service",
+                "Run Profile Service",
+                "Run Social Service",
+                "Run Group Service",
+                "Run Chat Service",
+                "Run AI Service"
+            ],
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ]
+}

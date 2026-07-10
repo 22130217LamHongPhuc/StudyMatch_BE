@@ -20,11 +20,13 @@ public interface ChatClient {
 
     @PostMapping("/api/chat/notify-session-created")
     void sendSessionCreatedNotification(@RequestBody StudySessionCreatedRequest request);
+
     @PostMapping("/api/chat/notify-group-invitation")
     void sendGroupInvitationNotification(@RequestBody com.group_service.dto.GroupInvitationNotificationRequest request);
 
     @PostMapping("/api/chat/notify-group-invitation-status")
-    void sendGroupInvitationStatusNotification(@RequestBody com.group_service.dto.GroupInvitationNotificationRequest request);
+    void sendGroupInvitationStatusNotification(
+            @RequestBody com.group_service.dto.GroupInvitationNotificationRequest request);
 
     @PostMapping("/api/chat/notify-group-kick")
     void sendGroupKickNotification(@RequestBody com.group_service.dto.GroupKickNotificationRequest request);
@@ -32,4 +34,3 @@ public interface ChatClient {
     @PostMapping("/conversation/group/{groupId}/sync-participants")
     void syncGroupParticipants(@PathVariable("groupId") Long groupId);
 }
-

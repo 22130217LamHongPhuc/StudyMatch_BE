@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/social")
@@ -65,6 +66,12 @@ public class FriendsController {
         return ResponseEntity.ok(new APIResponse<>(ResponseStatus.SUCCESS, res));
     }
 
+    @PostMapping("/friends/skip")
+    public ResponseEntity<?> skipUser(@RequestParam Long userId, @RequestParam Long skippedUserId) {
+        friendService.skipUser(userId, skippedUserId);
+        return ResponseEntity.ok(new APIResponse<>(ResponseStatus.SUCCESS, "Bỏ qua người dùng thành công"));
+    }
+
     @GetMapping("/friends/{userId}/list")
     public ResponseEntity<?> getFriendList(@PathVariable Long userId){
         List<FriendDto> res = friendService.getFriendList(userId);
@@ -88,6 +95,12 @@ public class FriendsController {
     public ResponseEntity<?> unfriend(@RequestParam Long userId, @RequestParam Long friendId) {
         friendService.unfriend(userId, friendId);
         return ResponseEntity.ok(new APIResponse<>(ResponseStatus.SUCCESS, "Hủy kết bạn thành công"));
+    }
+
+    @GetMapping("/friends/{userId}/relations")
+    public ResponseEntity<?> getFriendRelations(@PathVariable Long userId) {
+        Map<Long, FriendRelationDto> res = friendService.getFriendRelationsMap(userId);
+        return ResponseEntity.ok(new APIResponse<>(ResponseStatus.SUCCESS, res));
     }
 }
 

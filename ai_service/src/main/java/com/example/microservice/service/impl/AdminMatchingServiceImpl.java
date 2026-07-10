@@ -35,8 +35,7 @@ public class AdminMatchingServiceImpl implements AdminMatchingService {
 
     public AdminMatchingServiceImpl(
             UserClient userClient, MatchingItemRepository matchingItemRepository,
-            StudyFeedbackRepository studyFeedbackRepository
-    ) {
+            StudyFeedbackRepository studyFeedbackRepository) {
         this.userClient = userClient;
         this.matchingItemRepository = matchingItemRepository;
         this.studyFeedbackRepository = studyFeedbackRepository;
@@ -48,10 +47,14 @@ public class AdminMatchingServiceImpl implements AdminMatchingService {
         LocalDateTime toDateTime = toEndExclusive(toDate);
 
         long totalRecommendationItems = matchingItemRepository.countFiltered(fromDateTime, toDateTime);
-        long totalViewed = matchingItemRepository.countByActionStatusFiltered(MatchingActionStatus.VIEWED, fromDateTime, toDateTime);
-        long totalFriendRequestSent = matchingItemRepository.countByActionStatusFiltered(MatchingActionStatus.FRIEND_REQUEST_SENT, fromDateTime, toDateTime);
-        long totalRejected = matchingItemRepository.countByActionStatusFiltered(MatchingActionStatus.REJECTED, fromDateTime, toDateTime);
-        long totalAccepted = matchingItemRepository.countByActionStatusFiltered(MatchingActionStatus.ACCEPTED, fromDateTime, toDateTime);
+        long totalViewed = matchingItemRepository.countByActionStatusFiltered(MatchingActionStatus.VIEWED, fromDateTime,
+                toDateTime);
+        long totalFriendRequestSent = matchingItemRepository
+                .countByActionStatusFiltered(MatchingActionStatus.FRIEND_REQUEST_SENT, fromDateTime, toDateTime);
+        long totalRejected = matchingItemRepository.countByActionStatusFiltered(MatchingActionStatus.REJECTED,
+                fromDateTime, toDateTime);
+        long totalAccepted = matchingItemRepository.countByActionStatusFiltered(MatchingActionStatus.ACCEPTED,
+                fromDateTime, toDateTime);
 
         double viewRate = 0.0;
         double friendRequestRate = 0.0;
@@ -65,7 +68,8 @@ public class AdminMatchingServiceImpl implements AdminMatchingService {
             rejectRate = round((double) totalRejected / totalRecommendationItems);
         }
 
-        double averageFinalScore = round(safeDouble(matchingItemRepository.averageFinalScoreFiltered(fromDateTime, toDateTime)));
+        double averageFinalScore = round(
+                safeDouble(matchingItemRepository.averageFinalScoreFiltered(fromDateTime, toDateTime)));
         long totalFeedbacks = studyFeedbackRepository.countFiltered(fromDateTime, toDateTime);
         double averageRating = safeDouble(studyFeedbackRepository.averageRatingFiltered(fromDateTime, toDateTime));
 
@@ -81,8 +85,7 @@ public class AdminMatchingServiceImpl implements AdminMatchingService {
                 rejectRate,
                 averageFinalScore,
                 totalFeedbacks,
-                averageRating
-        );
+                averageRating);
     }
 
     @Override
@@ -93,8 +96,7 @@ public class AdminMatchingServiceImpl implements AdminMatchingService {
             Long recommendedUserId,
             MatchingActionStatus actionStatus,
             LocalDate fromDate,
-            LocalDate toDate
-    ) {
+            LocalDate toDate) {
         validateDateRange(fromDate, toDate);
 
         LocalDateTime fromDateTime = toStartOfDay(fromDate);
@@ -106,8 +108,7 @@ public class AdminMatchingServiceImpl implements AdminMatchingService {
                 actionStatus,
                 fromDateTime,
                 toDateTime,
-                PageRequest.of(page, size, Sort.by(Sort.Order.desc("updatedAt"), Sort.Order.desc("id")))
-        );
+                PageRequest.of(page, size, Sort.by(Sort.Order.desc("updatedAt"), Sort.Order.desc("id"))));
 
         List<MatchingItem> items = actionPage.getContent();
 
@@ -128,10 +129,8 @@ public class AdminMatchingServiceImpl implements AdminMatchingService {
                 actionPage.getNumber(),
                 actionPage.getSize(),
                 actionPage.getTotalElements(),
-                actionPage.getTotalPages()
-        );
+                actionPage.getTotalPages());
     }
-
 
     private Map<Long, BasicUserResponse> getUserMap(List<Long> userIds) {
         if (userIds == null || userIds.isEmpty()) {
@@ -150,8 +149,7 @@ public class AdminMatchingServiceImpl implements AdminMatchingService {
                     .collect(Collectors.toMap(
                             BasicUserResponse::getUserId,
                             Function.identity(),
-                            (oldValue, newValue) -> oldValue
-                    ));
+                            (oldValue, newValue) -> oldValue));
         } catch (Exception e) {
             return Collections.emptyMap();
         }
@@ -167,8 +165,7 @@ public class AdminMatchingServiceImpl implements AdminMatchingService {
             Long groupId,
             Integer minRating,
             LocalDate fromDate,
-            LocalDate toDate
-    ) {
+            LocalDate toDate) {
         validateDateRange(fromDate, toDate);
 
         LocalDateTime fromDateTime = toStartOfDay(fromDate);
@@ -182,8 +179,7 @@ public class AdminMatchingServiceImpl implements AdminMatchingService {
                 minRating,
                 fromDateTime,
                 toDateTime,
-                PageRequest.of(page, size, Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id")))
-        );
+                PageRequest.of(page, size, Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id"))));
 
         List<StudyFeedbackResponse> content = feedbackPage.getContent().stream()
                 .map(this::toFeedbackResponse)
@@ -194,8 +190,7 @@ public class AdminMatchingServiceImpl implements AdminMatchingService {
                 feedbackPage.getNumber(),
                 feedbackPage.getSize(),
                 feedbackPage.getTotalElements(),
-                feedbackPage.getTotalPages()
-        );
+                feedbackPage.getTotalPages());
     }
 
     @Override
@@ -215,12 +210,15 @@ public class AdminMatchingServiceImpl implements AdminMatchingService {
 
         long totalFeedbacks = studyFeedbackRepository.countFiltered(fromDateTime, toDateTime);
         double averageRating = safeDouble(studyFeedbackRepository.averageRatingFiltered(fromDateTime, toDateTime));
-        long oneToOneFeedbacks = studyFeedbackRepository.countBySessionTypeFiltered(StudySessionType.USER_PAIR, fromDateTime, toDateTime);
-        long groupFeedbacks = studyFeedbackRepository.countBySessionTypeFiltered(StudySessionType.GROUP, fromDateTime, toDateTime);
+        long oneToOneFeedbacks = studyFeedbackRepository.countBySessionTypeFiltered(StudySessionType.USER_PAIR,
+                fromDateTime, toDateTime);
+        long groupFeedbacks = studyFeedbackRepository.countBySessionTypeFiltered(StudySessionType.GROUP, fromDateTime,
+                toDateTime);
 
         Map<String, Long> ratingDistribution = new LinkedHashMap<>();
         for (int rating = 1; rating <= 5; rating++) {
-            ratingDistribution.put(String.valueOf(rating), studyFeedbackRepository.countByRatingFiltered(rating, fromDateTime, toDateTime));
+            ratingDistribution.put(String.valueOf(rating),
+                    studyFeedbackRepository.countByRatingFiltered(rating, fromDateTime, toDateTime));
         }
 
         return new StudyFeedbackStatisticsResponse(
@@ -229,16 +227,12 @@ public class AdminMatchingServiceImpl implements AdminMatchingService {
                 oneToOneFeedbacks,
                 0,
                 groupFeedbacks,
-                ratingDistribution
-        );
+                ratingDistribution);
     }
-
-
 
     private MatchingActionResponse toActionResponse(
             MatchingItem item,
-            Map<Long, BasicUserResponse> userMap
-    ) {
+            Map<Long, BasicUserResponse> userMap) {
         BasicUserResponse user = userMap.get(item.getUserId());
         BasicUserResponse recommendedUser = userMap.get(item.getRecommendedUserId());
 
@@ -260,7 +254,6 @@ public class AdminMatchingServiceImpl implements AdminMatchingService {
                 .updatedAt(item.getUpdatedAt())
                 .build();
     }
-
 
     private StudyFeedbackResponse toFeedbackResponse(StudyFeedback feedback) {
         return StudyFeedbackResponse.builder()
@@ -340,8 +333,7 @@ public class AdminMatchingServiceImpl implements AdminMatchingService {
                     totalViewed,
                     totalFriendRequestSent,
                     totalAccepted,
-                    totalRejected
-            ));
+                    totalRejected));
             current = current.plusDays(1);
         }
 
@@ -370,9 +362,3 @@ public class AdminMatchingServiceImpl implements AdminMatchingService {
         return Math.round(value * 100.0) / 100.0;
     }
 }
-
-
-
-
-
-
