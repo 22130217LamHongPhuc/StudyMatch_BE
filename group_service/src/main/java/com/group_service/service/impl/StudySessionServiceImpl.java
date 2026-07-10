@@ -15,8 +15,8 @@ import com.group_service.validator.StudySessionValidator;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import mapper.StudySessionMapper;
-import mapper.StudySessionParticipantMapper;
+import com.group_service.mapper.StudySessionMapper;
+import com.group_service.mapper.StudySessionParticipantMapper;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;

@@ -332,6 +332,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 .invitationId(savedInvitation.getId())
                 .groupId(groupId)
                 .groupName(studyGroup.getName())
+                .groupAvatarUrl(studyGroup.getAvatarUrl())
                 .inviterUserId(savedInvitation.getInviterUserId())
                 .inviteeUserId(savedInvitation.getInviteeUserId())
                 .message(savedInvitation.getMessage())
@@ -398,7 +399,9 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 .groupName(studyGroup.getName())
                 .groupAvatarUrl(studyGroup.getAvatarUrl())
                 .inviterUserId(inviterUserId)
+                .inviteeUserId(inviteeUserId)
                 .inviterUserId(savedInvitation.getInviterUserId())
+                .inviteeUserId(savedInvitation.getInviteeUserId())
                 .message(savedInvitation.getMessage())
                 .inviterName(inviterName)
                 .status(savedInvitation.getStatus())
@@ -835,5 +838,13 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                         .avatarUrl(group.getAvatarUrl())
                         .build())
                 .toList();
+    }
+
+    @Override
+    public boolean existsById(Long groupId) {
+        if (groupId == null) return false;
+        return studyGroupRepository.findById(groupId)
+                .map(group -> group.getStatus() != GroupStatus.DELETED)
+                .orElse(false);
     }
 }

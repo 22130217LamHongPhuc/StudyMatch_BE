@@ -1,4 +1,4 @@
-package mapper;
+package com.group_service.mapper;
 
 import java.util.Optional;
 

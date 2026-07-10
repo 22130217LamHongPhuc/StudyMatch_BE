@@ -236,6 +236,11 @@ public class StudyGroupController {
         StudyGroupDetailResponse response = studyGroupService.getGroupById(groupId);
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/{groupId}/exists")
+    public ResponseEntity<Boolean> existsById(@PathVariable Long groupId) {
+        return ResponseEntity.ok(studyGroupService.existsById(groupId));
+    }
 }
 
 
