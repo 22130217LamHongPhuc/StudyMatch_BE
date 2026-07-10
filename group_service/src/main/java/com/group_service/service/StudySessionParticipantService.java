@@ -22,7 +22,7 @@ import com.group_service.repository.StudySessionParticipantRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import mapper.StudySessionParticipantMapper;
+import com.group_service.mapper.StudySessionParticipantMapper;
 
 import org.springframework.stereotype.Service;
 

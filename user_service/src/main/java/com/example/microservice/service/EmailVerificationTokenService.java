@@ -13,7 +13,6 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-
 @Service
 public class EmailVerificationTokenService {
     @Autowired
@@ -45,19 +44,19 @@ public class EmailVerificationTokenService {
     @Transactional
     public void verifyEmail(String token) {
         EmailVerificationToken verificationToken = emailVerificationTokenRepository.findByToken(token).orElseThrow(
-                () -> new AppException("Token khong hợp lệ", StatusCode.INVALID_TOKEN)
-         );
+                () -> new AppException("Token không hợp lệ", StatusCode.INVALID_TOKEN)
+        );
 
         if (Boolean.TRUE.equals(verificationToken.getUsed())) {
-            throw new AppException( "Token đã được sử dụng",StatusCode.TOKEN_USED);
+            throw new AppException("Token đã được sử dụng", StatusCode.TOKEN_USED);
         }
 
         if (verificationToken.getExpiredAt().isBefore(LocalDateTime.now())) {
-            throw new AppException( "Token đã hết hạn",StatusCode.TOKEN_EXPIRED);
+            throw new AppException("Token đã hết hạn", StatusCode.TOKEN_EXPIRED);
         }
 
         User user = userRepository.findById(verificationToken.getUserId())
-                .orElseThrow(() -> new AppException("USER_NOT_FOUND", StatusCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new AppException("Không tìm thấy người dùng", StatusCode.USER_NOT_FOUND));
 
         user.setEmailVerified(true);
         user.setStatus("ACTIVE");

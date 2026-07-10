@@ -48,5 +48,7 @@ public interface StudyGroupService {
     UserGroupStatsResponse getCurrentUserGroupStats(Long userId);
 
     List<CommonGroupResponse> getCommonGroups(Long userId, Long otherUserId);
+
+    boolean existsById(Long groupId);
 }
 
