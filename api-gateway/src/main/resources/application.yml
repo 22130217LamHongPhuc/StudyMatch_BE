@@ -3,16 +3,7 @@ server:
 
 spring:
   application:
-    name: API-GATEWAY
-
-  cloud:
-    gateway:
-
-      routes:
-        - id: user-service
-          uri: lb://USER-SERVICE
-          predicates:
-            - Path=/users/**
+    name: api-gateway
 
 eureka:
   client:
@@ -22,3 +13,8 @@ eureka:
     fetch-registry: true
   instance:
     prefer-ip-address: true
+
+app:
+  security:
+    jwt:
+      secret-key: nlu_echo_by_phuc_lam_2004_this_is_be_for_applicati
