@@ -31,15 +31,15 @@ public class RefreshTokenService {
     public RefreshToken verifyRefreshToken(String token) throws RuntimeException {
 
         RefreshToken refreshToken = refreshTokenRepository.findByToken(token).orElseThrow(
-                () -> new AppException("Invalid refresh token", StatusCode.INVALID_REFRESH_TOKEN)
+                () -> new AppException("Refresh token không hợp lệ", StatusCode.INVALID_REFRESH_TOKEN)
         );
 
         if(refreshToken.isRevoked()){
-            throw new AppException("Refresh token revoked", StatusCode.INVALID_REFRESH_TOKEN);
+            throw new AppException("Refresh token đã bị thu hồi", StatusCode.INVALID_REFRESH_TOKEN);
         }
 
         if(refreshToken.getExpiresAt().isBefore(LocalDateTime.now())){
-            throw new AppException("Refresh token expired", StatusCode.INVALID_REFRESH_TOKEN);
+            throw new AppException("Refresh token đã hết hạn", StatusCode.INVALID_REFRESH_TOKEN);
         }
 
         return refreshToken;
@@ -49,7 +49,7 @@ public class RefreshTokenService {
         System.out.println(token);
         RefreshToken refreshToken = refreshTokenRepository.findByToken(token)
                 .orElseThrow(
-                        () -> new AppException("Invalid refresh token", StatusCode.INVALID_REFRESH_TOKEN)
+                        () -> new AppException("Refresh token không hợp lệ", StatusCode.INVALID_REFRESH_TOKEN)
                 );
         refreshToken.setRevoked(true);
         refreshTokenRepository.save(refreshToken);

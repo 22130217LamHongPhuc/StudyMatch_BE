@@ -16,7 +16,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ApiResponse<String> handleException(Exception ex){
-        return new ApiResponse<>(false, StatusCode.INTERNAL_SERVER_ERROR, "An unexpected error occurred: " + ex.getMessage(), null);
+        return new ApiResponse<>(false, StatusCode.INTERNAL_SERVER_ERROR, "Đã xảy ra lỗi không mong muốn: " + ex.getMessage(), null);
     }
 
 

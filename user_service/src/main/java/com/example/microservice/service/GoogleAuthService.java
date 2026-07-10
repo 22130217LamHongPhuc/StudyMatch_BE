@@ -1,6 +1,8 @@
 package com.example.microservice.service;
 
 import com.example.microservice.entity.User;
+import com.example.microservice.enums.StatusCode;
+import com.example.microservice.exception.AppException;
 import com.example.microservice.repository.UserRepository;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
@@ -10,7 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import javax.swing.text.html.Option;
 import java.util.Collections;
 import java.util.Optional;
 
@@ -19,8 +20,6 @@ public class GoogleAuthService {
 
     @Autowired
     UserRepository userRepository;
-
-
 
     @Value("${google.client-id}")
     private String googleClientId;
@@ -38,22 +37,22 @@ public class GoogleAuthService {
             GoogleIdToken idToken = verifier.verify(idTokenString);
 
             if (idToken == null) {
-                throw new RuntimeException("Invalid Google ID token");
+                throw new AppException("Token Google không hợp lệ", StatusCode.INVALID_TOKEN);
             }
 
             return idToken.getPayload();
 
+        } catch (AppException e) {
+            throw e;
         } catch (Exception e) {
-            throw new RuntimeException("Google token verify failed");
+            throw new AppException("Xác thực token Google thất bại", StatusCode.INVALID_TOKEN);
         }
     }
 
-    public User findOrCreateGoogleUser( String email, String name, String picture) {
+    public User findOrCreateGoogleUser(String email, String name, String picture) {
         Optional<User> userOpt = userRepository.findByEmail(email);
 
-
-
-        if  (userOpt.isPresent()) {
+        if (userOpt.isPresent()) {
             return userOpt.get();
         } else {
             User newUser = new User();
@@ -66,5 +65,6 @@ public class GoogleAuthService {
             newUser.setEmailVerified(true);
             newUser.setOnboardingCompleted(false);
             return userRepository.save(newUser);
-        } }
+        }
+    }
 }

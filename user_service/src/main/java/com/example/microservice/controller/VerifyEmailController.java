@@ -24,7 +24,7 @@ public class VerifyEmailController {
         return """
         <html>
         <head>
-            <title>Verify Email</title>
+            <title>Xác thực email</title>
             <style>
                 body {
                     font-family: Arial;
@@ -50,10 +50,10 @@ public class VerifyEmailController {
         </head>
         <body>
             <div class="box">
-                <h2> Email verified successfully</h2>
-                <p>You can now go back to the website</p>
+                <h2>Xác thực email thành công</h2>
+                <p>Bạn có thể quay lại website để tiếp tục đăng nhập</p>
                 <button onclick="window.location.href='http://localhost:3000/login'">
-                    Go to Website
+                    Quay lại website
                 </button>
             </div>
         </body>

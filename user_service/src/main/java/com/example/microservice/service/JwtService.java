@@ -10,6 +10,8 @@ import org.springframework.stereotype.Service;
 
 import java.security.Key;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 public class JwtService {
@@ -17,16 +19,38 @@ public class JwtService {
     private String SECRET_KEY;
 
     public String generateToken(UserDetails user) {
+        Map<String, Object> claims = new HashMap<>();
+        if (user instanceof CustomUserDetails customUserDetails) {
+            claims.put("role", customUserDetails.getUser().getRole());
+            claims.put("userId", customUserDetails.getUserId());
+        }
+
         return Jwts.builder()
+                .addClaims(claims)
                 .setSubject(user.getUsername())
                 .setIssuedAt(new Date())
-                .setExpiration(new Date((System.currentTimeMillis() + 1000 * 60 * 24 * 30 * 12))) // 1 tháng
+                .setExpiration(new Date((System.currentTimeMillis() + 1000 * 60 * 24 * 30 * 12)))
                 .signWith(getSignKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
     public String extractUsername(String token) {
         return extractAllClaims(token).getSubject();
+    }
+
+    public String extractRole(String token) {
+        return extractAllClaims(token).get("role", String.class);
+    }
+
+    public Long extractUserId(String token) {
+        Object userId = extractAllClaims(token).get("userId");
+        if (userId instanceof Integer integerUserId) {
+            return integerUserId.longValue();
+        }
+        if (userId instanceof Long longUserId) {
+            return longUserId;
+        }
+        return null;
     }
 
     private boolean isTokenExpired(String token) {
@@ -50,5 +74,4 @@ public class JwtService {
         byte[] keyBytes = SECRET_KEY.getBytes();
         return Keys.hmacShaKeyFor(keyBytes);
     }
-
 }

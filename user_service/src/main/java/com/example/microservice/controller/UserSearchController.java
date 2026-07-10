@@ -33,7 +33,7 @@ public class UserSearchController {
         return ResponseEntity.ok(new ApiResponse<>(
                 true,
                 StatusCode.SUCCESS,
-                "Search students successfully",
+                "Tìm kiếm sinh viên thành công",
                 result
         ));
     }

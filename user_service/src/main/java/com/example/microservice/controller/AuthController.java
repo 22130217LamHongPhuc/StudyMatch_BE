@@ -20,8 +20,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
-import java.util.UUID;
 @CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/api/auth")
@@ -52,14 +50,14 @@ public class AuthController {
 
     @GetMapping("/test")
     public String test() {
-        return "Hello";
+        return "Xin chào";
     }
 
     @PostMapping("register")
     public ResponseEntity<ApiResponse<AuthResponse>> register(@RequestBody RegisterRequest request) {
 
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new AppException("Email already in use", StatusCode.EMAIL_ALREADY_IN_USE);
+            throw new AppException("Email đã được sử dụng", StatusCode.EMAIL_ALREADY_IN_USE);
         }
 
         User user = new User();
@@ -89,7 +87,7 @@ public class AuthController {
         return ResponseEntity.ok(new ApiResponse<>(
                 true,
                 StatusCode.SUCCESS,
-                "Registration successful",
+                "Đăng ký thành công",
                 new AuthResponse("token", "",user.isOnboardingCompleted(),user.getUserId(),false)
         ));
     }
@@ -97,25 +95,25 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<AuthResponse>> login(@RequestBody AuthRequest request) {
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new AppException("User not found with email: " + request.getEmail(), StatusCode.USER_NOT_FOUND));
-
-        if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
-                throw new AppException("Password is incorrect", StatusCode.PASSWORD_INCORRECT);
-            }
-        System.out.println("start auth : "+user.getEmail());
-
-        user.setLastLoginAt(LocalDateTime.now());
-        userRepository.save(user);
-
-        String token = jwtService.generateToken(new CustomUserDetails(user));
-        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
+        AuthResponse response = authService.login(request);
 
         return ResponseEntity.ok(new ApiResponse<>(
                 true,
                 StatusCode.SUCCESS,
-                "Login successful",
-                new AuthResponse(token, refreshToken.getToken(),user.isOnboardingCompleted(),user.getUserId(),user.isEmailVerified())
+                "Đăng nhập thành công",
+                response
+        ));
+    }
+
+    @PostMapping("/admin/login")
+    public ResponseEntity<ApiResponse<AuthResponse>> adminLogin(@RequestBody AuthRequest request) {
+        AuthResponse response = authService.loginAdmin(request);
+
+        return ResponseEntity.ok(new ApiResponse<>(
+                true,
+                StatusCode.SUCCESS,
+                "Đăng nhập quản trị viên thành công",
+                response
         ));
     }
 
@@ -126,7 +124,6 @@ public class AuthController {
         GoogleIdToken.Payload payload =
                 googleAuthService.verifyIdToken(request.getIdToken());
 
-        String googleId = payload.getSubject();
         String email = payload.getEmail();
         String name = (String) payload.get("name");
         String picture = (String) payload.get("picture");
@@ -143,7 +140,7 @@ public class AuthController {
         return new ApiResponse<>(
                 true,
                 StatusCode.SUCCESS,
-                "Google login successful",
+                "Đăng nhập Google thành công",
                 new AuthResponse(accessToken, refreshToken,user.isOnboardingCompleted(),user.getUserId(),true)
         );
     }
@@ -158,7 +155,7 @@ public class AuthController {
         return ResponseEntity.ok(new ApiResponse<>(
                 true,
                 StatusCode.SUCCESS,
-                "Refresh token successful",
+                "Làm mới token thành công",
                 new AuthResponse(token, rt.getToken(),user.isOnboardingCompleted(),user.getUserId(),true)
         ));
     }
@@ -166,24 +163,24 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<String>> logout(@RequestBody RefreshTokenRequest tokenRequest) {
         refreshTokenService.revokeRefreshToken(tokenRequest.getRefreshToken());
-        return  ResponseEntity.ok(new ApiResponse<>(true, StatusCode.SUCCESS, "Logout successful", null));
+        return  ResponseEntity.ok(new ApiResponse<>(true, StatusCode.SUCCESS, "Đăng xuất thành công", null));
     }
 
     @PostMapping("/complete-onboarding/{userId}")
     public ResponseEntity<ApiResponse<String>> completeOnboarding(@PathVariable Long userId) {
         User user = userRepository.findById(userId).orElseThrow(
-                () -> new AppException("User not found with id: " + userId, StatusCode.USER_NOT_FOUND)
+                () -> new AppException("Không tìm thấy người dùng với ID: " + userId, StatusCode.USER_NOT_FOUND)
         );
         user.setOnboardingCompleted(true);
         userRepository.save(user);
-        return  ResponseEntity.ok(new ApiResponse<>(true, StatusCode.SUCCESS, "Onboarding completed", null));
+        return  ResponseEntity.ok(new ApiResponse<>(true, StatusCode.SUCCESS, "Hoàn tất onboarding thành công", null));
     }
 
     @PostMapping("/forget-password")
     public ResponseEntity<ApiResponse<String>> forgotPassword(@RequestBody ForgotPasswordRequest request) {
 
         User user = userRepository.findByEmail(request.getEmail()).orElseThrow(
-                () -> new AppException("User not found with email: " + request.getEmail(), StatusCode.USER_NOT_FOUND)
+                () -> new AppException("Không tìm thấy người dùng với email: " + request.getEmail(), StatusCode.USER_NOT_FOUND)
         );
 
         PasswordResetToken resetToken = authService.saveForgetPasswordToken(user);
@@ -198,7 +195,7 @@ public class AuthController {
         return ResponseEntity.ok(new ApiResponse<>(
                 true,
                 StatusCode.SUCCESS,
-                "Password reset email sent",
+                "Đã gửi email đặt lại mật khẩu",
                 null
         ));
 
@@ -210,7 +207,7 @@ public class AuthController {
         return ResponseEntity.ok(new ApiResponse<>(
                 true,
                 StatusCode.SUCCESS,
-                "Password reset successful",
+                "Đặt lại mật khẩu thành công",
                 null
         ));
     }
@@ -218,7 +215,7 @@ public class AuthController {
     @PostMapping("/reset-verify-email")
     public ResponseEntity<ApiResponse<String>> resetVerifyEmail(@RequestBody ForgotPasswordRequest request){
         User user = userRepository.findByEmail(request.getEmail()).orElseThrow(
-                () -> new AppException("User not found with email: " + request.getEmail(), StatusCode.USER_NOT_FOUND)
+                () -> new AppException("Không tìm thấy người dùng với email: " + request.getEmail(), StatusCode.USER_NOT_FOUND)
         );
         EmailVerificationToken verificationToken = verificationTokenService.saveVerificationToken(user);
 
@@ -233,7 +230,7 @@ public class AuthController {
         return ResponseEntity.ok(new ApiResponse<>(
                 true,
                 StatusCode.SUCCESS,
-                "Verification email sent",
+                "Đã gửi lại email xác thực",
                 null
         ));
     }
@@ -243,7 +240,7 @@ public class AuthController {
             @RequestHeader(value = "Authorization", required = false) String authorization
     ) {
         if (authorization == null || !authorization.startsWith("Bearer ")) {
-            return ResponseEntity.ok(TokenValidateResponse.invalid("Missing token"));
+            return ResponseEntity.ok(TokenValidateResponse.invalid("Thiếu token"));
         }
         String token = authorization.substring(7);
        String username = jwtService.extractUsername(token);
@@ -254,7 +251,7 @@ public class AuthController {
         try {
             boolean valid = jwtService.isTokenValid(token, userDetails);
             if (!valid) {
-                return ResponseEntity.ok(TokenValidateResponse.invalid("Invalid token"));
+                return ResponseEntity.ok(TokenValidateResponse.invalid("Token không hợp lệ"));
             }
             CustomUserDetails customUserDetails = (CustomUserDetails) userDetails;
             Long userId = customUserDetails.getUserId();
@@ -262,7 +259,7 @@ public class AuthController {
             return ResponseEntity.ok(TokenValidateResponse.valid(userId, username));
 
         } catch (Exception e) {
-            return ResponseEntity.ok(TokenValidateResponse.invalid("Token error"));
+            return ResponseEntity.ok(TokenValidateResponse.invalid("Có lỗi xảy ra với token"));
         }
     }
 

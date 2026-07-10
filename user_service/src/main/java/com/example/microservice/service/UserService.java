@@ -3,6 +3,8 @@ package com.example.microservice.service;
 import com.example.microservice.dto.respone.*;
 import com.example.microservice.dto.request.UpdateUserProfileRequest;
 import com.example.microservice.entity.User;
+import com.example.microservice.enums.StatusCode;
+import com.example.microservice.exception.AppException;
 import com.example.microservice.feignAPI.ProfileClient;
 import com.example.microservice.feignAPI.SocialClient;
 import com.example.microservice.repository.UserRepository;
@@ -32,7 +34,7 @@ public class UserService {
 
     public String getFullName(Long userId) {
         User user = repo.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new AppException("Không tìm thấy người dùng", StatusCode.USER_NOT_FOUND));
         return user.getFullName();
     }
     public Long getFriendCount(Long userId) {
@@ -60,7 +62,8 @@ public class UserService {
     }
 
     public ProfileDto updateProfile(Long userId, UpdateUserProfileRequest request) {
-        User user = repo.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        User user = repo.findById(userId)
+                .orElseThrow(() -> new AppException("Không tìm thấy người dùng", StatusCode.USER_NOT_FOUND));
         
         boolean isNameUpdated = false;
         boolean isAvatarUpdated = false;
@@ -165,7 +168,8 @@ public class UserService {
 
 
     public AdminUserStatusResponse updateStatusUser(Long userId, @NotNull() String status) {
-        User user = repo.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        User user = repo.findById(userId)
+                .orElseThrow(() -> new AppException("Không tìm thấy người dùng", StatusCode.USER_NOT_FOUND));
         user.setStatus(status);
         repo.save(user);
         return new AdminUserStatusResponse( user.getStatus());

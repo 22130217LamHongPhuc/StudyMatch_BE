@@ -27,7 +27,7 @@ public class UserController {
     @PostMapping(value = "/basic-info", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ApiResponse<List<BasicUserResponse>>> getBasicUsers(@RequestBody List<Long> userIds) {
         List<BasicUserResponse> users = userService.getBasicUsers(userIds);
-        return ResponseEntity.ok(new ApiResponse<>(true, StatusCode.SUCCESS, "Get basic users successfully", users));
+        return ResponseEntity.ok(new ApiResponse<>(true, StatusCode.SUCCESS, "Lấy thông tin cơ bản của người dùng thành công", users));
     }
 
     @GetMapping("/friends/{id}/mutual")
@@ -47,7 +47,7 @@ public class UserController {
     @GetMapping("/batch")
     public ResponseEntity<ApiResponse<List<BasicUserResponse>>> getBasicUsersByQuery(@RequestParam List<Long> ids) {
         List<BasicUserResponse> users = userService.getBasicUsers(ids);
-        return ResponseEntity.ok(new ApiResponse<>(true, StatusCode.SUCCESS, "Get basic users successfully", users));
+        return ResponseEntity.ok(new ApiResponse<>(true, StatusCode.SUCCESS, "Lấy thông tin cơ bản của người dùng thành công", users));
     }
 
     @PostMapping("/send-session-reminder")
@@ -64,7 +64,7 @@ public class UserController {
     @GetMapping("/{userId}/fullname")
     public ResponseEntity<ApiResponse<String>> getFullName(@PathVariable Long userId) {
         String fullName = userService.getFullName(userId);
-        return ResponseEntity.ok(new ApiResponse<>(true, StatusCode.SUCCESS, "Get fullname successfully", fullName));
+        return ResponseEntity.ok(new ApiResponse<>(true, StatusCode.SUCCESS, "Lấy họ và tên thành công", fullName));
     }
 
     @GetMapping("/{userId}")
