@@ -9,6 +9,12 @@ public interface MatchingItemService {
 
     MatchingItemResponse recordAction(CreateMatchingItemRequest request);
 
+    MatchingItemResponse recordActionSkipped(CreateMatchingItemRequest request);
+
+    MatchingItemResponse recordFriendRequest(CreateMatchingItemRequest request);
+
+    MatchingItemResponse recordActionCancelled(CreateMatchingItemRequest request);
+
     MatchingItemResponse updateMatchingItemStatus(UpdateMatchingItemStatusRequest request);
 
     DecidedMatchingItemsDto getDecidedMatchingItems(Long userId, Integer page, Integer size);

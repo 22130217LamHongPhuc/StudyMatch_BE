@@ -49,6 +49,6 @@ public interface FriendRequestRepo extends JpaRepository<FriendRequest, Long> {
             """, nativeQuery = true)
     void deleteFriendRequests(@Param("u1") Long u1, @Param("u2") Long u2);
 
+    @Query("SELECT fr FROM FriendRequest fr WHERE fr.senderId = :userId OR fr.receiverId = :userId")
+    List<FriendRequest> findAllRelationsByUserId(@Param("userId") Long userId);
 }
-
-

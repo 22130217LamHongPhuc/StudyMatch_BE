@@ -8,10 +8,16 @@ import com.group_service.entity.enums.*;
 import com.group_service.enums.StatusCode;
 import com.group_service.exception.AppException;
 import com.group_service.repository.*;
+import com.group_service.service.StudySessionParticipantService;
 import com.group_service.service.StudySessionService;
 import com.group_service.service.ZegoCloudTokenService;
+import com.group_service.validator.StudySessionValidator;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import mapper.StudySessionMapper;
+import mapper.StudySessionParticipantMapper;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -44,100 +50,30 @@ public class StudySessionServiceImpl implements StudySessionService {
     private final ZegoCloudTokenService zegoCloudTokenService;
     private final StudySessionAttendanceLogRepository attendanceLogRepository;
     private final ChatClient chatClient;
+    private final StudySessionValidator validator;
+    private final StudySessionMapper studySessionMapper;
+    private final StudySessionParticipantMapper studySessionParticipantMapper;
+    private final StudySessionParticipantService studySessionParticipantService;
+
+    private final StudySessionNotificationService studySessionNotificationService;
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy");
 
     @Override
     @Transactional
     public StudySessionResponse createSession(Long groupId, CreateStudySessionRequest request) {
-        StudyGroup group = studyGroupRepository.findById(groupId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Study group not found"));
 
-        if (group.getStatus() == GroupStatus.DELETED) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Group is deleted");
-        }
+        StudyGroup group = validator.validateGroup(groupId, request);
 
-        if (!groupMemberRepository.existsByGroupIdAndUserIdAndStatus(
-                groupId,
-                request.getCreatedByUserId(),
-                GroupMemberStatus.ACTIVE
-        )) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not an active member of this group");
-        }
-
-        validateTimeRange(request.getStartTime(), request.getEndTime());
-
-        StudySession session = StudySession.builder()
-                .groupId(groupId)
-                .title(request.getTitle().trim())
-                .description(normalizeText(request.getDescription()))
-                .startTime(request.getStartTime())
-                .endTime(request.getEndTime())
-                .studyMode(request.getStudyMode())
-                .location(normalizeText(request.getLocation()))
-                .meetingUrl(normalizeText(request.getMeetingUrl()))
-                .createdByUserId(request.getCreatedByUserId())
-                .status(GroupStudySessionStatus.SCHEDULED)
-                .sessionType(StudySessionType.GROUP)
-                .subjectName(request.getSubjectName())
-                .subjectId(request.getSubjectId())
-                .reminderSent(false)
-                .build();
+        StudySession session = studySessionMapper.mapToStudySession(groupId, request);
 
         StudySession saved = studySessionRepository.save(session);
 
-        List<GroupMember> activeMembers = groupMemberRepository.findByGroupIdAndStatus(groupId, GroupMemberStatus.ACTIVE);
-        if (activeMembers.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Group has no active members");
-        }
+        List<StudySessionParticipant> participants = studySessionParticipantService
+                .createParticipantsForGroupSession(groupId, request, saved);
+        studySessionNotificationService.sendSessionCreatedNotification(group, saved, request, participants);
 
-        List<Long> userIds = activeMembers.stream()
-                .map(GroupMember::getUserId)
-                .distinct()
-                .toList();
-
-        Map<Long, String> userNames = fetchUserNames(userIds);
-        List<StudySessionParticipant> participants = activeMembers.stream()
-                .map(member -> {
-                    Long memberUserId = member.getUserId();
-                    boolean isHost = memberUserId.equals(request.getCreatedByUserId());
-                    String userName = userNames.getOrDefault(memberUserId, fallbackUserName(memberUserId));
-
-                    return StudySessionParticipant.builder()
-                            .sessionId(saved.getId())
-                            .userId(memberUserId)
-                            .userName(userName)
-                            .role(isHost ? StudySessionParticipantRole.HOST : StudySessionParticipantRole.PARTICIPANT)
-                            .status(isHost ? StudySessionParticipantStatus.ACCEPTED : StudySessionParticipantStatus.PENDING)
-                            .respondedAt(isHost ? LocalDateTime.now() : null)
-                            .build();
-                })
-                .toList();
-
-        participantRepository.saveAll(participants);
-
-        try {
-            List<Long> recipients = userIds.stream()
-                    .filter(id -> !id.equals(request.getCreatedByUserId()))
-                    .toList();
-            if (!recipients.isEmpty()) {
-                StudySessionCreatedRequest notificationReq = StudySessionCreatedRequest.builder()
-                        .sessionId(saved.getId())
-                        .sessionTitle(saved.getTitle())
-                        .startTime(saved.getStartTime().format(FORMATTER))
-                        .meetingUrl(saved.getMeetingUrl())
-                        .groupName(group.getName())
-                        .sessionType(saved.getSessionType().name())
-                        .creatorName(userNames.getOrDefault(request.getCreatedByUserId(), fallbackUserName(request.getCreatedByUserId())))
-                        .userIds(recipients)
-                        .build();
-                chatClient.sendSessionCreatedNotification(notificationReq);
-            }
-        } catch (Exception e) {
-            log.error("Failed to send session created notification: {}", e.getMessage());
-        }
-
-        return toResponse(saved, request.getCreatedByUserId());
+        return studySessionMapper.mapToStudySessionResponse(saved, request.getCreatedByUserId());
     }
 
     @Override
@@ -179,8 +115,7 @@ public class StudySessionServiceImpl implements StudySessionService {
         Map<Long, String> userNames = fetchUserNames(List.of(request.getCreatedByUserId(), request.getPartnerUserId()));
         String hostUserName = userNames.getOrDefault(
                 request.getCreatedByUserId(),
-                fallbackUserName(request.getCreatedByUserId())
-        );
+                fallbackUserName(request.getCreatedByUserId()));
         String partnerUserName = userNames.get(request.getPartnerUserId());
         if (!StringUtils.hasText(partnerUserName)) {
             partnerUserName = normalizeText(request.getPartnerUserName());
@@ -225,7 +160,7 @@ public class StudySessionServiceImpl implements StudySessionService {
             log.error("Failed to send session created notification: {}", e.getMessage());
         }
 
-        return toResponse(saved, request.getCreatedByUserId());
+        return studySessionMapper.mapToStudySessionResponse(saved, request.getCreatedByUserId());
     }
 
     @Override
@@ -237,13 +172,11 @@ public class StudySessionServiceImpl implements StudySessionService {
             GroupStudySessionStatus sessionStatus,
             LocalDateTime startFrom,
             LocalDateTime startTo,
-            Pageable pageable
-    ) {
+            Pageable pageable) {
         Page<StudySession> sessions = studySessionRepository.findSessionsByUserIdWithFilters(
-                userId, sessionType, participantStatus, sessionStatus, startFrom, startTo, pageable
-        );
+                userId, sessionType, participantStatus, sessionStatus, startFrom, startTo, pageable);
 
-        return sessions.map(session -> toResponse(session, userId));
+        return sessions.map(session -> studySessionMapper.mapToStudySessionResponse(session, userId));
     }
 
     @Override
@@ -252,9 +185,8 @@ public class StudySessionServiceImpl implements StudySessionService {
         return studySessionRepository.findTopUpcomingSessionsByUserId(
                 userId,
                 LocalDateTime.now(),
-                PageRequest.of(0, 3)
-        ).stream()
-                .map(session -> toResponse(session, userId))
+                PageRequest.of(0, 3)).stream()
+                .map(session -> studySessionMapper.mapToStudySessionResponse(session, userId))
                 .toList();
     }
 
@@ -271,14 +203,13 @@ public class StudySessionServiceImpl implements StudySessionService {
         if (userId != null && !groupMemberRepository.existsByGroupIdAndUserIdAndStatus(
                 groupId,
                 userId,
-                GroupMemberStatus.ACTIVE
-        )) {
+                GroupMemberStatus.ACTIVE)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not an active member of this group");
         }
 
         return studySessionRepository.findByGroupIdOrderByStartTimeAsc(groupId)
                 .stream()
-                .map(session -> toResponse(session, userId))
+                .map(session -> studySessionMapper.mapToStudySessionResponse(session, userId))
                 .toList();
     }
 
@@ -288,7 +219,7 @@ public class StudySessionServiceImpl implements StudySessionService {
         StudySession session = studySessionRepository.findById(sessionId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Study session not found"));
 
-        return toResponse(session, userId);
+        return studySessionMapper.mapToStudySessionResponse(session, userId);
     }
 
     @Transactional
@@ -316,11 +247,10 @@ public class StudySessionServiceImpl implements StudySessionService {
             throw new AppException("session has already ended. You can join until 5 minutes after end time");
         }
 
-        Optional<StudySessionAttendanceLog> openingLog =
-                attendanceLogRepository.findFirstBySessionIdAndUserIdAndLeftAtIsNullOrderByJoinedAtDesc(
+        Optional<StudySessionAttendanceLog> openingLog = attendanceLogRepository
+                .findFirstBySessionIdAndUserIdAndLeftAtIsNullOrderByJoinedAtDesc(
                         sessionId,
-                        userId
-                );
+                        userId);
 
         StudySessionAttendanceLog log;
 
@@ -341,36 +271,32 @@ public class StudySessionServiceImpl implements StudySessionService {
             }
 
             participant.setJoinCount(
-                    participant.getJoinCount() == null ? 1 : participant.getJoinCount() + 1
-            );
+                    participant.getJoinCount() == null ? 1 : participant.getJoinCount() + 1);
 
             participant.setStatus(StudySessionParticipantStatus.JOINED);
             participantRepository.save(participant);
         }
         String roomId = ensureRoomId(session);
 
-
         String token = zegoCloudTokenService.generateToken(userId, roomId);
 
-
-//        return JoinStudySessionResponse.builder()
-//                .sessionId(session.getId())
-//                .userId(userId)
-//                .attendanceLogId(log.getId())
-//                .meetingUrl(session.getMeetingUrl())
-//                .roomId(session.getRoomId())
-//                .joinedAt(log.getJoinedAt())
-//                .joinCount(participant.getJoinCount())
-//                .totalDurationSeconds(participant.getTotalDurationSeconds())
-//                .attendanceStatus(participant.getAttendanceStatus())
-//                .build();
+        // return JoinStudySessionResponse.builder()
+        // .sessionId(session.getId())
+        // .userId(userId)
+        // .attendanceLogId(log.getId())
+        // .meetingUrl(session.getMeetingUrl())
+        // .roomId(session.getRoomId())
+        // .joinedAt(log.getJoinedAt())
+        // .joinCount(participant.getJoinCount())
+        // .totalDurationSeconds(participant.getTotalDurationSeconds())
+        // .attendanceStatus(participant.getAttendanceStatus())
+        // .build();
 
         return new JoinStudySessionResponse(
                 session.getId(),
                 roomId,
                 token,
-                now
-        );
+                now);
     }
 
     @Override
@@ -388,7 +314,8 @@ public class StudySessionServiceImpl implements StudySessionService {
         }
 
         StudySessionParticipant participant = participantRepository.findBySessionIdAndUserId(sessionId, userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "You are not a participant of this session"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "You are not a participant of this session"));
 
         if (participant.getStatus() != StudySessionParticipantStatus.PENDING) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You have already responded to this invitation");
@@ -398,17 +325,15 @@ public class StudySessionServiceImpl implements StudySessionService {
         participant.setRespondedAt(LocalDateTime.now());
         participantRepository.save(participant);
 
-        return toResponse(session, userId);
+        return studySessionMapper.mapToStudySessionResponse(session, userId);
     }
-
 
     @Transactional
     public void autoCloseAttendanceLogs(Long sessionId) {
         StudySession session = studySessionRepository.findById(sessionId)
                 .orElseThrow(() -> new AppException(StatusCode.SESSION_NOT_FOUND));
 
-        List<StudySessionAttendanceLog> openingLogs =
-                attendanceLogRepository.findBySessionIdAndLeftAtIsNull(sessionId);
+        List<StudySessionAttendanceLog> openingLogs = attendanceLogRepository.findBySessionIdAndLeftAtIsNull(sessionId);
 
         for (StudySessionAttendanceLog log : openingLogs) {
             LocalDateTime autoLeftAt = calculateAutoLeftAt(log.getJoinedAt(), session.getEndTime());
@@ -428,8 +353,7 @@ public class StudySessionServiceImpl implements StudySessionService {
                     .ifPresent(participant -> {
                         Long totalDuration = attendanceLogRepository.sumDurationSecondsBySessionIdAndUserId(
                                 sessionId,
-                                log.getUserId()
-                        );
+                                log.getUserId());
 
                         participant.setLastLeftAt(autoLeftAt);
                         participant.setTotalDurationSeconds(totalDuration);
@@ -438,6 +362,7 @@ public class StudySessionServiceImpl implements StudySessionService {
                     });
         }
     }
+
     @Override
     @Transactional
     public StudySessionResponse updateSessionStatus(Long sessionId, Long userId, GroupStudySessionStatus newStatus) {
@@ -453,7 +378,7 @@ public class StudySessionServiceImpl implements StudySessionService {
         session.setStatus(newStatus);
         StudySession saved = studySessionRepository.save(session);
 
-        return toResponse(saved, userId);
+        return studySessionMapper.mapToStudySessionResponse(saved, userId);
     }
 
     @Override
@@ -490,7 +415,8 @@ public class StudySessionServiceImpl implements StudySessionService {
         };
 
         if (!hasAccess) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not allowed to view confirmation stats for this session");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "You are not allowed to view confirmation stats for this session");
         }
 
         List<StudySessionParticipant> participantsDb = participantRepository.findBySessionId(sessionId);
@@ -500,8 +426,7 @@ public class StudySessionServiceImpl implements StudySessionService {
                         resolveParticipantUserName(participant),
                         participant.getRole(),
                         participant.getStatus(),
-                        participant.getRespondedAt()
-                ))
+                        participant.getRespondedAt()))
                 .toList();
 
         List<SessionParticipantConfirmationResponse> anotherParticipants = participantsDb.stream()
@@ -511,12 +436,12 @@ public class StudySessionServiceImpl implements StudySessionService {
                         resolveParticipantUserName(participant),
                         participant.getRole(),
                         participant.getStatus(),
-                        participant.getRespondedAt()
-                ))
+                        participant.getRespondedAt()))
                 .toList();
 
         long acceptedCount = participants.stream()
-                .filter(participant -> participant.status() == StudySessionParticipantStatus.ACCEPTED || participant.status() ==  StudySessionParticipantStatus.JOINED)
+                .filter(participant -> participant.status() == StudySessionParticipantStatus.ACCEPTED
+                        || participant.status() == StudySessionParticipantStatus.JOINED)
                 .count();
         long pendingCount = participants.stream()
                 .filter(participant -> participant.status() == StudySessionParticipantStatus.PENDING)
@@ -529,12 +454,11 @@ public class StudySessionServiceImpl implements StudySessionService {
                 session.getId(),
                 session.getSessionType(),
                 userId,
-                participants.size() ,
+                participants.size(),
                 acceptedCount,
                 pendingCount,
                 declinedCount,
-                anotherParticipants
-        );
+                anotherParticipants);
     }
 
     @Transactional
@@ -577,7 +501,7 @@ public class StudySessionServiceImpl implements StudySessionService {
             eligibleForModel = true;
             feedbackType = StudyFeedbackType.SESSION_FEEDBACK;
             message = "Bạn có thể đánh giá buổi học";
-        }  else if (attendanceStatus == StudySessionAttendanceStatus.JOINED_SHORT) {
+        } else if (attendanceStatus == StudySessionAttendanceStatus.JOINED_SHORT) {
             feedbackType = StudyFeedbackType.EARLY_LEAVE_REASON;
             message = "Bạn đã rời buổi học khá sớm, vui lòng cho biết lý do";
         } else {
@@ -643,60 +567,6 @@ public class StudySessionServiceImpl implements StudySessionService {
                 .build();
     }
 
-    private StudySessionResponse toResponse(StudySession s, Long currentUserId) {
-        StudySessionParticipantStatus participantStatus = null;
-        if (currentUserId != null) {
-            participantStatus = participantRepository.findBySessionIdAndUserId(s.getId(), currentUserId)
-                    .map(StudySessionParticipant::getStatus)
-                    .orElse(null);
-        }
-
-        String groupName = null;
-        if (s.getGroupId() != null) {
-            groupName = studyGroupRepository.findById(s.getGroupId())
-                    .map(StudyGroup::getName)
-                    .orElse(null);
-        }
-
-        String partnerName = null;
-        String partnerUserName = null;
-        if (s.getSessionType() == StudySessionType.USER_PAIR && currentUserId != null) {
-            StudySessionParticipant partner = participantRepository
-                    .findFirstBySessionIdAndUserIdNot(s.getId(), currentUserId)
-                    .orElse(null);
-            if (partner != null) {
-                partnerUserName = normalizeText(partner.getUserName());
-                partnerName = fetchUserFullName(partner.getUserId());
-            }
-        }
-
-        long membersCount = participantRepository.countBySessionId(s.getId());
-
-        return new StudySessionResponse(
-                s.getId(),
-                s.getSessionType(),
-                s.getGroupId(),
-                s.getTitle(),
-                s.getDescription(),
-                s.getStartTime(),
-                s.getEndTime(),
-                s.getStudyMode(),
-                s.getLocation(),
-                s.getMeetingUrl(),
-                s.getRoomId(),
-                s.getCreatedByUserId(),
-                s.getStatus(),
-                participantStatus,
-                partnerName,
-                partnerUserName,
-                groupName,
-                membersCount,
-                s.getSubjectName(),
-                s.getCreatedAt(),
-                s.getUpdatedAt()
-        );
-    }
-
     private String fetchUserFullName(Long userId) {
         try {
             Map<String, Object> userData = userClient.getUserById(userId);
@@ -710,6 +580,13 @@ public class StudySessionServiceImpl implements StudySessionService {
             log.warn("Failed to fetch user name for userId={}: {}", userId, e.getMessage());
         }
         return "User #" + userId;
+    }
+
+    private String normalizeText(String text) {
+        if (text == null) {
+            return null;
+        }
+        return text.trim();
     }
 
     private Map<Long, String> fetchUserNames(List<Long> userIds) {
@@ -737,10 +614,6 @@ public class StudySessionServiceImpl implements StudySessionService {
         return result;
     }
 
-    private String fallbackUserName(Long userId) {
-        return "User #" + userId;
-    }
-
     private void validateTimeRange(LocalDateTime startTime, LocalDateTime endTime) {
         if (endTime.isBefore(startTime) || endTime.isEqual(startTime)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "endTime must be after startTime");
@@ -752,7 +625,8 @@ public class StudySessionServiceImpl implements StudySessionService {
         LocalDateTime joinEnd = endTime.plusMinutes(5);
 
         if (now.isBefore(joinStart) || now.isAfter(joinEnd)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Session can only be joined from 5 minutes before start until 5 minutes after end");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Session can only be joined from 5 minutes before start until 5 minutes after end");
         }
     }
 
@@ -783,10 +657,6 @@ public class StudySessionServiceImpl implements StudySessionService {
         }
     }
 
-    private String normalizeText(String value) {
-        return StringUtils.hasText(value) ? value.trim() : null;
-    }
-
     private String resolveParticipantUserName(StudySessionParticipant participant) {
         if (StringUtils.hasText(participant.getUserName())) {
             return participant.getUserName();
@@ -794,13 +664,16 @@ public class StudySessionServiceImpl implements StudySessionService {
         return fallbackUserName(participant.getUserId());
     }
 
+    private String fallbackUserName(Long userId) {
+        return "User " + userId;
+    }
+
     @Transactional
     @Override
     public LeaveStudySessionResponse leaveSession(
             Long sessionId,
             Long userId,
-            LeaveStudySessionRequest request
-    ) {
+            LeaveStudySessionRequest request) {
         StudySession session = studySessionRepository.findById(sessionId)
                 .orElseThrow(() -> new RuntimeException("Study session not found"));
 
@@ -866,8 +739,7 @@ public class StudySessionServiceImpl implements StudySessionService {
 
     private StudySessionAttendanceStatus calculateAttendanceStatus(
             StudySession session,
-            Long totalDurationSeconds
-    ) {
+            Long totalDurationSeconds) {
         long total = totalDurationSeconds == null ? 0L : totalDurationSeconds;
 
         if (total <= 0) {
@@ -890,8 +762,7 @@ public class StudySessionServiceImpl implements StudySessionService {
     private long calculateMinRequiredDurationSeconds(StudySession session) {
         long sessionDurationSeconds = Duration.between(
                 session.getStartTime(),
-                session.getEndTime()
-        ).getSeconds();
+                session.getEndTime()).getSeconds();
 
         long tenMinutes = 1 * 60L;
         long thirtyPercent = Math.round(sessionDurationSeconds * 0.3);
@@ -899,5 +770,11 @@ public class StudySessionServiceImpl implements StudySessionService {
         return Math.max(tenMinutes, thirtyPercent);
     }
 
-
+    @Override
+    @Transactional(readOnly = true)
+    public List<UserStudyDurationResponse> getTotalMinutesForAllUsers() {
+        return attendanceLogRepository.getStudyDurationPerUser().stream()
+                .map(p -> new UserStudyDurationResponse(p.getUserId(), p.getTotalDurationSeconds() / 60))
+                .toList();
+    }
 }

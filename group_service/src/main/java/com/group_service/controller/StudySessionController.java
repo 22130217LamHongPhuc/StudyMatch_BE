@@ -259,6 +259,14 @@ public class StudySessionController {
         ));
     }
 
-
-
+    @GetMapping("/attendance/users/total-minutes")
+    public ResponseEntity<ApiResponse<List<UserStudyDurationResponse>>> getTotalMinutesForAllUsers() {
+        List<UserStudyDurationResponse> response = studySessionService.getTotalMinutesForAllUsers();
+        return ResponseEntity.ok(new ApiResponse<>(
+                true,
+                StatusCode.SUCCESS,
+                "Get total study minutes for all users successfully",
+                response
+        ));
+    }
 }

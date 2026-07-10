@@ -1,6 +1,5 @@
 package com.example.microservice.controller;
 
-
 import com.example.microservice.dto.request.UpdateUserProfileRequest;
 import com.example.microservice.dto.request.SessionReminderEmailRequest;
 import com.example.microservice.service.JavaMail;
@@ -17,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @CrossOrigin(origins = "*")
-@RequestMapping({"/api/users", "/users"})
+@RequestMapping({ "/api/users", "/users" })
 public class UserController {
     @Autowired
     UserService userService;
@@ -34,16 +33,14 @@ public class UserController {
     @GetMapping("/friends/{id}/mutual")
     public ResponseEntity<ProfileDto> getProfileWithMutualFriends(
             @PathVariable Long id,
-            @RequestParam Long targetUserId
-    ) {
+            @RequestParam Long targetUserId) {
         return ResponseEntity.ok(userService.getProfile(id, targetUserId));
     }
 
     @PutMapping("/{userId}/profile")
     public ResponseEntity<ProfileDto> updateProfile(
             @PathVariable Long userId,
-            @RequestBody UpdateUserProfileRequest request
-    ) {
+            @RequestBody UpdateUserProfileRequest request) {
         return ResponseEntity.ok(userService.updateProfile(userId, request));
     }
 
@@ -60,8 +57,7 @@ public class UserController {
                 request.getFullName(),
                 request.getSessionTitle(),
                 request.getStartTime(),
-                request.getGroupName()
-        );
+                request.getGroupName());
         return ResponseEntity.ok().build();
     }
 
@@ -86,4 +82,3 @@ public class UserController {
     }
 
 }
-

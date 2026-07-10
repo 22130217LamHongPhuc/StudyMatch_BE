@@ -1,6 +1,7 @@
 package com.group_service.controller;
 
 import com.group_service.dto.ApiResponse;
+import com.group_service.dto.CommonGroupResponse;
 import com.group_service.dto.CreateStudyGroupRequest;
 import com.group_service.dto.GroupMemberResponse;
 import com.group_service.dto.JoinGroupRequest;
@@ -72,6 +73,20 @@ public class StudyGroupController {
                 true,
                 StatusCode.SUCCESS,
                 "create group successfully",
+                response
+        ));
+    }
+
+    @GetMapping("/user/{userId}/common/{otherUserId}")
+    public ResponseEntity<ApiResponse<List<CommonGroupResponse>>> getCommonGroups(
+            @PathVariable Long userId,
+            @PathVariable Long otherUserId
+    ) {
+        List<CommonGroupResponse> response = studyGroupService.getCommonGroups(userId, otherUserId);
+        return ResponseEntity.ok(new ApiResponse<>(
+                true,
+                StatusCode.SUCCESS,
+                "Get common groups successfully",
                 response
         ));
     }

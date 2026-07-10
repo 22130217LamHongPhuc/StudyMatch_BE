@@ -50,4 +50,6 @@ public interface StudySessionService {
     void autoCloseAttendanceLogs(Long sessionId);
 
     LeaveStudySessionResponse leaveSession(Long sessionId, Long userId, @Valid LeaveStudySessionRequest request);
+
+    List<UserStudyDurationResponse> getTotalMinutesForAllUsers();
 }

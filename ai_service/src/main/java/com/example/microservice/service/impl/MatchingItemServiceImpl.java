@@ -30,44 +30,121 @@ public class MatchingItemServiceImpl implements MatchingItemService {
     public MatchingItemResponse recordAction(CreateMatchingItemRequest request) {
         validateRequest(request.getUserId(), request.getRecommendedUserId());
 
-        MatchingActionStatus actionStatus = request.getActionStatus();
+        MatchingActionStatus newStatus = request.getActionStatus();
+        LocalDateTime now = LocalDateTime.now();
 
-        if (actionStatus == MatchingActionStatus.ACCEPTED ||
-                actionStatus == MatchingActionStatus.REJECTED) {
+        MatchingItem matchingItem = matchingItemRepository
+                .findByUserIdAndRecommendedUserIdAndActionStatus(
+                        request.getUserId(),
+                        request.getRecommendedUserId(),
+                        MatchingActionStatus.VIEWED)
+                .map(item -> {
+                    item.setCount(item.getCount() + 1);
+                    return item;
+                })
+                .orElseGet(() -> {
+                    MatchingItem item = new MatchingItem();
+                    item.setUserId(request.getUserId());
+                    item.setRecommendedUserId(request.getRecommendedUserId());
+                    item.setFinalScore(0.0);
+                    item.setIsRecommendation(true);
+                    item.setActionStatus(MatchingActionStatus.VIEWED);
+                    item.setCount(0);
+                    return item;
+                });
 
-            MatchingItem firstSide = upsertOneSide(
-                    request.getUserId(),
-                    request.getRecommendedUserId(),
-                    actionStatus,
-                    request.getFinalScore(),
-                    request.getReasonText(),
-                    false,
-                    false);
+        updateActionTime(matchingItem, newStatus, now);
 
-            upsertOneSide(
-                    request.getRecommendedUserId(),
-                    request.getUserId(),
-                    actionStatus,
-                    request.getFinalScore(),
-                    request.getReasonText(),
-                    false,
-                    false);
-
-            return mapToResponse(firstSide);
+        if (shouldUpdateStatus(matchingItem.getActionStatus(), newStatus)) {
+            matchingItem.setActionStatus(newStatus);
         }
 
-        MatchingItem saved = upsertOneSide(
-                request.getUserId(),
-                request.getRecommendedUserId(),
-                actionStatus,
-                request.getFinalScore(),
-                request.getReasonText(),
-                true,
-                request.getIsRecommendation()
+        if (request.getFinalScore() != null) {
+            matchingItem.setFinalScore(request.getFinalScore());
+        }
 
-        );
+        if (request.getReasonText() != null) {
+            matchingItem.setReasonText(request.getReasonText());
+        }
 
-        return mapToResponse(saved);
+        MatchingItem savedItem = matchingItemRepository.save(matchingItem);
+
+        return mapToResponse(savedItem);
+    }
+
+    @Override
+    @Transactional
+    public MatchingItemResponse recordActionSkipped(CreateMatchingItemRequest request) {
+        validateRequest(request.getUserId(), request.getRecommendedUserId());
+
+        MatchingActionStatus newStatus = request.getActionStatus();
+        LocalDateTime now = LocalDateTime.now();
+
+        MatchingItem matchingItem = matchingItemRepository
+                .findByUserIdAndRecommendedUserIdAndActionStatus(
+                        request.getUserId(),
+                        request.getRecommendedUserId(),
+                        MatchingActionStatus.SKIPPED)
+                .map(item -> {
+                    item.setCount(item.getCount() + 1);
+                    return item;
+                })
+                .orElseGet(() -> {
+                    MatchingItem item = new MatchingItem();
+                    item.setUserId(request.getUserId());
+                    item.setRecommendedUserId(request.getRecommendedUserId());
+                    item.setFinalScore(0.0);
+                    item.setIsRecommendation(true);
+                    item.setActionStatus(MatchingActionStatus.SKIPPED);
+                    item.setCount(0);
+                    return item;
+                });
+
+        updateActionTime(matchingItem, newStatus, now);
+
+        if (shouldUpdateStatus(matchingItem.getActionStatus(), newStatus)) {
+            matchingItem.setActionStatus(newStatus);
+        }
+
+        if (request.getFinalScore() != null) {
+            matchingItem.setFinalScore(request.getFinalScore());
+        }
+
+        if (request.getReasonText() != null) {
+            matchingItem.setReasonText(request.getReasonText());
+        }
+
+        MatchingItem savedItem = matchingItemRepository.save(matchingItem);
+
+        return mapToResponse(savedItem);
+    }
+
+    @Override
+    @Transactional
+    public MatchingItemResponse recordFriendRequest(CreateMatchingItemRequest request) {
+        MatchingItem matchingItem = new MatchingItem();
+        matchingItem.setUserId(request.getUserId());
+        matchingItem.setRecommendedUserId(request.getRecommendedUserId());
+        matchingItem.setFinalScore(0.0);
+        matchingItem.setIsRecommendation(true);
+        LocalDateTime now = LocalDateTime.now();
+
+        updateActionTime(matchingItem, MatchingActionStatus.FRIEND_REQUEST_SENT, now);
+
+        if (shouldUpdateStatus(matchingItem.getActionStatus(), MatchingActionStatus.FRIEND_REQUEST_SENT)) {
+            matchingItem.setActionStatus(MatchingActionStatus.FRIEND_REQUEST_SENT);
+        }
+
+        if (request.getFinalScore() != null) {
+            matchingItem.setFinalScore(request.getFinalScore());
+        }
+
+        if (request.getReasonText() != null) {
+            matchingItem.setReasonText(request.getReasonText());
+        }
+
+        MatchingItem savedItem = matchingItemRepository.save(matchingItem);
+        return mapToResponse(savedItem);
     }
 
     @Override
@@ -76,81 +153,51 @@ public class MatchingItemServiceImpl implements MatchingItemService {
         validateRequest(request.getUserId(), request.getRecommendedUserId());
 
         MatchingActionStatus actionStatus = request.getActionStatus();
+        MatchingItem matchingItem = matchingItemRepository
+                .findBidirectionalByActionStatus(request.getUserId(),
+                        request.getRecommendedUserId(),
+                        MatchingActionStatus.FRIEND_REQUEST_SENT)
+                .stream()
+                .findFirst()
+                .orElseThrow(() -> new AppException("Matching item not found"));
 
-        if (actionStatus == MatchingActionStatus.ACCEPTED ||
-                actionStatus == MatchingActionStatus.REJECTED) {
+        LocalDateTime now = LocalDateTime.now();
 
-            MatchingItem firstSide = upsertOneSide(
-                    request.getUserId(),
-                    request.getRecommendedUserId(),
-                    actionStatus,
-                    request.getFinalScore(),
-                    request.getReasonText(),
-                    false,
-                    false);
+        updateActionTime(matchingItem, actionStatus, now);
 
-            upsertOneSide(
-                    request.getRecommendedUserId(),
-                    request.getUserId(),
-                    actionStatus,
-                    request.getFinalScore(),
-                    request.getReasonText(),
-                    false,
-                    false);
-
-            return mapToResponse(firstSide);
+        if (shouldUpdateStatus(matchingItem.getActionStatus(), actionStatus)) {
+            matchingItem.setActionStatus(actionStatus);
         }
 
-        MatchingItem saved = upsertOneSide(
-                request.getUserId(),
-                request.getRecommendedUserId(),
-                actionStatus,
-                request.getFinalScore(),
-                request.getReasonText(),
-                true,
-                request.getIsRecommendation()
-
-        );
+        MatchingItem saved = matchingItemRepository.save(matchingItem);
 
         return mapToResponse(saved);
     }
 
-    private MatchingItem upsertOneSide(
-            Long userId,
-            Long recommendedUserId,
-            MatchingActionStatus newStatus,
-            Double finalScore,
-            String reasonText,
-            Boolean isUpdate,
-            Boolean isRecommendation) {
+    @Override
+    @Transactional
+    public MatchingItemResponse recordActionCancelled(CreateMatchingItemRequest request) {
+        validateRequest(request.getUserId(), request.getRecommendedUserId());
+
         MatchingItem matchingItem = matchingItemRepository
-                .findByUserIdAndRecommendedUserId(userId, recommendedUserId)
-                .orElseGet(() -> {
-                    MatchingItem item = new MatchingItem();
-                    item.setUserId(userId);
-                    item.setRecommendedUserId(recommendedUserId);
-                    item.setFinalScore(0.0);
-                    item.setIsRecommendation(isRecommendation);
-                    return item;
-                });
+                .findBidirectionalByActionStatus(request.getUserId(),
+                        request.getRecommendedUserId(),
+                        MatchingActionStatus.ACCEPTED)
+                .stream()
+                .findFirst()
+                .orElseThrow(() -> new AppException("Matching item not found"));
 
         LocalDateTime now = LocalDateTime.now();
 
-        updateActionTime(matchingItem, newStatus, now);
+        updateActionTime(matchingItem, MatchingActionStatus.CANCELLED, now);
 
-        if (shouldUpdateStatus(matchingItem.getActionStatus(), newStatus)) {
-            matchingItem.setActionStatus(newStatus);
+        if (shouldUpdateStatus(matchingItem.getActionStatus(), MatchingActionStatus.CANCELLED)) {
+            matchingItem.setActionStatus(MatchingActionStatus.CANCELLED);
         }
 
-        if (finalScore != null) {
-            matchingItem.setFinalScore(finalScore);
-        }
+        MatchingItem saved = matchingItemRepository.save(matchingItem);
 
-        if (reasonText != null) {
-            matchingItem.setReasonText(reasonText);
-        }
-
-        return matchingItemRepository.save(matchingItem);
+        return mapToResponse(saved);
     }
 
     private void updateActionTime(
@@ -174,8 +221,20 @@ public class MatchingItemServiceImpl implements MatchingItemService {
             return true;
         }
 
+        if (newStatus == MatchingActionStatus.CANCELLED && currentStatus == MatchingActionStatus.ACCEPTED) {
+            return true;
+        }
+
         if (isFinalStatus(currentStatus)) {
             return false;
+        }
+
+        if (newStatus == MatchingActionStatus.CANCELLED) {
+            return currentStatus == MatchingActionStatus.FRIEND_REQUEST_SENT;
+        }
+
+        if (currentStatus == MatchingActionStatus.CANCELLED) {
+            return newStatus == MatchingActionStatus.FRIEND_REQUEST_SENT || newStatus == MatchingActionStatus.SKIPPED;
         }
 
         return getStatusPriority(newStatus) > getStatusPriority(currentStatus);
@@ -193,6 +252,7 @@ public class MatchingItemServiceImpl implements MatchingItemService {
             case REJECTED -> 3;
             case ACCEPTED -> 3;
             case SKIPPED -> 4;
+            case CANCELLED -> 0;
         };
     }
 
@@ -211,6 +271,7 @@ public class MatchingItemServiceImpl implements MatchingItemService {
                 .recommendedUserId(matchingItem.getRecommendedUserId())
                 .finalScore(matchingItem.getFinalScore())
                 .reasonText(matchingItem.getReasonText())
+                .count(matchingItem.getCount())
                 .actionStatus(matchingItem.getActionStatus())
                 .viewedAt(matchingItem.getViewedAt())
                 .requestSentAt(matchingItem.getRequestSentAt())
@@ -242,6 +303,15 @@ public class MatchingItemServiceImpl implements MatchingItemService {
                 .findRelatedByUserIdAndActionStatusOrderByUpdatedAtDesc(
                         userId,
                         MatchingActionStatus.REJECTED,
+                        pageable)
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+
+        List<MatchingItemResponse> cancelled = matchingItemRepository
+                .findRelatedByUserIdAndActionStatusOrderByUpdatedAtDesc(
+                        userId,
+                        MatchingActionStatus.CANCELLED,
                         pageable)
                 .stream()
                 .map(this::mapToResponse)

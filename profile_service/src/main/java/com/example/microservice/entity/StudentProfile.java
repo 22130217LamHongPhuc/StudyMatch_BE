@@ -20,8 +20,8 @@ import lombok.Setter;
 @Getter
 @Entity
 @Table(name = "student_profiles", uniqueConstraints = {
-        @UniqueConstraint(name = "uk_user_id", columnNames = {"user_id"}),
-        @UniqueConstraint(name = "uk_student_code", columnNames = {"student_code"})
+        @UniqueConstraint(name = "uk_user_id", columnNames = { "user_id" }),
+        @UniqueConstraint(name = "uk_student_code", columnNames = { "student_code" })
 })
 public class StudentProfile {
 
@@ -38,6 +38,9 @@ public class StudentProfile {
 
     @Column(name = "full_name", length = 120)
     private String fullName;
+
+    @Column(name = "avatar_url")
+    private String avatarUrl;
 
     @Column(name = "gender", length = 10)
     private String gender;
@@ -66,4 +69,3 @@ public class StudentProfile {
     }
 
 }
-

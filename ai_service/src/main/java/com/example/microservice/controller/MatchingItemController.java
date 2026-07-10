@@ -26,9 +26,10 @@ public class MatchingItemController {
 
         private final MatchingItemService matchingItemService;
 
-        @PostMapping("/action")
+        @PostMapping("/action/view")
         public ResponseEntity<ApiResponse<MatchingItemResponse>> recordAction(
                         @Valid @RequestBody CreateMatchingItemRequest request) {
+
                 MatchingItemResponse response = matchingItemService.recordAction(request);
                 return ResponseEntity.ok(new ApiResponse<>(
                                 true,
@@ -36,6 +37,40 @@ public class MatchingItemController {
                                 "Record matching action successfully",
                                 response));
         }
+
+        @PostMapping("/action/skip")
+        public ResponseEntity<ApiResponse<MatchingItemResponse>> recordSkippedAction(
+                        @Valid @RequestBody CreateMatchingItemRequest request) {
+                MatchingItemResponse response = matchingItemService.recordActionSkipped(request);
+                return ResponseEntity.ok(new ApiResponse<>(
+                                true,
+                                StatusCode.SUCCESS,
+                                "Record matching skipped action successfully",
+                                response));
+        }
+
+        @PostMapping("/action/friend-request")
+        public ResponseEntity<ApiResponse<MatchingItemResponse>> recordFriendRequest(
+                        @Valid @RequestBody CreateMatchingItemRequest request) {
+                MatchingItemResponse response = matchingItemService.recordFriendRequest(request);
+                return ResponseEntity.ok(new ApiResponse<>(
+                                true,
+                                StatusCode.SUCCESS,
+                                "Record matching friend request action successfully",
+                                response));
+        }
+
+        @PostMapping("/action/cancel")
+        public ResponseEntity<ApiResponse<MatchingItemResponse>> recordActionCancelled(
+                        @Valid @RequestBody CreateMatchingItemRequest request) {
+                MatchingItemResponse response = matchingItemService.recordActionCancelled(request);
+                return ResponseEntity.ok(new ApiResponse<>(
+                                true,
+                                StatusCode.SUCCESS,
+                                "Record matching cancelled action successfully",
+                                response));
+        }
+
 
         @PatchMapping("/status")
         public ResponseEntity<ApiResponse<MatchingItemResponse>> updateMatchingItemStatus(

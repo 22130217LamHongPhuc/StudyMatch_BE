@@ -18,6 +18,7 @@ public class GroupInvitationResponse {
     private Long invitationId;
     private Long groupId;
     private String groupName;
+    private String groupAvatarUrl;
     private Long inviterUserId;
     private Long inviteeUserId;
     private String inviterName;

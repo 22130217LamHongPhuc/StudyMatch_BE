@@ -145,6 +145,7 @@ public class AdminStudySessionServiceImpl implements AdminStudySessionService {
                     .title(s.getTitle())
                     .subjectName(s.getSubjectName())
                     .groupName(groupName)
+                    .groupAvatarUrl(group != null ? group.getAvatarUrl() : null)
                     .sessionType(s.getSessionType())
                     .creatorName(creatorName)
                     .startTime(s.getStartTime())

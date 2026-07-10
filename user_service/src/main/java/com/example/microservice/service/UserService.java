@@ -3,6 +3,7 @@ package com.example.microservice.service;
 import com.example.microservice.dto.respone.*;
 import com.example.microservice.dto.request.UpdateUserProfileRequest;
 import com.example.microservice.entity.User;
+import com.example.microservice.feignAPI.ProfileClient;
 import com.example.microservice.feignAPI.SocialClient;
 import com.example.microservice.repository.UserRepository;
 import jakarta.validation.constraints.NotNull;
@@ -22,6 +23,8 @@ public class UserService {
     UserRepository repo;
     @Autowired
     SocialClient socialClient;
+    @Autowired
+    ProfileClient profileClient;
 
     public User getProfile (Long userId ){
         return repo.findUsersByUserId(userId);
@@ -58,16 +61,37 @@ public class UserService {
 
     public ProfileDto updateProfile(Long userId, UpdateUserProfileRequest request) {
         User user = repo.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        
+        boolean isNameUpdated = false;
+        boolean isAvatarUpdated = false;
+
         if (request.getFullName() != null) {
-            user.setFullName(normalizeNullable(request.getFullName()));
+            String newFullName = normalizeNullable(request.getFullName());
+            if (!java.util.Objects.equals(user.getFullName(), newFullName)) {
+                user.setFullName(newFullName);
+                isNameUpdated = true;
+            }
         }
         if (request.getBio() != null) {
             user.setBio(normalizeNullable(request.getBio()));
         }
         if (request.getAvatarUrl() != null) {
-            user.setAvatarUrl(normalizeNullable(request.getAvatarUrl()));
+            String newAvatarUrl = normalizeNullable(request.getAvatarUrl());
+            if (!java.util.Objects.equals(user.getAvatarUrl(), newAvatarUrl)) {
+                user.setAvatarUrl(newAvatarUrl);
+                isAvatarUpdated = true;
+            }
         }
+
         User saved = repo.save(user);
+
+        if (isNameUpdated || isAvatarUpdated) {
+            try {
+                profileClient.updateStudentProfileInfo(userId, saved.getFullName(), saved.getAvatarUrl());
+            } catch (Exception e) {
+                System.err.println("Failed to update student profile in profile service: " + e.getMessage());
+            }
+        }
 
         ProfileDto res = new ProfileDto();
         res.setAvatarUrl(saved.getAvatarUrl());

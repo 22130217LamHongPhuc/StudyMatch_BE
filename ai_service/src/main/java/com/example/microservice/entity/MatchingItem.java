@@ -51,13 +51,15 @@ public class MatchingItem {
     @Column(name = "action_status", nullable = false)
     private MatchingActionStatus actionStatus = MatchingActionStatus.VIEWED;
 
-
     @Enumerated(EnumType.STRING)
     @Column(name = "reject_type")
     private MatchingRejectType rejectType;
 
     @Column(name = "is_recommendation", nullable = false, columnDefinition = "boolean default false")
     private Boolean isRecommendation = false;
+
+    @Column(name = "count", nullable = false, columnDefinition = "int default 0")
+    private Integer count = 0;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -83,6 +85,9 @@ public class MatchingItem {
         this.updatedAt = now;
         if (this.finalScore == null) {
             this.finalScore = 0.0;
+        }
+        if (this.count == null) {
+            this.count = 0;
         }
     }
 
