@@ -12,7 +12,6 @@ import com.group_service.dto.GroupFilterRequest;
 import com.group_service.dto.GroupInvitationNotificationRequest;
 import com.group_service.dto.GroupInvitationResponse;
 import com.group_service.dto.JoinGroupRequest;
-import com.group_service.dto.JoinGroupResponse;
 import com.group_service.dto.StudyGroupDetailResponse;
 import com.group_service.dto.StudyGroupResponse;
 import com.group_service.dto.TokenValidateResponse;
@@ -156,8 +155,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
         List<StudyGroup> groups = groupMemberRepository.findGroupsByUserId(
                 userId,
                 GroupMemberStatus.ACTIVE,
-                GroupStatus.ACTIVE
-        );
+                GroupStatus.ACTIVE);
 
         return groups.stream()
                 .map(this::mapToDetailResponse)
@@ -174,8 +172,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 effectiveFilter.getType(),
                 effectiveFilter.getStatus(),
                 keyword,
-                pageable
-        );
+                pageable);
 
         return groups.map(this::mapToAdminGroupResponse);
     }
@@ -190,8 +187,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
 
         Page<AdminGroupProjection> groups = studyGroupRepository.searchAdminGroupsByKeyword(
                 normalizedKeyword,
-                pageable
-        );
+                pageable);
 
         return groups.map(this::mapToAdminGroupResponse);
     }
@@ -204,7 +200,10 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     @Override
     public AdminGroupDetailResponse getGroupDetailForAdmin(Long groupId) {
         StudyGroup studyGroup = findGroupOrThrow(groupId);
-        long memberCount = groupMemberRepository.countByGroupId(groupId);
+        long memberCount = groupMemberRepository.findByGroupIdAndStatus(groupId, GroupMemberStatus.ACTIVE)
+                .stream()
+                .filter(member -> member.getRole() != GroupMemberRole.ADMIN)
+                .count();
 
         return new AdminGroupDetailResponse(
                 studyGroup.getId(),
@@ -223,8 +222,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 memberCount,
                 studyGroup.getCreatedAt(),
                 studyGroup.getUpdatedAt(),
-                getGroupFreeTimeSlotResponses(groupId)
-        );
+                getGroupFreeTimeSlotResponses(groupId));
     }
 
     @Override
@@ -253,8 +251,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
             Long mainSubjectId,
             Long currentUserId,
             int page,
-            int limit
-    ) {
+            int limit) {
         Pageable pageable = PageRequest.of(page, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
 
         return studyGroupRepository.findByFiltersForBrowse(
@@ -263,13 +260,14 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 mainSubjectId,
                 currentUserId,
                 List.of(GroupMemberStatus.ACTIVE),
-                pageable
-        );
+                GroupMemberStatus.ACTIVE,
+                GroupMemberRole.ADMIN,
+                pageable);
     }
 
     @Override
     @Transactional
-    public JoinGroupResponse joinGroup(Long groupId, JoinGroupRequest request) {
+    public GroupInvitationResponse joinGroup(Long groupId, JoinGroupRequest request) {
         if (request == null || request.getUserId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "userId must not be null");
         }
@@ -283,55 +281,75 @@ public class StudyGroupServiceImpl implements StudyGroupService {
         }
 
         Long userId = request.getUserId();
-        Optional<GroupMember> existingMember = groupMemberRepository.findByGroupIdAndUserId(groupId, userId);
-        if (existingMember.isPresent() && existingMember.get().getStatus() == GroupMemberStatus.ACTIVE) {
+        boolean isAlreadyActive = groupMemberRepository.existsByGroupIdAndUserIdAndStatus(
+                groupId,
+                userId,
+                GroupMemberStatus.ACTIVE);
+        if (isAlreadyActive) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "User already joined this group");
         }
 
-        Integer maxMembers = studyGroup.getMaxMembers();
-        if (maxMembers != null) {
-            long activeMembers = groupMemberRepository.countByGroupIdAndStatus(groupId, GroupMemberStatus.ACTIVE);
-            if (activeMembers >= maxMembers) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Group has reached max members");
-            }
+        boolean hasPending = groupInvitationRepository.existsByGroupIdAndInviteeUserIdAndStatus(
+                groupId,
+                userId,
+                GroupInvitationStatus.PENDING);
+        if (hasPending) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "A join request is already pending for this group");
         }
 
-        GroupMember savedMember;
-        if (existingMember.isPresent()) {
-            GroupMember member = existingMember.get();
-            member.setRole(GroupMemberRole.MEMBER);
-            member.setStatus(GroupMemberStatus.ACTIVE);
-            savedMember = groupMemberRepository.save(member);
-        } else {
-            savedMember = groupMemberRepository.save(GroupMember.builder()
-                    .groupId(groupId)
-                    .userId(userId)
-                    .role(GroupMemberRole.MEMBER)
-                    .status(GroupMemberStatus.ACTIVE)
-                    .build());
-        }
+        Long ownerUserId = studyGroup.getOwnerUserId();
+        GroupInvitation savedInvitation = groupInvitationRepository.save(GroupInvitation.builder()
+                .groupId(groupId)
+                .inviterUserId(userId)
+                .inviteeUserId(userId)
+                .message(request.getMessage())
+                .status(GroupInvitationStatus.PENDING)
+                .build());
 
-        trySyncGroupParticipants(groupId, "joinGroup");
+        String requesterName = resolveUserName(userId, "User #" + userId);
+        groupMemberRepository.findByGroupIdAndStatus(groupId, GroupMemberStatus.ACTIVE)
+                .stream()
+                .filter(member -> member.getRole() == GroupMemberRole.OWNER
+                        || member.getRole() == GroupMemberRole.ADMIN)
+                .map(GroupMember::getUserId)
+                .distinct()
+                .forEach(moderatorUserId -> {
+                    try {
+                        chatClient.sendGroupInvitationNotification(GroupInvitationNotificationRequest.builder()
+                                .userId(moderatorUserId)
+                                .groupId(groupId)
+                                .groupName(studyGroup.getName())
+                                .inviterName(requesterName)
+                                .invitationId(savedInvitation.getId())
+                                .inviteeUserId(userId)
+                                .build());
+                    } catch (Exception e) {
+                        System.err.println("Failed to send WebSocket join request notification: " + e.getMessage());
+                    }
+                });
 
-        return new JoinGroupResponse(
-                savedMember.getId(),
-                savedMember.getGroupId(),
-                savedMember.getUserId(),
-                savedMember.getRole(),
-                savedMember.getStatus(),
-                savedMember.getJoinedAt()
-        );
+        return GroupInvitationResponse.builder()
+                .invitationId(savedInvitation.getId())
+                .groupId(groupId)
+                .groupName(studyGroup.getName())
+                .inviterUserId(savedInvitation.getInviterUserId())
+                .inviteeUserId(savedInvitation.getInviteeUserId())
+                .message(savedInvitation.getMessage())
+                .status(savedInvitation.getStatus())
+                .createdAt(savedInvitation.getCreatedAt())
+                .build();
     }
 
     @Override
     @Transactional
-    public GroupInvitationResponse sendInvitation(Long groupId, Long inviteeUserId, String token) {
+    public GroupInvitationResponse sendInvitation(Long groupId, Long inviteeUserId, String message, String token) {
         TokenValidateResponse validation = validateTokenOrThrow(token);
         Long inviterUserId = validation.getUserId();
 
         StudyGroup studyGroup = findGroupOrThrow(groupId);
         GroupMember inviterMember = groupMemberRepository.findByGroupIdAndUserId(groupId, inviterUserId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not a member of this group"));
+                .orElseThrow(
+                        () -> new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not a member of this group"));
 
         if (inviterMember.getRole() != GroupMemberRole.OWNER && inviterMember.getRole() != GroupMemberRole.ADMIN) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only group owner or admin can invite members");
@@ -340,8 +358,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
         boolean isAlreadyActive = groupMemberRepository.existsByGroupIdAndUserIdAndStatus(
                 groupId,
                 inviteeUserId,
-                GroupMemberStatus.ACTIVE
-        );
+                GroupMemberStatus.ACTIVE);
         if (isAlreadyActive) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "User is already an active member of this group");
         }
@@ -349,8 +366,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
         boolean hasPending = groupInvitationRepository.existsByGroupIdAndInviteeUserIdAndStatus(
                 groupId,
                 inviteeUserId,
-                GroupInvitationStatus.PENDING
-        );
+                GroupInvitationStatus.PENDING);
         if (hasPending) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "An invitation is already pending for this user");
         }
@@ -359,6 +375,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 .groupId(groupId)
                 .inviterUserId(inviterUserId)
                 .inviteeUserId(inviteeUserId)
+                .message(message)
                 .status(GroupInvitationStatus.PENDING)
                 .build());
 
@@ -381,7 +398,8 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 .groupName(studyGroup.getName())
                 .groupAvatarUrl(studyGroup.getAvatarUrl())
                 .inviterUserId(inviterUserId)
-                .inviteeUserId(inviteeUserId)
+                .inviterUserId(savedInvitation.getInviterUserId())
+                .message(savedInvitation.getMessage())
                 .inviterName(inviterName)
                 .status(savedInvitation.getStatus())
                 .createdAt(savedInvitation.getCreatedAt())
@@ -394,11 +412,13 @@ public class StudyGroupServiceImpl implements StudyGroupService {
 
         List<GroupInvitation> invitations = groupInvitationRepository.findByInviteeUserIdAndStatus(
                 inviteeUserId,
-                GroupInvitationStatus.PENDING
-        );
+                GroupInvitationStatus.PENDING);
 
         List<GroupInvitationResponse> responses = new ArrayList<>();
         for (GroupInvitation invitation : invitations) {
+            if (invitation.getInviterUserId().equals(invitation.getInviteeUserId())) {
+                continue;
+            }
             StudyGroup group = studyGroupRepository.findById(invitation.getGroupId()).orElse(null);
             String inviterName = "User #" + invitation.getInviterUserId();
             String inviterAvatar = null;
@@ -410,7 +430,6 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                     inviterAvatar = getStringValue(userData, inviterAvatar, "avatarUrl", "avatar_url");
                 }
             } catch (Exception e) {
-                // ignore downstream lookup failure
             }
 
             responses.add(GroupInvitationResponse.builder()
@@ -421,7 +440,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                     .inviterUserId(invitation.getInviterUserId())
                     .inviteeUserId(invitation.getInviteeUserId())
                     .inviterName(inviterName)
-                    .inviterAvatar(inviterAvatar)
+                    .message(invitation.getMessage())
                     .status(invitation.getStatus())
                     .createdAt(invitation.getCreatedAt())
                     .build());
@@ -436,7 +455,8 @@ public class StudyGroupServiceImpl implements StudyGroupService {
         StudyGroup group = findGroupOrThrow(groupId);
 
         GroupMember requesterMember = groupMemberRepository.findByGroupIdAndUserId(groupId, requesterUserId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not a member of this group"));
+                .orElseThrow(
+                        () -> new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not a member of this group"));
 
         if (requesterMember.getRole() != GroupMemberRole.OWNER && requesterMember.getRole() != GroupMemberRole.ADMIN) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only group owner or admin can view invitations");
@@ -451,6 +471,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                         .groupAvatarUrl(group.getAvatarUrl())
                         .inviterUserId(invitation.getInviterUserId())
                         .inviteeUserId(invitation.getInviteeUserId())
+                        .message(invitation.getMessage())
                         .status(invitation.getStatus())
                         .createdAt(invitation.getCreatedAt())
                         .build())
@@ -460,12 +481,14 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     @Override
     @Transactional
     public void acceptInvitation(Long invitationId, String token) {
-        Long inviteeUserId = validateTokenOrThrow(token).getUserId();
+        Long actorUserId = validateTokenOrThrow(token).getUserId();
         GroupInvitation invitation = groupInvitationRepository.findById(invitationId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Invitation not found"));
 
-        if (!invitation.getInviteeUserId().equals(inviteeUserId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "This invitation is not for you");
+        boolean isInvitationToActor = invitation.getInviteeUserId().equals(actorUserId)
+                && !invitation.getInviterUserId().equals(actorUserId);
+        if (!isInvitationToActor) {
+            assertCanModerateInvitation(invitation, actorUserId);
         }
         if (invitation.getStatus() != GroupInvitationStatus.PENDING) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invitation is not in pending status");
@@ -476,8 +499,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
         if (maxMembers != null) {
             long activeMembers = groupMemberRepository.countByGroupIdAndStatus(
                     invitation.getGroupId(),
-                    GroupMemberStatus.ACTIVE
-            );
+                    GroupMemberStatus.ACTIVE);
             if (activeMembers >= maxMembers) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Group has reached max members");
             }
@@ -489,8 +511,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
 
         Optional<GroupMember> existingMember = groupMemberRepository.findByGroupIdAndUserId(
                 invitation.getGroupId(),
-                inviteeUserId
-        );
+                invitation.getInviteeUserId());
         if (existingMember.isPresent()) {
             GroupMember member = existingMember.get();
             member.setRole(GroupMemberRole.MEMBER);
@@ -499,7 +520,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
         } else {
             groupMemberRepository.save(GroupMember.builder()
                     .groupId(invitation.getGroupId())
-                    .userId(inviteeUserId)
+                    .userId(invitation.getInviteeUserId())
                     .role(GroupMemberRole.MEMBER)
                     .status(GroupMemberStatus.ACTIVE)
                     .build());
@@ -511,12 +532,14 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     @Override
     @Transactional
     public void rejectInvitation(Long invitationId, String token) {
-        Long inviteeUserId = validateTokenOrThrow(token).getUserId();
+        Long actorUserId = validateTokenOrThrow(token).getUserId();
         GroupInvitation invitation = groupInvitationRepository.findById(invitationId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Invitation not found"));
 
-        if (!invitation.getInviteeUserId().equals(inviteeUserId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "This invitation is not for you");
+        boolean isInvitationToActor = invitation.getInviteeUserId().equals(actorUserId)
+                && !invitation.getInviterUserId().equals(actorUserId);
+        if (!isInvitationToActor) {
+            assertCanModerateInvitation(invitation, actorUserId);
         }
         if (invitation.getStatus() != GroupInvitationStatus.PENDING) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invitation is not in pending status");
@@ -547,14 +570,28 @@ public class StudyGroupServiceImpl implements StudyGroupService {
         long joinedGroupCount = groupMemberRepository.countGroupsByUserId(
                 userId,
                 GroupMemberStatus.ACTIVE,
-                GroupStatus.ACTIVE
-        );
-        long pendingInvitationCount = groupInvitationRepository.countByInviteeUserIdAndStatus(
+                GroupStatus.ACTIVE);
+        long pendingInvitationCount = groupInvitationRepository.findByInviteeUserIdAndStatus(
                 userId,
-                GroupInvitationStatus.PENDING
-        );
+                GroupInvitationStatus.PENDING).stream()
+                .filter(invitation -> !invitation.getInviterUserId().equals(invitation.getInviteeUserId()))
+                .count();
 
         return new UserGroupStatsResponse(joinedGroupCount, pendingInvitationCount);
+    }
+
+    private void assertCanModerateInvitation(GroupInvitation invitation, Long actorUserId) {
+        GroupMember moderator = groupMemberRepository.findByGroupIdAndUserIdAndStatus(
+                invitation.getGroupId(),
+                actorUserId,
+                GroupMemberStatus.ACTIVE)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN,
+                        "Only group owner or admin can respond to this request"));
+
+        if (moderator.getRole() != GroupMemberRole.OWNER && moderator.getRole() != GroupMemberRole.ADMIN) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Only group owner or admin can respond to this request");
+        }
     }
 
     private StudyGroup findGroupOrThrow(Long groupId) {
@@ -579,7 +616,8 @@ public class StudyGroupServiceImpl implements StudyGroupService {
             return;
         }
         if (termId == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "termId is required when free time slots are provided");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "termId is required when free time slots are provided");
         }
 
         List<GroupFreeTimeSlot> slots = slotRequests.stream()
@@ -604,8 +642,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                         slot.getTermId(),
                         slot.getDayOfWeek(),
                         slot.getSlotCode(),
-                        slot.getIsAvailable()
-                ))
+                        slot.getIsAvailable()))
                 .toList();
     }
 
@@ -642,8 +679,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 group.getStatus(),
                 group.getCreatedAt(),
                 group.getUpdatedAt(),
-                freeTimeSlots
-        );
+                freeTimeSlots);
     }
 
     private StudyGroupResponse toResponse(StudyGroup studyGroup, boolean isMember) {
@@ -661,8 +697,9 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 studyGroup.getStatus(),
                 studyGroup.getCreatedAt(),
                 studyGroup.getUpdatedAt(),
-                isMember
-        );
+                1L,
+                isMember,
+                false);
     }
 
     private void addInvitedMembers(Long groupId, Long ownerUserId, Integer maxMembers, List<Long> invitedUserIds) {
@@ -694,7 +731,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
         List<GroupInvitation> invitations = uniqueInvitedUserIds.stream()
                 .map(userId -> GroupInvitation.builder()
                         .groupId(groupId)
-                        .inviterUserId(ownerUserId)
+                        .inviterUserId(userId)
                         .inviteeUserId(userId)
                         .status(GroupInvitationStatus.PENDING)
                         .build())
@@ -780,8 +817,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Visibility must be PUBLIC or PRIVATE for study groups"
-            );
+                    "Visibility must be PUBLIC or PRIVATE for study groups");
         }
     }
 
@@ -791,8 +827,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 userId,
                 otherUserId,
                 GroupMemberStatus.ACTIVE,
-                GroupStatus.ACTIVE
-        );
+                GroupStatus.ACTIVE);
         return commonGroups.stream()
                 .map(group -> CommonGroupResponse.builder()
                         .id(group.getId())

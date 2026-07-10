@@ -33,9 +33,9 @@ public interface StudyGroupService {
             int limit
     );
 
-    JoinGroupResponse joinGroup(Long groupId, JoinGroupRequest request);
+    GroupInvitationResponse joinGroup(Long groupId, JoinGroupRequest request);
 
-    com.group_service.dto.GroupInvitationResponse sendInvitation(Long groupId, Long inviteeUserId, String token);
+    com.group_service.dto.GroupInvitationResponse sendInvitation(Long groupId, Long inviteeUserId, String message, String token);
 
     List<com.group_service.dto.GroupInvitationResponse> getPendingInvitations(String token);
 
@@ -49,3 +49,4 @@ public interface StudyGroupService {
 
     List<CommonGroupResponse> getCommonGroups(Long userId, Long otherUserId);
 }
+

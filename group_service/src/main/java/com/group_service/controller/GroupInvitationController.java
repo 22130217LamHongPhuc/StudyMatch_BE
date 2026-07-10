@@ -25,7 +25,7 @@ public class GroupInvitationController {
             @RequestBody @jakarta.validation.Valid JoinGroupRequest request,
             @RequestHeader("Authorization") String token
     ) {
-        GroupInvitationResponse response = studyGroupService.sendInvitation(groupId, request.getUserId(), token);
+        GroupInvitationResponse response = studyGroupService.sendInvitation(groupId, request.getUserId(), request.getMessage(), token);
         return ResponseEntity.ok(new ApiResponse<>(
                 true,
                 StatusCode.SUCCESS,
@@ -88,3 +88,4 @@ public class GroupInvitationController {
         ));
     }
 }
+

@@ -21,4 +21,7 @@ public class PostResponse {
     private Long likeCount;
     private Long commentCount;
     private boolean likedByViewer;
+    private String reactionType;
+    private List<String> topReactions;
+    private PostResponse sharedPost;
 }

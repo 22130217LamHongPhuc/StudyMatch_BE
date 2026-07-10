@@ -5,7 +5,7 @@ import com.group_service.dto.CommonGroupResponse;
 import com.group_service.dto.CreateStudyGroupRequest;
 import com.group_service.dto.GroupMemberResponse;
 import com.group_service.dto.JoinGroupRequest;
-import com.group_service.dto.JoinGroupResponse;
+import com.group_service.dto.GroupInvitationResponse;
 import com.group_service.dto.StudyGroupDetailResponse;
 import com.group_service.dto.StudyGroupResponse;
 import com.group_service.dto.UserGroupStatsResponse;
@@ -35,18 +35,11 @@ public class StudyGroupController {
     private final StudyGroupService studyGroupService;
     private final GroupMemberRepository groupMemberRepository;
     private final com.group_service.clients.ChatClient chatClient;
-//    private final ProfileClient profileClient;
-//
-//    @GetMapping("/test")
-//    public Long testProfileClient() {
-//        return profileClient.getActiveTerm();
-//    }
 
     @PostMapping(consumes = {"multipart/form-data"})
     public ResponseEntity<ApiResponse<StudyGroupResponse>> createGroup(
             @RequestPart("request") @Valid CreateStudyGroupRequest request,
             @RequestPart(value = "avatar", required = false) org.springframework.web.multipart.MultipartFile avatar) {
-//        Long termId = profileClient.getActiveTerm();
         request.setTermId(8L);
         StudyGroupResponse response = studyGroupService.createStudyGroup(request, avatar);
         return ResponseEntity.ok(new ApiResponse<>(
@@ -62,7 +55,6 @@ public class StudyGroupController {
     public ResponseEntity<ApiResponse<StudyGroupResponse>> createCommunityGroup(
             @RequestPart("request") @Valid CreateStudyGroupRequest request,
             @RequestPart(value = "avatar", required = false) org.springframework.web.multipart.MultipartFile avatar) {
-//        Long termId = profileClient.getActiveTerm();
         request.setTermId(8L);
         StudyGroupResponse response = studyGroupService.createCommunityGroup(request, avatar);
         return ResponseEntity.ok(new ApiResponse<>(
@@ -137,16 +129,16 @@ public class StudyGroupController {
     }
 
     @PostMapping("/{groupId}/members")
-    public ResponseEntity<ApiResponse<JoinGroupResponse>> joinGroup(
+    public ResponseEntity<ApiResponse<GroupInvitationResponse>> joinGroup(
             @PathVariable Long groupId,
             @Valid @RequestBody JoinGroupRequest request
     ) {
-        JoinGroupResponse response = studyGroupService.joinGroup(groupId, request);
+        GroupInvitationResponse response = studyGroupService.joinGroup(groupId, request);
 
         return ResponseEntity.ok(new ApiResponse<>(
                 true,
                 StatusCode.SUCCESS,
-                "Join group successfully",
+                "Create join request successfully",
                 response
         ));
     }
@@ -245,4 +237,5 @@ public class StudyGroupController {
         return ResponseEntity.ok(response);
     }
 }
+
 

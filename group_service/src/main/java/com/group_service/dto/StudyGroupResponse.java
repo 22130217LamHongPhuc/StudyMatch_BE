@@ -38,5 +38,9 @@ public class StudyGroupResponse {
 
     private LocalDateTime updatedAt;
 
+    private Long memberCount;
+
     private boolean isMember;
+
+    private boolean isJoinRequestPending;
 }

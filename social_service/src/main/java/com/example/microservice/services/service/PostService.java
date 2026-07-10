@@ -49,9 +49,41 @@ public class PostService {
         return toResponse(postRepo.save(post), viewerId, userMap(List.of(request.getAuthorId())));
     }
 
+    @Transactional
+    public PostResponse sharePost(Long postId, SharePostRequest request, Long viewerId) {
+        if (request.getAuthorId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "authorId is required");
+        }
+        Post originalPost = getActivePost(postId);
+        
+        Post post = new Post();
+        post.setAuthorId(request.getAuthorId());
+        post.setContent(normalizeText(request.getContent()));
+        post.setVisibility(normalizeVisibility(request.getVisibility()));
+        post.setSharedPost(originalPost);
+        
+        Post saved = postRepo.save(post);
+        
+        List<Long> authorIds = new ArrayList<>();
+        authorIds.add(request.getAuthorId());
+        authorIds.add(originalPost.getAuthorId());
+        if (originalPost.getSharedPost() != null) {
+            authorIds.add(originalPost.getSharedPost().getAuthorId());
+        }
+        
+        return toResponse(saved, viewerId, userMap(authorIds));
+    }
+
     public List<PostResponse> getProfileFeed(Long profileUserId, Long viewerId) {
         List<Post> posts = postRepo.findByAuthorIdAndIsDeletedFalseOrderByCreatedAtDesc(profileUserId);
-        Map<Long, BasicUserResponse> users = userMap(posts.stream().map(Post::getAuthorId).distinct().toList());
+        List<Long> authorIds = new ArrayList<>();
+        for (Post p : posts) {
+            authorIds.add(p.getAuthorId());
+            if (p.getSharedPost() != null) {
+                authorIds.add(p.getSharedPost().getAuthorId());
+            }
+        }
+        Map<Long, BasicUserResponse> users = userMap(authorIds.stream().distinct().toList());
         return posts.stream()
                 .filter(post -> canViewPost(post, viewerId))
                 .map(post -> toResponse(post, viewerId, users))
@@ -67,12 +99,14 @@ public class PostService {
         }
 
         Page<Post> posts = postRepo.findVisibleFeedPosts(viewerId, PageRequest.of(page, size));
-        Map<Long, BasicUserResponse> users = userMap(
-                posts.getContent().stream()
-                        .map(Post::getAuthorId)
-                        .distinct()
-                        .toList()
-        );
+        List<Long> authorIds = new ArrayList<>();
+        for (Post p : posts.getContent()) {
+            authorIds.add(p.getAuthorId());
+            if (p.getSharedPost() != null) {
+                authorIds.add(p.getSharedPost().getAuthorId());
+            }
+        }
+        Map<Long, BasicUserResponse> users = userMap(authorIds.stream().distinct().toList());
 
         return new PageResponse<>(
                 posts.getContent().stream()
@@ -94,7 +128,13 @@ public class PostService {
         post.setVisibility(normalizeVisibility(request.getVisibility()));
         post.getMedia().clear();
         applyMedia(post, request.getMedia());
-        return toResponse(postRepo.save(post), request.getActorId(), userMap(List.of(post.getAuthorId())));
+        Post saved = postRepo.save(post);
+        List<Long> authorIds = new ArrayList<>();
+        authorIds.add(saved.getAuthorId());
+        if (saved.getSharedPost() != null) {
+            authorIds.add(saved.getSharedPost().getAuthorId());
+        }
+        return toResponse(saved, request.getActorId(), userMap(authorIds));
     }
 
     @Transactional
@@ -106,23 +146,64 @@ public class PostService {
     }
 
     @Transactional
-    public PostResponse toggleReaction(Long postId, Long userId) {
+    public PostResponse toggleReaction(Long postId, Long userId, String reactionType) {
         if (userId == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "userId is required");
         Post post = getActivePost(postId);
         Optional<PostReaction> existed = reactionRepo.findByPostIdAndUserId(postId, userId);
+        String finalReactionType = reactionType != null ? reactionType.trim().toUpperCase() : "LIKE";
         if (existed.isPresent()) {
-            reactionRepo.delete(existed.get());
+            PostReaction existingReaction = existed.get();
+            if (existingReaction.getReactionType().equalsIgnoreCase(finalReactionType)) {
+                reactionRepo.delete(existingReaction);
+            } else {
+                existingReaction.setReactionType(finalReactionType);
+                reactionRepo.save(existingReaction);
+            }
         } else {
             PostReaction reaction = new PostReaction();
             reaction.setPost(post);
             reaction.setUserId(userId);
-            reaction.setReactionType("LIKE");
+            reaction.setReactionType(finalReactionType);
             reactionRepo.save(reaction);
         }
-        return toResponse(post, userId, userMap(List.of(post.getAuthorId())));
+        List<Long> authorIds = new ArrayList<>();
+        authorIds.add(post.getAuthorId());
+        if (post.getSharedPost() != null) {
+            authorIds.add(post.getSharedPost().getAuthorId());
+        }
+        return toResponse(post, userId, userMap(authorIds));
     }
 
-    @Transactional
+    public List<PostReactionResponse> getPostReactions(Long postId, Long viewerId) {
+        List<PostReaction> reactions = reactionRepo.findByPostId(postId);
+        List<Long> userIds = reactions.stream().map(PostReaction::getUserId).toList();
+        Map<Long, BasicUserResponse> users = userMap(userIds);
+
+        List<PostReactionResponse> responses = new ArrayList<>();
+        for (PostReaction r : reactions) {
+            BasicUserResponse u = users.get(r.getUserId());
+            if (u == null) continue;
+
+            boolean isFriend = false;
+            int mutualCount = 0;
+            if (viewerId != null && !viewerId.equals(r.getUserId())) {
+                isFriend = friendRepo.isFriends(viewerId, r.getUserId()) > 0;
+                Long count = friendRepo.countMutualFriend(viewerId, r.getUserId());
+                mutualCount = count != null ? count.intValue() : 0;
+            }
+
+            responses.add(new PostReactionResponse(
+                    r.getUserId(),
+                    u.getFullName(),
+                    u.getAvatarUrl(),
+                    r.getReactionType(),
+                    isFriend,
+                    mutualCount
+            ));
+        }
+        return responses;
+    }
+
     public PostCommentDto addComment(Long postId, CreateCommentRequest request) {
         if (request.getAuthorId() == null || normalizeText(request.getContent()) == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "authorId and content are required");
@@ -208,9 +289,29 @@ public class PostService {
             post.getMedia().add(media);
         }
     }
-
     private PostResponse toResponse(Post post, Long viewerId, Map<Long, BasicUserResponse> users) {
         BasicUserResponse author = users.get(post.getAuthorId());
+        Optional<PostReaction> reactionOpt = viewerId != null
+                ? reactionRepo.findByPostIdAndUserId(post.getId(), viewerId)
+                : Optional.empty();
+        boolean likedByViewer = reactionOpt.isPresent();
+        String reactionType = reactionOpt.map(PostReaction::getReactionType).orElse(null);
+
+        List<PostReaction> allReactions = reactionRepo.findByPostId(post.getId());
+        List<String> topReactions = allReactions.stream()
+                .filter(r -> r.getReactionType() != null)
+                .collect(Collectors.groupingBy(PostReaction::getReactionType, Collectors.counting()))
+                .entrySet().stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                .limit(2)
+                .map(Map.Entry::getKey)
+                .toList();
+
+        PostResponse sharedPostRes = null;
+        if (post.getSharedPost() != null) {
+            sharedPostRes = toResponse(post.getSharedPost(), viewerId, users);
+        }
+
         return new PostResponse(
                 post.getId(),
                 post.getAuthorId(),
@@ -223,9 +324,12 @@ public class PostService {
                 post.getMedia().stream()
                         .map(media -> new PostMediaDto(media.getId(), media.getMediaUrl(), media.getMediaType()))
                         .toList(),
-                reactionRepo.countByPostId(post.getId()),
+                (long) allReactions.size(),
                 commentRepo.countByPostIdAndIsDeletedFalse(post.getId()),
-                viewerId != null && reactionRepo.findByPostIdAndUserId(post.getId(), viewerId).isPresent()
+                likedByViewer,
+                reactionType,
+                topReactions,
+                sharedPostRes
         );
     }
 
