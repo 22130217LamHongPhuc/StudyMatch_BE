@@ -93,6 +93,11 @@ public class PostController {
         return ResponseEntity.ok(new APIResponse<>(ResponseStatus.SUCCESS, postService.getComments(postId)));
     }
 
+    @GetMapping("/posts/{postId}/exists")
+    public ResponseEntity<Boolean> existsById(@PathVariable Long postId) {
+        return ResponseEntity.ok(postService.existsById(postId));
+    }
+
     @GetMapping("/users/{userId}/stats")
     public ResponseEntity<?> getStats(@PathVariable Long userId) {
         return ResponseEntity.ok(new APIResponse<>(ResponseStatus.SUCCESS, postService.getStats(userId)));

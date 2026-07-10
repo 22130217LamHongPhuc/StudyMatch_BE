@@ -247,6 +247,13 @@ public class PostService {
         return new AchievementDto(code, title, description, current >= target, current, target);
     }
 
+    public boolean existsById(Long postId) {
+        if (postId == null) return false;
+        return postRepo.findById(postId)
+                .map(post -> !Boolean.TRUE.equals(post.getIsDeleted()))
+                .orElse(false);
+    }
+
     private Post getActivePost(Long postId) {
         Post post = postRepo.findById(postId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Post not found"));
