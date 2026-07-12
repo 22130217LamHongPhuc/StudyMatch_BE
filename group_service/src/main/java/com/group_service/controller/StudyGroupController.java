@@ -241,6 +241,36 @@ public class StudyGroupController {
     public ResponseEntity<Boolean> existsById(@PathVariable Long groupId) {
         return ResponseEntity.ok(studyGroupService.existsById(groupId));
     }
+
+    @PutMapping(value = "/{groupId}", consumes = {"multipart/form-data"})
+    public ResponseEntity<ApiResponse<Void>> updateGroup(
+            @PathVariable Long groupId,
+            @RequestPart("request") @Valid CreateStudyGroupRequest.UpdateStudyGroupRequest request,
+            @RequestPart(value = "avatar", required = false) org.springframework.web.multipart.MultipartFile avatar,
+            @RequestHeader("Authorization") String token
+    ) {
+        studyGroupService.updateStudyGroup(groupId, request, avatar, token);
+        return ResponseEntity.ok(new ApiResponse<>(
+                true,
+                StatusCode.SUCCESS,
+                "Update group successfully",
+                null
+        ));
+    }
+
+    @DeleteMapping("/{groupId}")
+    public ResponseEntity<ApiResponse<Void>> deleteGroup(
+            @PathVariable Long groupId,
+            @RequestHeader("Authorization") String token
+    ) {
+        studyGroupService.deleteStudyGroup(groupId, token);
+        return ResponseEntity.ok(new ApiResponse<>(
+                true,
+                StatusCode.SUCCESS,
+                "Delete group successfully",
+                null
+        ));
+    }
 }
 
 

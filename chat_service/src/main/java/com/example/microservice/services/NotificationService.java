@@ -6,6 +6,7 @@ import com.example.microservice.dto.GroupKickNotificationRequest;
 import com.example.microservice.dto.SessionReminderRequest;
 import com.example.microservice.dto.SocketEnvelope;
 import com.example.microservice.dto.StudySessionCreatedRequest;
+import com.example.microservice.dto.UserLockNotificationRequest;
 import com.example.microservice.socket.WebSocketSessionManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -114,6 +115,7 @@ public class NotificationService {
         data.put("groupName", request.getGroupName());
         data.put("inviterName", request.getInviterName());
         data.put("invitationId", request.getInvitationId());
+        data.put("inviteeUserId", request.getInviteeUserId());
 
         SocketEnvelope<Map<String, Object>> envelope = new SocketEnvelope<>(
                 EnumEvent.GROUP_INVITATION_RECEIVE.toString(),
@@ -164,6 +166,28 @@ public class NotificationService {
 
         SocketEnvelope<Map<String, Object>> envelope = new SocketEnvelope<>(
                 EnumEvent.GROUP_MEMBER_KICKED.toString(),
+                data
+        );
+
+        messagingTemplate.convertAndSendToUser(
+                String.valueOf(userId),
+                "/queue/chat",
+                envelope
+        );
+    }
+
+    public void sendForceLogoutNotification(UserLockNotificationRequest request) {
+        Long userId = request.getUserId();
+        if (userId == null || !sessionManager.isOnline(userId)) {
+            return;
+        }
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("userId", request.getUserId());
+        data.put("reason", request.getReason());
+
+        SocketEnvelope<Map<String, Object>> envelope = new SocketEnvelope<>(
+                EnumEvent.FORCE_LOGOUT.toString(),
                 data
         );
 
