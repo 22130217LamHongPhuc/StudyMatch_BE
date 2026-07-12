@@ -17,6 +17,9 @@ public class BasicUserResponse {
     @JsonAlias("email")
     private String email;
 
+    @JsonAlias("avatar_url")
+    private String avatarUrl;
+
     public String getUserName() {
         return fullName;
     }

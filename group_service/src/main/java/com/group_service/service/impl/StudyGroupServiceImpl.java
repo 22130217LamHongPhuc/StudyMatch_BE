@@ -200,10 +200,59 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     @Override
     public AdminGroupDetailResponse getGroupDetailForAdmin(Long groupId) {
         StudyGroup studyGroup = findGroupOrThrow(groupId);
-        long memberCount = groupMemberRepository.findByGroupIdAndStatus(groupId, GroupMemberStatus.ACTIVE)
-                .stream()
+        List<GroupMember> groupMembers = groupMemberRepository.findByGroupIdAndStatus(groupId, GroupMemberStatus.ACTIVE);
+
+        long memberCount = groupMembers.stream()
                 .filter(member -> member.getRole() != GroupMemberRole.ADMIN)
                 .count();
+
+        List<Long> memberUserIds = groupMembers.stream()
+                .map(GroupMember::getUserId)
+                .toList();
+
+        List<AdminGroupDetailResponse.MemberInfo> memberInfos = new java.util.ArrayList<>();
+        if (!memberUserIds.isEmpty()) {
+            try {
+                com.group_service.dto.ApiResponse<List<com.group_service.dto.BasicUserResponse>> userResponse =
+                        userClient.getBasicUsers(memberUserIds);
+                if (userResponse != null && userResponse.isSuccess() && userResponse.getData() != null) {
+                    java.util.Map<Long, com.group_service.dto.BasicUserResponse> userMap = new java.util.HashMap<>();
+                    for (com.group_service.dto.BasicUserResponse bu : userResponse.getData()) {
+                        if (bu.getUserId() != null) {
+                            userMap.put(bu.getUserId(), bu);
+                        }
+                    }
+                    for (GroupMember member : groupMembers) {
+                        com.group_service.dto.BasicUserResponse bu = userMap.get(member.getUserId());
+                        String fullName = bu != null ? bu.getFullName() : "N/A";
+                        String email = bu != null ? bu.getEmail() : "N/A";
+                        String avatarUrl = bu != null ? bu.getAvatarUrl() : null;
+
+                        memberInfos.add(new AdminGroupDetailResponse.MemberInfo(
+                                member.getUserId(),
+                                fullName,
+                                email,
+                                avatarUrl,
+                                member.getRole() != null ? member.getRole().name() : null,
+                                member.getStatus() != null ? member.getStatus().name() : null,
+                                member.getJoinedAt()
+                        ));
+                    }
+                }
+            } catch (Exception e) {
+                for (GroupMember member : groupMembers) {
+                    memberInfos.add(new AdminGroupDetailResponse.MemberInfo(
+                            member.getUserId(),
+                            "User #" + member.getUserId(),
+                            "--",
+                            null,
+                            member.getRole() != null ? member.getRole().name() : null,
+                            member.getStatus() != null ? member.getStatus().name() : null,
+                            member.getJoinedAt()
+                    ));
+                }
+            }
+        }
 
         return new AdminGroupDetailResponse(
                 studyGroup.getId(),
@@ -222,7 +271,8 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 memberCount,
                 studyGroup.getCreatedAt(),
                 studyGroup.getUpdatedAt(),
-                getGroupFreeTimeSlotResponses(groupId));
+                getGroupFreeTimeSlotResponses(groupId),
+                memberInfos);
     }
 
     @Override
@@ -242,6 +292,25 @@ public class StudyGroupServiceImpl implements StudyGroupService {
 
         studyGroup.setStatus(newStatus);
         studyGroupRepository.save(studyGroup);
+
+        if (newStatus != GroupStatus.ACTIVE) {
+            try {
+                Map<String, Object> userData = userClient.getUserById(studyGroup.getOwnerUserId());
+                if (userData != null && userData.containsKey("email")) {
+                    String leaderEmail = (String) userData.get("email");
+                    if (leaderEmail != null && !leaderEmail.trim().isEmpty()) {
+                        userClient.sendGroupLockEmail(com.group_service.dto.GroupLockEmailRequest.builder()
+                                .email(leaderEmail)
+                                .groupName(studyGroup.getName())
+                                .status(newStatus.name())
+                                .build());
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("Failed to send group lock email: " + e.getMessage());
+            }
+        }
+
         return getGroupDetailForAdmin(groupId);
     }
 
@@ -846,5 +915,72 @@ public class StudyGroupServiceImpl implements StudyGroupService {
         return studyGroupRepository.findById(groupId)
                 .map(group -> group.getStatus() != GroupStatus.DELETED)
                 .orElse(false);
+    }
+
+    @Override
+    @Transactional
+    public void removeGroupMemberForAdmin(Long groupId, Long userId) {
+        findGroupOrThrow(groupId);
+        GroupMember member = groupMemberRepository
+                .findByGroupIdAndUserIdAndStatus(groupId, userId, GroupMemberStatus.ACTIVE)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Active group member not found"));
+
+        if (member.getRole() == GroupMemberRole.OWNER) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot remove group owner. Please transfer ownership first.");
+        }
+
+        member.setStatus(GroupMemberStatus.REMOVED);
+        groupMemberRepository.save(member);
+
+        trySyncGroupParticipants(groupId, "removeGroupMemberForAdmin");
+
+        String groupName = null;
+        try {
+            StudyGroupDetailResponse groupDetail = getGroupById(groupId);
+            if (groupDetail != null) {
+                groupName = groupDetail.getName();
+            }
+        } catch (Exception e) {
+        }
+
+        try {
+            chatClient.sendGroupKickNotification(com.group_service.dto.GroupKickNotificationRequest.builder()
+                    .userId(userId)
+                    .groupId(groupId)
+                    .groupName(groupName)
+                    .build());
+        } catch (Exception e) {
+        }
+    }
+
+    @Override
+    @Transactional
+    public void changeGroupOwnerForAdmin(Long groupId, Long newOwnerUserId) {
+        StudyGroup studyGroup = findGroupOrThrow(groupId);
+        GroupMember newOwnerMember = groupMemberRepository
+                .findByGroupIdAndUserIdAndStatus(groupId, newOwnerUserId, GroupMemberStatus.ACTIVE)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "New owner must be an active member of the group"));
+
+        if (newOwnerMember.getRole() == GroupMemberRole.OWNER) {
+            return;
+        }
+
+        List<GroupMember> currentOwners = groupMemberRepository.findByGroupIdAndStatus(groupId, GroupMemberStatus.ACTIVE)
+                .stream()
+                .filter(m -> m.getRole() == GroupMemberRole.OWNER)
+                .toList();
+
+        for (GroupMember co : currentOwners) {
+            co.setRole(GroupMemberRole.MEMBER);
+            groupMemberRepository.save(co);
+        }
+
+        newOwnerMember.setRole(GroupMemberRole.OWNER);
+        groupMemberRepository.save(newOwnerMember);
+
+        studyGroup.setOwnerUserId(newOwnerUserId);
+        studyGroupRepository.save(studyGroup);
+
+        trySyncGroupParticipants(groupId, "changeGroupOwnerForAdmin");
     }
 }

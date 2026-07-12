@@ -237,10 +237,20 @@ public class StudySessionServiceImpl implements StudySessionService {
             throw new AppException("you can't joined into session");
         }
 
+        if (session.getStatus() == GroupStudySessionStatus.CANCELLED) {
+            throw new AppException("Buổi học đã bị hủy, Vui lòng reload để cập nhật lại");
+        }
+
         LocalDateTime now = LocalDateTime.now();
 
-        if (now.isBefore(session.getStartTime().minusMinutes(5))) {
-            throw new AppException("session has not started yet. You can join from 5 minutes before start time");
+        if (session.getEndTime() != null) {
+            if (now.isBefore(session.getStartTime().minusMinutes(5))) {
+                throw new AppException("session has not started yet. You can join from 5 minutes before start time");
+            }
+        } else {
+            if (now.isBefore(session.getStartTime().minusMinutes(5))) {
+                throw new AppException("session has not started yet. You can join from 5 minutes before start time");
+            }
         }
 
         if (now.isAfter(session.getEndTime())) {

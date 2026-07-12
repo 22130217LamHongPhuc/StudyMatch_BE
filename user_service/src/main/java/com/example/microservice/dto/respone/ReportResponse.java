@@ -19,6 +19,9 @@ public class ReportResponse {
     @JsonProperty("reporter_user_id")
     private Long reporterUserId;
 
+    @JsonProperty("reporter_name")
+    private String reporterName;
+
     @JsonProperty("target_type")
     private ReportTargetType targetType;
 

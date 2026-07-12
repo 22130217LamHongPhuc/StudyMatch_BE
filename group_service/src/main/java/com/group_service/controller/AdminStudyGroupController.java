@@ -89,7 +89,31 @@ public class AdminStudyGroupController {
         ));
     }
 
+    @DeleteMapping("/{groupId}/members/{userId}")
+    public ResponseEntity<ApiResponse<Void>> removeGroupMemberForAdmin(
+            @PathVariable Long groupId,
+            @PathVariable Long userId
+    ) {
+        studyGroupService.removeGroupMemberForAdmin(groupId, userId);
+        return ResponseEntity.ok(new ApiResponse<>(
+                true,
+                StatusCode.SUCCESS,
+                "Remove group member successfully",
+                null
+        ));
+    }
 
-
-
+    @PutMapping("/{groupId}/owner/{newOwnerUserId}")
+    public ResponseEntity<ApiResponse<Void>> changeGroupOwnerForAdmin(
+            @PathVariable Long groupId,
+            @PathVariable Long newOwnerUserId
+    ) {
+        studyGroupService.changeGroupOwnerForAdmin(groupId, newOwnerUserId);
+        return ResponseEntity.ok(new ApiResponse<>(
+                true,
+                StatusCode.SUCCESS,
+                "Change group owner successfully",
+                null
+        ));
+    }
 }

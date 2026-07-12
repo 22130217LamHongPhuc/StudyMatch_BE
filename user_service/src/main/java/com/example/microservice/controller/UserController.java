@@ -61,6 +61,15 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/send-group-lock")
+    public ResponseEntity<Void> sendGroupLock(@RequestBody com.example.microservice.dto.request.GroupLockEmailRequest request) {
+        javaMail.sendGroupLockEmail(
+                request.getEmail(),
+                request.getGroupName(),
+                request.getStatus());
+        return ResponseEntity.ok().build();
+    }
+
     @GetMapping("/{userId}/fullname")
     public ResponseEntity<ApiResponse<String>> getFullName(@PathVariable Long userId) {
         String fullName = userService.getFullName(userId);

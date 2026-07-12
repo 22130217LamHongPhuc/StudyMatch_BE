@@ -50,5 +50,9 @@ public interface StudyGroupService {
     List<CommonGroupResponse> getCommonGroups(Long userId, Long otherUserId);
 
     boolean existsById(Long groupId);
+
+    void removeGroupMemberForAdmin(Long groupId, Long userId);
+
+    void changeGroupOwnerForAdmin(Long groupId, Long newOwnerUserId);
 }
 

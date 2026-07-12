@@ -39,5 +39,20 @@ public class AdminGroupDetailResponse {
     private LocalDateTime updatedAt;
 
     private List<FreeTimeSlotResponse> freeTimeSlots;
+    private List<MemberInfo> members;
+
+    @Getter
+    @Setter
+    @AllArgsConstructor
+    @lombok.NoArgsConstructor
+    public static class MemberInfo {
+        private Long userId;
+        private String fullName;
+        private String email;
+        private String avatarUrl;
+        private String role;
+        private String status;
+        private LocalDateTime joinedAt;
+    }
 }
 

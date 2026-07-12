@@ -2,9 +2,11 @@ package com.example.microservice.controller;
 
 
 import com.example.microservice.dto.request.SubjectByCohortAndCurriculumRequest;
+import com.example.microservice.dto.response.ApiResponse;
 import com.example.microservice.dto.response.CohortStudyPlanResponse;
 import com.example.microservice.entity.Cohort;
 import com.example.microservice.entity.Curriculum;
+import com.example.microservice.enums.StatusCode;
 import com.example.microservice.repositories.CohortRepository;
 import com.example.microservice.repositories.CurriculumTermSubjectRepository;
 import com.example.microservice.repositories.StudyYearSemesterProjection;
@@ -38,32 +40,32 @@ public class CohortStudyPlanController {
 
 
     @GetMapping()
-    public ResponseEntity<List<Cohort>> getAllCohorts() {
+    public ApiResponse<List<Cohort>> getAllCohorts() {
         List<Cohort> cohorts = cohortRepository.findAll();
-        return ResponseEntity.ok(cohorts);
+        return new ApiResponse<>(true, StatusCode.SUCCESS, "Get cohorts successfully", cohorts);
     }
 
 
     @GetMapping("/{cohortCode}/study-plan/current")
-    public ResponseEntity<CohortStudyPlanResponse> getCurrentStudyPlan(
+    public ApiResponse<CohortStudyPlanResponse> getCurrentStudyPlan(
             @PathVariable String cohortCode
     ) {
         System.out.println("Received request for current study plan of cohort: " + cohortCode);
         CohortStudyPlanResponse response =
                 cohortStudyPlanService.getCurrentStudyPlanByCohortCode(cohortCode);
 
-        return ResponseEntity.ok(response);
+        return new ApiResponse<>(true, StatusCode.SUCCESS, "Get current study plan successfully", response);
     }
 
     @GetMapping("/{cohortCode}/study-plan-options/subject")
-    public ResponseEntity<CohortStudyPlanResponse> getOptionStudyPlan(
+    public ApiResponse<CohortStudyPlanResponse> getOptionStudyPlan(
             @PathVariable String cohortCode,
             @Valid  @ModelAttribute SubjectByCohortAndCurriculumRequest request
             ) {
         System.out.println("Received request for option plan of cohort: " + cohortCode);
         CohortStudyPlanResponse response = cohortStudyPlanService.getSubjectByCohortCodeAndCurriculum(cohortCode,request);
 
-        return ResponseEntity.ok(response);
+        return new ApiResponse<>(true, StatusCode.SUCCESS, "Get option study plan successfully", response);
     }
 
 
