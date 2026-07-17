@@ -4,6 +4,7 @@ import com.example.microservice.dto.GroupInvitationNotificationRequest;
 import com.example.microservice.dto.GroupKickNotificationRequest;
 import com.example.microservice.dto.SessionReminderRequest;
 import com.example.microservice.dto.StudySessionCreatedRequest;
+import com.example.microservice.dto.UserLockNotificationRequest;
 import com.example.microservice.services.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -54,6 +55,12 @@ public class NotificationController {
     @PostMapping("/notify-group-kick")
     public ResponseEntity<Void> sendGroupKickNotification(@RequestBody GroupKickNotificationRequest request) {
         notificationService.sendGroupKickNotification(request);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/notify-force-logout")
+    public ResponseEntity<Void> sendForceLogoutNotification(@RequestBody UserLockNotificationRequest request) {
+        notificationService.sendForceLogoutNotification(request);
         return ResponseEntity.ok().build();
     }
 }

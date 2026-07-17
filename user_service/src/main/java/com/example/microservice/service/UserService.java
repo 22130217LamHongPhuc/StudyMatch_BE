@@ -17,6 +17,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,6 +29,8 @@ public class UserService {
     SocialClient socialClient;
     @Autowired
     ProfileClient profileClient;
+    @Autowired
+    com.example.microservice.feignAPI.ChatClient chatClient;
 
     public User getProfile (Long userId ){
         return repo.findUsersByUserId(userId);
@@ -172,6 +176,19 @@ public class UserService {
                 .orElseThrow(() -> new AppException("Không tìm thấy người dùng", StatusCode.USER_NOT_FOUND));
         user.setStatus(status);
         repo.save(user);
+
+        if ("DELETED".equalsIgnoreCase(status) ||
+            "LOCKED".equalsIgnoreCase(status)) {
+            try {
+                Map<String, Object> reqBody = new HashMap<>();
+                reqBody.put("userId", userId);
+                reqBody.put("reason", "Tài khoản của bạn đã bị khóa hoặc ngừng hoạt động bởi quản trị viên.");
+                chatClient.notifyForceLogout(reqBody);
+            } catch (Exception e) {
+                System.err.println("Failed to send force logout notification via chat-service: " + e.getMessage());
+            }
+        }
+
         return new AdminUserStatusResponse( user.getStatus());
     }
 }
