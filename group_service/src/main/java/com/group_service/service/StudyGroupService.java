@@ -39,6 +39,8 @@ public interface StudyGroupService {
 
     List<com.group_service.dto.GroupInvitationResponse> getPendingInvitations(String token);
 
+    List<com.group_service.dto.GroupInvitationResponse> getSentPendingJoinRequests(String token);
+
     List<com.group_service.dto.GroupInvitationResponse> getGroupInvitations(Long groupId, String token);
 
     void acceptInvitation(Long invitationId, String token);
@@ -54,5 +56,9 @@ public interface StudyGroupService {
     void removeGroupMemberForAdmin(Long groupId, Long userId);
 
     void changeGroupOwnerForAdmin(Long groupId, Long newOwnerUserId);
+
+    void updateStudyGroup(Long groupId, CreateStudyGroupRequest.UpdateStudyGroupRequest request, org.springframework.web.multipart.MultipartFile avatar, String token);
+
+    void deleteStudyGroup(Long groupId, String token);
 }
 

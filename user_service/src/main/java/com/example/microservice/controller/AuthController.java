@@ -134,6 +134,11 @@ public class AuthController {
                 picture
         );
 
+        if ("DELETED".equalsIgnoreCase(user.getStatus()) ||
+            "LOCKED".equalsIgnoreCase(user.getStatus())) {
+            throw new AppException("Tài khoản của bạn đã bị khóa hoặc ngừng hoạt động bởi quản trị viên", StatusCode.USER_LOCKED);
+        }
+
         String accessToken = jwtService.generateToken(new CustomUserDetails(user));
         String refreshToken = refreshTokenService.createRefreshToken(user).getToken();
 

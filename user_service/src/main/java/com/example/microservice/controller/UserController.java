@@ -20,7 +20,6 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
     @Autowired
     UserService userService;
-
     @Autowired
     JavaMail javaMail;
 

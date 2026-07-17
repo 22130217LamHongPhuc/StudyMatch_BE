@@ -60,6 +60,19 @@ public class GroupInvitationController {
         ));
     }
 
+    @GetMapping("/invitations/sent-pending")
+    public ResponseEntity<ApiResponse<List<GroupInvitationResponse>>> getSentPendingJoinRequests(
+            @RequestHeader("Authorization") String token
+    ) {
+        List<GroupInvitationResponse> response = studyGroupService.getSentPendingJoinRequests(token);
+        return ResponseEntity.ok(new ApiResponse<>(
+                true,
+                StatusCode.SUCCESS,
+                "Get sent pending join requests successfully",
+                response
+        ));
+    }
+
     @PostMapping("/invitations/{invitationId}/accept")
     public ResponseEntity<ApiResponse<Void>> acceptInvitation(
             @PathVariable Long invitationId,

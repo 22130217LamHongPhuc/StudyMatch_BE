@@ -522,6 +522,42 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     }
 
     @Override
+    public List<GroupInvitationResponse> getSentPendingJoinRequests(String token) {
+        Long userId = validateTokenOrThrow(token).getUserId();
+
+        return groupInvitationRepository.findByInviterUserIdAndInviteeUserIdAndStatusOrderByCreatedAtDesc(
+                        userId,
+                        userId,
+                        GroupInvitationStatus.PENDING)
+                .stream()
+                .map(invitation -> {
+                    StudyGroup group = studyGroupRepository.findById(invitation.getGroupId()).orElse(null);
+                    String inviterName = "User #" + invitation.getInviterUserId();
+                    try {
+                        Map<String, Object> userData = userClient.getUserById(invitation.getInviterUserId());
+                        if (userData != null) {
+                            inviterName = getStringValue(userData, inviterName, "fullName", "full_name");
+                        }
+                    } catch (Exception e) {
+                    }
+
+                    return GroupInvitationResponse.builder()
+                            .invitationId(invitation.getId())
+                            .groupId(invitation.getGroupId())
+                            .groupName(group != null ? group.getName() : "Unknown Group")
+                            .groupAvatarUrl(group != null ? group.getAvatarUrl() : null)
+                            .inviterUserId(invitation.getInviterUserId())
+                            .inviteeUserId(invitation.getInviteeUserId())
+                            .inviterName(inviterName)
+                            .message(invitation.getMessage())
+                            .status(invitation.getStatus())
+                            .createdAt(invitation.getCreatedAt())
+                            .build();
+                })
+                .toList();
+    }
+
+    @Override
     public List<GroupInvitationResponse> getGroupInvitations(Long groupId, String token) {
         Long requesterUserId = validateTokenOrThrow(token).getUserId();
         StudyGroup group = findGroupOrThrow(groupId);
@@ -536,17 +572,29 @@ public class StudyGroupServiceImpl implements StudyGroupService {
 
         return groupInvitationRepository.findByGroupIdOrderByCreatedAtDesc(groupId)
                 .stream()
-                .map(invitation -> GroupInvitationResponse.builder()
-                        .invitationId(invitation.getId())
-                        .groupId(invitation.getGroupId())
-                        .groupName(group.getName())
-                        .groupAvatarUrl(group.getAvatarUrl())
-                        .inviterUserId(invitation.getInviterUserId())
-                        .inviteeUserId(invitation.getInviteeUserId())
-                        .message(invitation.getMessage())
-                        .status(invitation.getStatus())
-                        .createdAt(invitation.getCreatedAt())
-                        .build())
+                .map(invitation -> {
+                    String inviterName = "User #" + invitation.getInviterUserId();
+                    try {
+                        Map<String, Object> userData = userClient.getUserById(invitation.getInviterUserId());
+                        if (userData != null) {
+                            inviterName = getStringValue(userData, inviterName, "fullName", "full_name");
+                        }
+                    } catch (Exception e) {
+                    }
+
+                    return GroupInvitationResponse.builder()
+                            .invitationId(invitation.getId())
+                            .groupId(invitation.getGroupId())
+                            .groupName(group.getName())
+                            .groupAvatarUrl(group.getAvatarUrl())
+                            .inviterUserId(invitation.getInviterUserId())
+                            .inviteeUserId(invitation.getInviteeUserId())
+                            .inviterName(inviterName)
+                            .message(invitation.getMessage())
+                            .status(invitation.getStatus())
+                            .createdAt(invitation.getCreatedAt())
+                            .build();
+                })
                 .toList();
     }
 
@@ -608,31 +656,39 @@ public class StudyGroupServiceImpl implements StudyGroupService {
         GroupInvitation invitation = groupInvitationRepository.findById(invitationId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Invitation not found"));
 
-        boolean isInvitationToActor = invitation.getInviteeUserId().equals(actorUserId)
-                && !invitation.getInviterUserId().equals(actorUserId);
-        if (!isInvitationToActor) {
+        boolean isPartyToInvitation = invitation.getInviteeUserId().equals(actorUserId)
+                || invitation.getInviterUserId().equals(actorUserId);
+        if (!isPartyToInvitation) {
             assertCanModerateInvitation(invitation, actorUserId);
         }
         if (invitation.getStatus() != GroupInvitationStatus.PENDING) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invitation is not in pending status");
         }
 
-        invitation.setStatus(GroupInvitationStatus.REJECTED);
+        if (invitation.getInviterUserId().equals(actorUserId)) {
+            invitation.setStatus(GroupInvitationStatus.CANCELLED);
+        } else {
+            invitation.setStatus(GroupInvitationStatus.REJECTED);
+        }
         invitation.setRespondedAt(LocalDateTime.now());
         groupInvitationRepository.save(invitation);
 
         StudyGroup group = studyGroupRepository.findById(invitation.getGroupId()).orElse(null);
-        try {
-            chatClient.sendGroupInvitationStatusNotification(GroupInvitationNotificationRequest.builder()
-                    .userId(invitation.getInviterUserId())
-                    .groupId(invitation.getGroupId())
-                    .groupName(group != null ? group.getName() : null)
-                    .invitationId(invitation.getId())
-                    .inviteeUserId(invitation.getInviteeUserId())
-                    .status(invitation.getStatus().name())
-                    .build());
-        } catch (Exception e) {
-            System.err.println("Failed to send WebSocket notification on rejectInvitation: " + e.getMessage());
+        // Only notify if this is a genuine invitation rejection (not a self-sent join request cancellation)
+        boolean isSelfJoinRequest = invitation.getInviterUserId().equals(invitation.getInviteeUserId());
+        if (!isSelfJoinRequest) {
+            try {
+                chatClient.sendGroupInvitationStatusNotification(GroupInvitationNotificationRequest.builder()
+                        .userId(invitation.getInviterUserId())
+                        .groupId(invitation.getGroupId())
+                        .groupName(group != null ? group.getName() : null)
+                        .invitationId(invitation.getId())
+                        .inviteeUserId(invitation.getInviteeUserId())
+                        .status(invitation.getStatus().name())
+                        .build());
+            } catch (Exception e) {
+                System.err.println("Failed to send WebSocket notification on rejectInvitation: " + e.getMessage());
+            }
         }
     }
 
@@ -982,5 +1038,77 @@ public class StudyGroupServiceImpl implements StudyGroupService {
         studyGroupRepository.save(studyGroup);
 
         trySyncGroupParticipants(groupId, "changeGroupOwnerForAdmin");
+    }
+
+    @Override
+    @Transactional
+    public void updateStudyGroup(Long groupId, com.group_service.dto.CreateStudyGroupRequest.UpdateStudyGroupRequest request, org.springframework.web.multipart.MultipartFile avatar, String token) {
+        Long actorUserId = validateTokenOrThrow(token).getUserId();
+        StudyGroup group = findGroupOrThrow(groupId);
+
+        if (!group.getOwnerUserId().equals(actorUserId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the group owner can update group info");
+        }
+
+        if (group.getGroupType() == GroupType.COMMUNITY || group.getVisibility() == GroupVisibility.COMMUNITY) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Community groups cannot be modified");
+        }
+
+        if (avatar != null && !avatar.isEmpty()) {
+            try {
+                group.setAvatarUrl(cloudinaryService.uploadFile(avatar));
+            } catch (IOException e) {
+                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to upload avatar", e);
+            }
+        }
+
+        if (request.getName() != null && !request.getName().trim().isEmpty()) {
+            group.setName(request.getName().trim());
+        }
+
+        if (request.getDescription() != null) {
+            group.setDescription(request.getDescription().trim());
+        }
+
+        if (request.getMainSubjectId() != null) {
+            group.setMainSubjectId(request.getMainSubjectId());
+        }
+
+        if (request.getSubjectName() != null && !request.getSubjectName().trim().isEmpty()) {
+            group.setSubjectName(request.getSubjectName().trim());
+        }
+
+        if (request.getMaxMembers() != null) {
+            if (request.getMaxMembers() < 1) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Max members must be at least 1");
+            }
+            group.setMaxMembers(request.getMaxMembers());
+        }
+
+        if (request.getVisibility() != null) {
+            String visStr = request.getVisibility().toUpperCase();
+            if (!visStr.equals("PUBLIC") && !visStr.equals("PRIVATE")) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Visibility can only be PUBLIC or PRIVATE");
+            }
+            group.setVisibility(GroupVisibility.valueOf(visStr));
+        }
+
+        studyGroupRepository.save(group);
+        trySyncGroupParticipants(groupId, "updateStudyGroup");
+    }
+
+    @Override
+    @Transactional
+    public void deleteStudyGroup(Long groupId, String token) {
+        Long actorUserId = validateTokenOrThrow(token).getUserId();
+        StudyGroup group = findGroupOrThrow(groupId);
+
+        if (!group.getOwnerUserId().equals(actorUserId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the group owner can delete the group");
+        }
+
+        group.setStatus(GroupStatus.DELETED);
+        studyGroupRepository.save(group);
+        trySyncGroupParticipants(groupId, "deleteStudyGroup");
     }
 }

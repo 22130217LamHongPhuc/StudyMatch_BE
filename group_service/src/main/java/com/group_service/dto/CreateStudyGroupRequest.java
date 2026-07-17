@@ -41,5 +41,15 @@ public class CreateStudyGroupRequest {
         private String avatarUrl;
 
         private List<FreeTimeSlotRequest> freeTimeSlots;
+
+        @Data
+        public static class UpdateStudyGroupRequest {
+                private String name;
+                private String description;
+                private Long mainSubjectId;
+                private String subjectName;
+                private Integer maxMembers;
+                private String visibility;
+        }
 }
 
