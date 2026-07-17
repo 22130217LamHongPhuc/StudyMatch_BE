@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 
 import java.util.List;
 
-@FeignClient(name = "group-service", url = "http://localhost:8086")
+@FeignClient(name = "group-service", url = "${group-service.url:http://localhost:8086}")
 public interface GroupClient {
     @GetMapping("/api/groups/{groupId}/members/active-user-ids")
     GroupApiResponse<List<Long>> getActiveMemberUserIds(@PathVariable("groupId") Long groupId);

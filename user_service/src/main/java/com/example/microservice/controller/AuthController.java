@@ -1,6 +1,5 @@
 package com.example.microservice.controller;
 
-
 import com.example.microservice.dto.request.*;
 import com.example.microservice.dto.respone.ApiResponse;
 import com.example.microservice.dto.respone.AuthResponse;
@@ -24,29 +23,31 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
+    @org.springframework.beans.factory.annotation.Value("${app.user-service.url:http://localhost:8085}")
+    private String userServiceUrl;
+
+    @org.springframework.beans.factory.annotation.Value("${app.frontend.url:http://localhost:3000}")
+    private String frontendUrl;
+
     @Autowired
     CustomUserDetailService userDetailsService;
     @Autowired
     private JwtService jwtService;
-
     @Autowired
     UserRepository userRepository;
-
     @Autowired
     GoogleAuthService googleAuthService;
-
     @Autowired
     RefreshTokenService refreshTokenService;
-
-
     @Autowired
     private PasswordEncoder passwordEncoder;
-
     @Autowired
     private MailService mailService;
+    @Autowired 
+    EmailVerificationTokenService verificationTokenService;
+    @Autowired 
+    AuthService authService;
 
-    @Autowired EmailVerificationTokenService verificationTokenService;
-    @Autowired AuthService authService;
 
     @GetMapping("/test")
     public String test() {
@@ -70,13 +71,9 @@ public class AuthController {
         user.setOnboardingCompleted(false);
         userRepository.save(user);
 
-//        String token = jwtService.generateToken(new CustomUserDetails(user));
-//        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
-
-
         EmailVerificationToken verificationToken = verificationTokenService.saveVerificationToken(user);
 
-        String link = "http://localhost:8085/api/verify-email/confirm?token=" + verificationToken.getToken();
+        String link = userServiceUrl + "/api/verify-email/confirm?token=" + verificationToken.getToken();
 
 
         mailService.sendMailTo(user.getEmail(), "Chào mừng đến với StudyMatch",
@@ -190,7 +187,7 @@ public class AuthController {
 
         PasswordResetToken resetToken = authService.saveForgetPasswordToken(user);
 
-        String link = "http://localhost:3000/reset-password?token=" + resetToken.getToken();
+        String link = frontendUrl + "/reset-password?token=" + resetToken.getToken();
 
         mailService.sendMailTo(user.getEmail(), "Yêu cầu đặt lại mật khẩu",
                 "reset-password",
@@ -224,7 +221,7 @@ public class AuthController {
         );
         EmailVerificationToken verificationToken = verificationTokenService.saveVerificationToken(user);
 
-        String link = "http://localhost:8085/api/verify-email/confirm?token=" + verificationToken.getToken();
+        String link = userServiceUrl + "/api/verify-email/confirm?token=" + verificationToken.getToken();
 
 
         mailService.sendMailTo(user.getEmail(), "Chào mừng đến với StudyMatch",

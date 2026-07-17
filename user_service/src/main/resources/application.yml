@@ -1,43 +1,68 @@
 server:
-  port: 8085
+  port: ${PORT:8085}
 
 spring:
   application:
     name: USER-SERVICE
 
   datasource:
-    url: jdbc:mysql://localhost:3306/db_user_service?useSSL=false&serverTimezone=UTC
-    username: root
-    password: ""
+    url: ${DB_URL:jdbc:mysql://localhost:3306/db_user_service?useSSL=false&serverTimezone=UTC}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
     driver-class-name: com.mysql.cj.jdbc.Driver
-
+    hikari:
+      maximum-pool-size: ${DB_MAX_POOL_SIZE:5}
+      minimum-idle: ${DB_MIN_IDLE:0}
+      connection-timeout: ${DB_CONNECTION_TIMEOUT:30000}
+      idle-timeout: ${DB_IDLE_TIMEOUT:600000}
+      max-lifetime: ${DB_MAX_LIFETIME:1800000}
 
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: ${DDL_AUTO:none}
     show-sql: true
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
 
+
 eureka:
   client:
+    enabled: ${EUREKA_ENABLED:true}
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka/}
     register-with-eureka: true
     fetch-registry: true
 
   instance:
     prefer-ip-address: true
 
+feign:
+  client:
+    config:
+      SOCIAL-SERVICE:
+        url: ${SOCIAL_SERVICE_URL:}
+      PROFILE-SERVICE:
+        url: ${PROFILE_SERVICE_URL:}
+      GROUP-SERVICE:
+        url: ${GROUP_SERVICE_URL:}
+
+
 app:
   security:
     jwt:
-      secret-key: nlu_echo_by_phuc_lam_2004_this_is_be_for_applicati
+      secret-key: ${JWT_SECRET_KEY:nlu_echo_by_phuc_lam_2004_this_is_be_for_applicati}
+  user-service:
+    url: ${USER_SERVICE_URL:http://localhost:8085}
+  frontend:
+    url: ${FRONTEND_URL:http://localhost:3000}
+  api-gateway:
+    url: ${API_GATEWAY_URL:http://localhost:8080}
 
 google:
-  client-id: 714586252342-f47e1oar4i153si4gp61i15v7lg625ft.apps.googleusercontent.com
+  client-id: ${GOOGLE_CLIENT_ID:714586252342-f47e1oar4i153si4gp61i15v7lg625ft.apps.googleusercontent.com}
 
 mail:
-  email: tailam164@gmail.com
-  password: xxslfhfwvnkiiscn
+  email: ${MAIL_EMAIL:tailam164@gmail.com}
+  password: ${MAIL_PASSWORD:xxslfhfwvnkiiscn}
+

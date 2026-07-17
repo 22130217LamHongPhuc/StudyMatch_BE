@@ -34,14 +34,12 @@ public class FriendRequest {
     private String status;
 
     @NotNull
-    @ColumnDefault("current_timestamp()")
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "created_at", nullable = false, columnDefinition = "datetime(6) default CURRENT_TIMESTAMP(6)")
     @CreationTimestamp
     private LocalDateTime createdAt;
 
     @NotNull
-    @ColumnDefault("current_timestamp()")
-    @Column(name = "updated_at", nullable = false)
+    @Column(name = "updated_at", nullable = false, columnDefinition = "datetime(6) default CURRENT_TIMESTAMP(6)")
     private LocalDateTime updatedAt;
 
 }
