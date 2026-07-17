@@ -20,6 +20,9 @@ public class EmailVerificationTokenService {
     @Autowired
     UserRepository userRepository;
 
+    @org.springframework.beans.factory.annotation.Value("${app.api-gateway.url:http://localhost:8080}")
+    private String apiGatewayUrl;
+
     public void sendVerificationEmail(User user) {
         String token = UUID.randomUUID().toString();
 
@@ -32,7 +35,7 @@ public class EmailVerificationTokenService {
 
         emailVerificationTokenRepository.save(verificationToken);
 
-        String link = "http://localhost:8080/api/auth/verify-email?token=" + token;
+        String link = apiGatewayUrl + "/api/auth/verify-email?token=" + token;
 
 //        emailService.send(
 //                user.getEmail(),

@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 
-@FeignClient(name = "user-service", url = "http://localhost:8085/")
+@FeignClient(name = "user-service", url = "${user-service.url:http://localhost:8085/}")
 public interface  UserClient {
 //    @GetMapping("/users/{id}")
 //    User getUser(@PathVariable("id") Long id);

@@ -14,6 +14,9 @@ import org.springframework.web.client.RestTemplate;
 @Service
 public class OnboardingService {
 
+    @org.springframework.beans.factory.annotation.Value("${recommender.service.url:http://localhost:8000}")
+    private String recommenderServiceUrl;
+
     @Autowired
     private StudentProfileRepository studentProfileRepository;
 
@@ -210,7 +213,7 @@ public class OnboardingService {
 
     private void reloadAiRecommender(Long userId) {
         try {
-            String url = "http://localhost:8000/api/reload-recommender?userId=" + userId;
+            String url = recommenderServiceUrl + "/api/reload-recommender?userId=" + userId;
 
             String response = restTemplate.postForObject(
                     url,

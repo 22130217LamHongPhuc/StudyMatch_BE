@@ -27,8 +27,7 @@ public class UserSkip {
     @Column(name = "skipped_user_id", nullable = false)
     private Long skippedUserId;
 
-    @ColumnDefault("current_timestamp()")
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "created_at", nullable = false, columnDefinition = "datetime(6) default CURRENT_TIMESTAMP(6)")
     @CreationTimestamp
     private LocalDateTime createdAt;
 }

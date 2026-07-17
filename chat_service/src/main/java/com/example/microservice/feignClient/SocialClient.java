@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.List;
 
-@FeignClient(name = "social-service", url = "http://localhost:8083/")
+@FeignClient(name = "social-service", url = "${social-service.url:http://localhost:8083/}")
 public interface SocialClient {
     @GetMapping("/social/friends/{userId}/list")
     SocialApiResponse<List<SocialFriendDTO>> getFriendList(@PathVariable("userId") Long userId);

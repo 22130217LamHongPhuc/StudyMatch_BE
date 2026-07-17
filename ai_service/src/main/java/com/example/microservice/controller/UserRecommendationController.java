@@ -10,15 +10,17 @@ import org.springframework.web.util.UriComponentsBuilder;
 @RestController
 public class UserRecommendationController {
 
+    @org.springframework.beans.factory.annotation.Value("${recommender.service.url:http://localhost:8000}")
+    private String recommenderServiceUrl;
+
     private final RestTemplate restTemplate = new RestTemplate();
 
     @GetMapping("/api/recommend-users")
     public ResponseEntity<Object> getRecommendUsers(
             @RequestParam("user_id") Long userId,
             @RequestParam(value = "page", defaultValue = "1") Integer page,
-            @RequestParam(value = "limit", defaultValue = "3") Integer limit
-    ) {
-        String url = UriComponentsBuilder.fromHttpUrl("http://localhost:8000/api/recommend-users")
+            @RequestParam(value = "limit", defaultValue = "3") Integer limit) {
+        String url = UriComponentsBuilder.fromHttpUrl(recommenderServiceUrl + "/api/recommend-users")
                 .queryParam("user_id", userId)
                 .queryParam("page", page)
                 .queryParam("limit", limit)

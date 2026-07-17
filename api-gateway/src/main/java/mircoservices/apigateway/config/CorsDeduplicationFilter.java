@@ -17,11 +17,15 @@ public class CorsDeduplicationFilter implements GlobalFilter, Ordered {
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         return chain.filter(exchange).then(Mono.fromRunnable(() -> {
             HttpHeaders headers = exchange.getResponse().getHeaders();
-            
+            String requestOrigin = exchange.getRequest().getHeaders().getOrigin();
+
             if (headers.containsKey(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN)) {
                 List<String> origins = headers.get(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN);
                 if (origins != null && origins.size() > 1) {
-                    headers.put(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, List.of(origins.get(0)));
+                    headers.put(
+                            HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN,
+                            List.of(resolveAllowedOrigin(origins, requestOrigin))
+                    );
                 }
             }
 
@@ -32,6 +36,20 @@ public class CorsDeduplicationFilter implements GlobalFilter, Ordered {
                 }
             }
         }));
+    }
+
+    private String resolveAllowedOrigin(List<String> origins, String requestOrigin) {
+        if (requestOrigin != null && origins.contains(requestOrigin)) {
+            return requestOrigin;
+        }
+
+        for (String origin : origins) {
+            if (origin != null && !origin.isBlank() && !"*".equals(origin)) {
+                return origin;
+            }
+        }
+
+        return origins.get(0);
     }
 
     @Override
