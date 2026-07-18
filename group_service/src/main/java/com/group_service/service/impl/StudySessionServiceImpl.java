@@ -327,8 +327,9 @@ public class StudySessionServiceImpl implements StudySessionService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "You are not a participant of this session"));
 
-        if (participant.getStatus() != StudySessionParticipantStatus.PENDING) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You have already responded to this invitation");
+        if (participant.getStatus() == StudySessionParticipantStatus.JOINED ||
+                participant.getStatus() == StudySessionParticipantStatus.ABSENT) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot change response after joining or being marked absent");
         }
 
         participant.setStatus(status);
