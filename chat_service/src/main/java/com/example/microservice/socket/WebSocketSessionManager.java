@@ -51,4 +51,8 @@ public class WebSocketSessionManager {
     public Set<Long> getOnlineUserIds() {
         return Set.copyOf(userSessions.keySet());
     }
+
+    public int getOnlineUsersCount() {
+        return userSessions.size();
+    }
 }
