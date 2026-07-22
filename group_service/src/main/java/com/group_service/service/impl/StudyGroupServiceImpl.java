@@ -101,7 +101,8 @@ public class StudyGroupServiceImpl implements StudyGroupService {
         groupMemberRepository.save(ownerMember);
 
         addInvitedMembers(savedStudyGroup.getId(), ownerUserId, request.getMaxMembers(), request.getInvitedUserIds());
-        saveFreeTimeSlots(savedStudyGroup.getId(), request.getTermId(), request.getFreeTimeSlots());
+        // saveFreeTimeSlots(savedStudyGroup.getId(), request.getTermId(),
+        // request.getFreeTimeSlots());
 
         return toResponse(savedStudyGroup, false);
     }
@@ -200,7 +201,8 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     @Override
     public AdminGroupDetailResponse getGroupDetailForAdmin(Long groupId) {
         StudyGroup studyGroup = findGroupOrThrow(groupId);
-        List<GroupMember> groupMembers = groupMemberRepository.findByGroupIdAndStatus(groupId, GroupMemberStatus.ACTIVE);
+        List<GroupMember> groupMembers = groupMemberRepository.findByGroupIdAndStatus(groupId,
+                GroupMemberStatus.ACTIVE);
 
         long memberCount = groupMembers.stream()
                 .filter(member -> member.getRole() != GroupMemberRole.ADMIN)
@@ -213,8 +215,8 @@ public class StudyGroupServiceImpl implements StudyGroupService {
         List<AdminGroupDetailResponse.MemberInfo> memberInfos = new java.util.ArrayList<>();
         if (!memberUserIds.isEmpty()) {
             try {
-                com.group_service.dto.ApiResponse<List<com.group_service.dto.BasicUserResponse>> userResponse =
-                        userClient.getBasicUsers(memberUserIds);
+                com.group_service.dto.ApiResponse<List<com.group_service.dto.BasicUserResponse>> userResponse = userClient
+                        .getBasicUsers(memberUserIds);
                 if (userResponse != null && userResponse.isSuccess() && userResponse.getData() != null) {
                     java.util.Map<Long, com.group_service.dto.BasicUserResponse> userMap = new java.util.HashMap<>();
                     for (com.group_service.dto.BasicUserResponse bu : userResponse.getData()) {
@@ -235,8 +237,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                                 avatarUrl,
                                 member.getRole() != null ? member.getRole().name() : null,
                                 member.getStatus() != null ? member.getStatus().name() : null,
-                                member.getJoinedAt()
-                        ));
+                                member.getJoinedAt()));
                     }
                 }
             } catch (Exception e) {
@@ -248,8 +249,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                             null,
                             member.getRole() != null ? member.getRole().name() : null,
                             member.getStatus() != null ? member.getStatus().name() : null,
-                            member.getJoinedAt()
-                    ));
+                            member.getJoinedAt()));
                 }
             }
         }
@@ -526,9 +526,9 @@ public class StudyGroupServiceImpl implements StudyGroupService {
         Long userId = validateTokenOrThrow(token).getUserId();
 
         return groupInvitationRepository.findByInviterUserIdAndInviteeUserIdAndStatusOrderByCreatedAtDesc(
-                        userId,
-                        userId,
-                        GroupInvitationStatus.PENDING)
+                userId,
+                userId,
+                GroupInvitationStatus.PENDING)
                 .stream()
                 .map(invitation -> {
                     StudyGroup group = studyGroupRepository.findById(invitation.getGroupId()).orElse(null);
@@ -674,7 +674,8 @@ public class StudyGroupServiceImpl implements StudyGroupService {
         groupInvitationRepository.save(invitation);
 
         StudyGroup group = studyGroupRepository.findById(invitation.getGroupId()).orElse(null);
-        // Only notify if this is a genuine invitation rejection (not a self-sent join request cancellation)
+        // Only notify if this is a genuine invitation rejection (not a self-sent join
+        // request cancellation)
         boolean isSelfJoinRequest = invitation.getInviterUserId().equals(invitation.getInviteeUserId());
         if (!isSelfJoinRequest) {
             try {
@@ -967,7 +968,8 @@ public class StudyGroupServiceImpl implements StudyGroupService {
 
     @Override
     public boolean existsById(Long groupId) {
-        if (groupId == null) return false;
+        if (groupId == null)
+            return false;
         return studyGroupRepository.findById(groupId)
                 .map(group -> group.getStatus() != GroupStatus.DELETED)
                 .orElse(false);
@@ -982,7 +984,8 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Active group member not found"));
 
         if (member.getRole() == GroupMemberRole.OWNER) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot remove group owner. Please transfer ownership first.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Cannot remove group owner. Please transfer ownership first.");
         }
 
         member.setStatus(GroupMemberStatus.REMOVED);
@@ -1015,13 +1018,15 @@ public class StudyGroupServiceImpl implements StudyGroupService {
         StudyGroup studyGroup = findGroupOrThrow(groupId);
         GroupMember newOwnerMember = groupMemberRepository
                 .findByGroupIdAndUserIdAndStatus(groupId, newOwnerUserId, GroupMemberStatus.ACTIVE)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "New owner must be an active member of the group"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "New owner must be an active member of the group"));
 
         if (newOwnerMember.getRole() == GroupMemberRole.OWNER) {
             return;
         }
 
-        List<GroupMember> currentOwners = groupMemberRepository.findByGroupIdAndStatus(groupId, GroupMemberStatus.ACTIVE)
+        List<GroupMember> currentOwners = groupMemberRepository
+                .findByGroupIdAndStatus(groupId, GroupMemberStatus.ACTIVE)
                 .stream()
                 .filter(m -> m.getRole() == GroupMemberRole.OWNER)
                 .toList();
@@ -1042,7 +1047,9 @@ public class StudyGroupServiceImpl implements StudyGroupService {
 
     @Override
     @Transactional
-    public void updateStudyGroup(Long groupId, com.group_service.dto.CreateStudyGroupRequest.UpdateStudyGroupRequest request, org.springframework.web.multipart.MultipartFile avatar, String token) {
+    public void updateStudyGroup(Long groupId,
+            com.group_service.dto.CreateStudyGroupRequest.UpdateStudyGroupRequest request,
+            org.springframework.web.multipart.MultipartFile avatar, String token) {
         Long actorUserId = validateTokenOrThrow(token).getUserId();
         StudyGroup group = findGroupOrThrow(groupId);
 

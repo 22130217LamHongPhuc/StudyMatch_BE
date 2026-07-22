@@ -65,15 +65,72 @@ public class StudySessionServiceImpl implements StudySessionService {
 
         StudyGroup group = validator.validateGroup(groupId, request);
 
-        StudySession session = studySessionMapper.mapToStudySession(groupId, request);
+        boolean isRecurring = request.getRecurrenceType() != null
+                && !request.getRecurrenceType().equalsIgnoreCase("NONE");
 
-        StudySession saved = studySessionRepository.save(session);
+        if (!isRecurring) {
+            StudySession session = studySessionMapper.mapToStudySession(groupId, request);
+            validator.validateNoOverlap(request.getCreatedByUserId(), List.of(session), null);
+            StudySession saved = studySessionRepository.save(session);
+            List<StudySessionParticipant> participants = studySessionParticipantService
+                    .createParticipantsForGroupSession(groupId, request, saved);
+            studySessionNotificationService.sendSessionCreatedNotification(group, List.of(saved), request, participants,
+                    1);
+            return studySessionMapper.mapToStudySessionResponse(saved, request.getCreatedByUserId());
+        }
 
-        List<StudySessionParticipant> participants = studySessionParticipantService
-                .createParticipantsForGroupSession(groupId, request, saved);
-        studySessionNotificationService.sendSessionCreatedNotification(group, saved, request, participants);
+        String recurrenceId = java.util.UUID.randomUUID().toString();
 
-        return studySessionMapper.mapToStudySessionResponse(saved, request.getCreatedByUserId());
+        List<LocalDateTime> startTimes = generateRecurringDates(
+                request.getStartDate(),
+                request.getEndDate(),
+                request.getStartTime(),
+                request.getRecurrenceType(),
+                request.getRepeatDays());
+
+        long durationMinutes = java.time.Duration.between(request.getStartTime(), request.getEndTime()).toMinutes();
+
+        List<StudySession> sessionsToSave = new java.util.ArrayList<>();
+        for (LocalDateTime sessionStart : startTimes) {
+            LocalDateTime sessionEnd = sessionStart.plusMinutes(durationMinutes);
+
+            StudySession session = StudySession.builder()
+                    .groupId(groupId)
+                    .title(request.getTitle().trim())
+                    .description(request.getDescription())
+                    .startTime(sessionStart)
+                    .endTime(sessionEnd)
+                    .studyMode(request.getStudyMode())
+                    .location(request.getLocation())
+                    .meetingUrl(request.getMeetingUrl())
+                    .createdByUserId(request.getCreatedByUserId())
+                    .status(GroupStudySessionStatus.SCHEDULED)
+                    .sessionType(StudySessionType.GROUP)
+                    .subjectName(request.getSubjectName())
+                    .subjectId(request.getSubjectId())
+                    .reminderSent(false)
+                    .recurrenceId(recurrenceId)
+                    .recurrenceType(request.getRecurrenceType())
+                    .build();
+            sessionsToSave.add(session);
+        }
+
+        validator.validateNoOverlap(request.getCreatedByUserId(), sessionsToSave, null);
+        List<StudySession> savedSessions = studySessionRepository.saveAll(sessionsToSave);
+        StudySession firstSession = savedSessions.get(0);
+
+        List<StudySessionParticipant> allParticipants = studySessionParticipantService
+                .createParticipantsForSessions(groupId, request, savedSessions);
+
+        List<StudySessionParticipant> firstSessionParticipants = allParticipants.stream()
+                .filter(p -> p.getSessionId().equals(firstSession.getId()))
+                .toList();
+
+        studySessionNotificationService.sendSessionCreatedNotification(group, savedSessions, request,
+                firstSessionParticipants, savedSessions.size());
+
+        return studySessionMapper.mapToStudySessionResponse(firstSession, request.getCreatedByUserId(),
+                savedSessions.size());
     }
 
     @Override
@@ -93,24 +150,126 @@ public class StudySessionServiceImpl implements StudySessionService {
 
         validateTimeRange(request.getStartTime(), request.getEndTime());
 
-        StudySession session = StudySession.builder()
-                .groupId(null)
-                .title(request.getTitle().trim())
-                .description(normalizeText(request.getDescription()))
-                .startTime(request.getStartTime())
-                .endTime(request.getEndTime())
-                .studyMode(request.getStudyMode())
-                .location(normalizeText(request.getLocation()))
-                .meetingUrl(normalizeText(request.getMeetingUrl()))
-                .createdByUserId(request.getCreatedByUserId())
-                .status(GroupStudySessionStatus.SCHEDULED)
-                .sessionType(StudySessionType.USER_PAIR)
-                .subjectName(request.getSubjectName())
-                .reminderSent(false)
-                .subjectId(request.getSubjectId())
-                .build();
+        boolean isRecurring = request.getRecurrenceType() != null
+                && !request.getRecurrenceType().equalsIgnoreCase("NONE");
 
-        StudySession saved = studySessionRepository.save(session);
+        if (!isRecurring) {
+            StudySession session = StudySession.builder()
+                    .groupId(null)
+                    .title(request.getTitle().trim())
+                    .description(normalizeText(request.getDescription()))
+                    .startTime(java.time.LocalDateTime.of(request.getStartDate(), request.getStartTime()))
+                    .endTime(java.time.LocalDateTime.of(request.getStartDate(), request.getEndTime()))
+                    .studyMode(request.getStudyMode())
+                    .location(normalizeText(request.getLocation()))
+                    .meetingUrl(normalizeText(request.getMeetingUrl()))
+                    .createdByUserId(request.getCreatedByUserId())
+                    .status(GroupStudySessionStatus.SCHEDULED)
+                    .sessionType(StudySessionType.USER_PAIR)
+                    .subjectName(request.getSubjectName())
+                    .reminderSent(false)
+                    .subjectId(request.getSubjectId())
+                    .build();
+
+            validator.validateNoOverlap(request.getCreatedByUserId(), List.of(session), null);
+            StudySession saved = studySessionRepository.save(session);
+
+            Map<Long, String> userNames = fetchUserNames(
+                    List.of(request.getCreatedByUserId(), request.getPartnerUserId()));
+            String hostUserName = userNames.getOrDefault(
+                    request.getCreatedByUserId(),
+                    fallbackUserName(request.getCreatedByUserId()));
+            String partnerUserName = userNames.get(request.getPartnerUserId());
+            if (!StringUtils.hasText(partnerUserName)) {
+                partnerUserName = normalizeText(request.getPartnerUserName());
+            }
+            if (!StringUtils.hasText(partnerUserName)) {
+                partnerUserName = fallbackUserName(request.getPartnerUserId());
+            }
+
+            StudySessionParticipant host = StudySessionParticipant.builder()
+                    .sessionId(saved.getId())
+                    .userId(request.getCreatedByUserId())
+                    .userName(hostUserName)
+                    .role(StudySessionParticipantRole.HOST)
+                    .status(StudySessionParticipantStatus.ACCEPTED)
+                    .respondedAt(LocalDateTime.now())
+                    .build();
+
+            StudySessionParticipant partner = StudySessionParticipant.builder()
+                    .sessionId(saved.getId())
+                    .userId(request.getPartnerUserId())
+                    .userName(partnerUserName)
+                    .role(StudySessionParticipantRole.PARTICIPANT)
+                    .status(StudySessionParticipantStatus.PENDING)
+                    .build();
+
+            participantRepository.save(host);
+            participantRepository.save(partner);
+
+            try {
+                StudySessionCreatedRequest.SessionInfo sessionInfo = StudySessionCreatedRequest.SessionInfo.builder()
+                        .sessionId(saved.getId())
+                        .sessionTitle(saved.getTitle())
+                        .startTime(saved.getStartTime().format(FORMATTER))
+                        .meetingUrl(saved.getMeetingUrl())
+                        .build();
+
+                StudySessionCreatedRequest notificationReq = StudySessionCreatedRequest.builder()
+                        .sessions(List.of(sessionInfo))
+                        .groupName("Buổi học cá nhân")
+                        .sessionType(saved.getSessionType().name())
+                        .creatorName(hostUserName)
+                        .userIds(List.of(request.getPartnerUserId()))
+                        .totalSessions(1)
+                        .build();
+                chatClient.sendSessionCreatedNotification(notificationReq);
+            } catch (Exception e) {
+                log.error("Failed to send session created notification: {}", e.getMessage());
+            }
+
+            return studySessionMapper.mapToStudySessionResponse(saved, request.getCreatedByUserId());
+        }
+
+        String recurrenceId = java.util.UUID.randomUUID().toString();
+
+        List<LocalDateTime> startTimes = generateRecurringDates(
+                request.getStartDate(),
+                request.getEndDate(),
+                request.getStartTime(),
+                request.getRecurrenceType(),
+                request.getRepeatDays());
+
+        long durationMinutes = java.time.Duration.between(request.getStartTime(), request.getEndTime()).toMinutes();
+
+        List<StudySession> sessionsToSave = new java.util.ArrayList<>();
+        for (LocalDateTime sessionStart : startTimes) {
+            LocalDateTime sessionEnd = sessionStart.plusMinutes(durationMinutes);
+
+            StudySession session = StudySession.builder()
+                    .groupId(null)
+                    .title(request.getTitle().trim())
+                    .description(normalizeText(request.getDescription()))
+                    .startTime(sessionStart)
+                    .endTime(sessionEnd)
+                    .studyMode(request.getStudyMode())
+                    .location(normalizeText(request.getLocation()))
+                    .meetingUrl(normalizeText(request.getMeetingUrl()))
+                    .createdByUserId(request.getCreatedByUserId())
+                    .status(GroupStudySessionStatus.SCHEDULED)
+                    .sessionType(StudySessionType.USER_PAIR)
+                    .subjectName(request.getSubjectName())
+                    .reminderSent(false)
+                    .subjectId(request.getSubjectId())
+                    .recurrenceId(recurrenceId)
+                    .recurrenceType(request.getRecurrenceType())
+                    .build();
+            sessionsToSave.add(session);
+        }
+
+        validator.validateNoOverlap(request.getCreatedByUserId(), sessionsToSave, null);
+        List<StudySession> savedSessions = studySessionRepository.saveAll(sessionsToSave);
+        StudySession firstSession = savedSessions.get(0);
 
         Map<Long, String> userNames = fetchUserNames(List.of(request.getCreatedByUserId(), request.getPartnerUserId()));
         String hostUserName = userNames.getOrDefault(
@@ -124,43 +283,63 @@ public class StudySessionServiceImpl implements StudySessionService {
             partnerUserName = fallbackUserName(request.getPartnerUserId());
         }
 
-        StudySessionParticipant host = StudySessionParticipant.builder()
-                .sessionId(saved.getId())
-                .userId(request.getCreatedByUserId())
-                .userName(hostUserName)
-                .role(StudySessionParticipantRole.HOST)
-                .status(StudySessionParticipantStatus.ACCEPTED)
-                .respondedAt(LocalDateTime.now())
-                .build();
+        List<StudySessionParticipant> allParticipants = new java.util.ArrayList<>();
+        for (StudySession s : savedSessions) {
+            StudySessionParticipant host = StudySessionParticipant.builder()
+                    .sessionId(s.getId())
+                    .userId(request.getCreatedByUserId())
+                    .userName(hostUserName)
+                    .role(StudySessionParticipantRole.HOST)
+                    .status(StudySessionParticipantStatus.ACCEPTED)
+                    .respondedAt(LocalDateTime.now())
+                    .build();
 
-        StudySessionParticipant partner = StudySessionParticipant.builder()
-                .sessionId(saved.getId())
-                .userId(request.getPartnerUserId())
-                .userName(partnerUserName)
-                .role(StudySessionParticipantRole.PARTICIPANT)
-                .status(StudySessionParticipantStatus.PENDING)
-                .build();
+            StudySessionParticipant partner = StudySessionParticipant.builder()
+                    .sessionId(s.getId())
+                    .userId(request.getPartnerUserId())
+                    .userName(partnerUserName)
+                    .role(StudySessionParticipantRole.PARTICIPANT)
+                    .status(StudySessionParticipantStatus.PENDING)
+                    .build();
 
-        participantRepository.save(host);
-        participantRepository.save(partner);
+            allParticipants.add(host);
+            allParticipants.add(partner);
+        }
+
+        participantRepository.saveAll(allParticipants);
 
         try {
+            String groupName = "Buổi học cá nhân";
+            if (recurrenceId != null) {
+                groupName += " (Lịch lặp)";
+            }
+
+            List<StudySessionCreatedRequest.SessionInfo> sessionsInfo = savedSessions.stream()
+                    .map(s -> StudySessionCreatedRequest.SessionInfo.builder()
+                            .sessionId(s.getId())
+                            .sessionTitle(s.getTitle())
+                            .startTime(s.getStartTime().format(FORMATTER))
+                            .meetingUrl(s.getMeetingUrl())
+                            .build())
+                    .toList();
+
             StudySessionCreatedRequest notificationReq = StudySessionCreatedRequest.builder()
-                    .sessionId(saved.getId())
-                    .sessionTitle(saved.getTitle())
-                    .startTime(saved.getStartTime().format(FORMATTER))
-                    .meetingUrl(saved.getMeetingUrl())
-                    .groupName("Buổi học cá nhân")
-                    .sessionType(saved.getSessionType().name())
+                    .sessions(sessionsInfo)
+                    .groupName(groupName)
+                    .sessionType(firstSession.getSessionType().name())
                     .creatorName(hostUserName)
                     .userIds(List.of(request.getPartnerUserId()))
+                    .recurrenceId(recurrenceId)
+                    .recurrenceType(request.getRecurrenceType())
+                    .totalSessions(savedSessions.size())
                     .build();
             chatClient.sendSessionCreatedNotification(notificationReq);
         } catch (Exception e) {
             log.error("Failed to send session created notification: {}", e.getMessage());
         }
 
-        return studySessionMapper.mapToStudySessionResponse(saved, request.getCreatedByUserId());
+        return studySessionMapper.mapToStudySessionResponse(firstSession, request.getCreatedByUserId(),
+                savedSessions.size());
     }
 
     @Override
@@ -208,6 +387,18 @@ public class StudySessionServiceImpl implements StudySessionService {
         }
 
         return studySessionRepository.findByGroupIdOrderByStartTimeAsc(groupId)
+                .stream()
+                .map(session -> studySessionMapper.mapToStudySessionResponse(session, userId))
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<StudySessionResponse> getSessionsByRecurrenceId(String recurrenceId, Long userId) {
+        if (!org.springframework.util.StringUtils.hasText(recurrenceId)) {
+            return new java.util.ArrayList<>();
+        }
+        return studySessionRepository.findByRecurrenceIdOrderByStartTimeAsc(recurrenceId)
                 .stream()
                 .map(session -> studySessionMapper.mapToStudySessionResponse(session, userId))
                 .toList();
@@ -329,7 +520,12 @@ public class StudySessionServiceImpl implements StudySessionService {
 
         if (participant.getStatus() == StudySessionParticipantStatus.JOINED ||
                 participant.getStatus() == StudySessionParticipantStatus.ABSENT) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot change response after joining or being marked absent");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Cannot change response after joining or being marked absent");
+        }
+
+        if (status == StudySessionParticipantStatus.ACCEPTED) {
+            validator.validateNoOverlap(userId, List.of(session), sessionId);
         }
 
         participant.setStatus(status);
@@ -625,8 +821,8 @@ public class StudySessionServiceImpl implements StudySessionService {
         return result;
     }
 
-    private void validateTimeRange(LocalDateTime startTime, LocalDateTime endTime) {
-        if (endTime.isBefore(startTime) || endTime.isEqual(startTime)) {
+    private void validateTimeRange(java.time.LocalTime startTime, java.time.LocalTime endTime) {
+        if (endTime.isBefore(startTime) || endTime.equals(startTime)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "endTime must be after startTime");
         }
     }
@@ -787,5 +983,141 @@ public class StudySessionServiceImpl implements StudySessionService {
         return attendanceLogRepository.getStudyDurationPerUser().stream()
                 .map(p -> new UserStudyDurationResponse(p.getUserId(), p.getTotalDurationSeconds() / 60))
                 .toList();
+    }
+
+    private List<java.time.DayOfWeek> parseRepeatDays(List<String> repeatDays) {
+        if (repeatDays == null || repeatDays.isEmpty()) {
+            return List.of(java.time.DayOfWeek.values());
+        }
+        List<java.time.DayOfWeek> days = new java.util.ArrayList<>();
+        for (String dayStr : repeatDays) {
+            if (dayStr == null)
+                continue;
+            try {
+                days.add(java.time.DayOfWeek.valueOf(dayStr.trim().toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                String normalized = dayStr.trim().toUpperCase();
+                if (normalized.startsWith("MON"))
+                    days.add(java.time.DayOfWeek.MONDAY);
+                else if (normalized.startsWith("TUE"))
+                    days.add(java.time.DayOfWeek.TUESDAY);
+                else if (normalized.startsWith("WED"))
+                    days.add(java.time.DayOfWeek.WEDNESDAY);
+                else if (normalized.startsWith("THU"))
+                    days.add(java.time.DayOfWeek.THURSDAY);
+                else if (normalized.startsWith("FRI"))
+                    days.add(java.time.DayOfWeek.FRIDAY);
+                else if (normalized.startsWith("SAT"))
+                    days.add(java.time.DayOfWeek.SATURDAY);
+                else if (normalized.startsWith("SUN"))
+                    days.add(java.time.DayOfWeek.SUNDAY);
+            }
+        }
+        return days;
+    }
+
+    private List<LocalDateTime> generateRecurringDates(
+            LocalDate startDate,
+            LocalDate endDate,
+            java.time.LocalTime startTime,
+            String recurrenceType,
+            List<String> repeatDays) {
+        List<LocalDateTime> dates = new java.util.ArrayList<>();
+        LocalDateTime startDateTime = LocalDateTime.of(startDate, startTime);
+
+        if (recurrenceType == null || recurrenceType.equalsIgnoreCase("NONE")) {
+            dates.add(startDateTime);
+            return dates;
+        }
+
+        LocalDate start = startDate;
+        LocalDate end = endDate != null ? endDate : start;
+        if (end.isBefore(start)) {
+            end = start;
+        }
+
+        LocalDate limitDate = start.plusYears(1);
+        if (end.isAfter(limitDate)) {
+            end = limitDate;
+        }
+
+        if (recurrenceType.equalsIgnoreCase("DAILY")) {
+            LocalDate current = start;
+            while (!current.isAfter(end)) {
+                dates.add(current.atTime(startTime));
+                current = current.plusDays(1);
+            }
+        } else if (recurrenceType.equalsIgnoreCase("WEEKLY")) {
+            List<java.time.DayOfWeek> targetDays = parseRepeatDays(repeatDays);
+            LocalDate current = start;
+            while (!current.isAfter(end)) {
+                if (targetDays.contains(current.getDayOfWeek())) {
+                    dates.add(current.atTime(startTime));
+                }
+                current = current.plusDays(1);
+            }
+        } else if (recurrenceType.equalsIgnoreCase("MONTHLY")) {
+            LocalDate current = start;
+            while (!current.isAfter(end)) {
+                dates.add(current.atTime(startTime));
+                current = current.plusMonths(1);
+            }
+        } else {
+            dates.add(startDateTime);
+        }
+
+        if (dates.isEmpty()) {
+            dates.add(startDateTime);
+        }
+        return dates;
+    }
+
+    @Override
+    @Transactional
+    public void respondToMultipleSessions(Long userId, List<Long> sessionIds, StudySessionParticipantStatus status) {
+        if (status != StudySessionParticipantStatus.ACCEPTED && status != StudySessionParticipantStatus.DECLINED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Status must be ACCEPTED or DECLINED");
+        }
+
+        if (status == StudySessionParticipantStatus.ACCEPTED && sessionIds != null && !sessionIds.isEmpty()) {
+            List<StudySession> sessionsToValidate = new java.util.ArrayList<>();
+            for (Long sessionId : sessionIds) {
+                StudySession session = studySessionRepository.findById(sessionId).orElse(null);
+                if (session == null || session.getStatus() == GroupStudySessionStatus.CANCELLED) {
+                    continue;
+                }
+                StudySessionParticipant participant = participantRepository.findBySessionIdAndUserId(sessionId, userId)
+                        .orElse(null);
+                if (participant == null) {
+                    continue;
+                }
+                if (participant.getStatus() == StudySessionParticipantStatus.JOINED ||
+                        participant.getStatus() == StudySessionParticipantStatus.ABSENT) {
+                    continue;
+                }
+                sessionsToValidate.add(session);
+            }
+            validator.validateNoOverlap(userId, sessionsToValidate, null);
+        }
+
+        for (Long sessionId : sessionIds) {
+            StudySession session = studySessionRepository.findById(sessionId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Study session not found"));
+            if (session.getStatus() == GroupStudySessionStatus.CANCELLED) {
+                continue;
+            }
+            StudySessionParticipant participant = participantRepository.findBySessionIdAndUserId(sessionId, userId)
+                    .orElse(null);
+            if (participant == null) {
+                continue;
+            }
+            if (participant.getStatus() == StudySessionParticipantStatus.JOINED ||
+                    participant.getStatus() == StudySessionParticipantStatus.ABSENT) {
+                continue;
+            }
+            participant.setStatus(status);
+            participant.setRespondedAt(LocalDateTime.now());
+            participantRepository.save(participant);
+        }
     }
 }

@@ -67,6 +67,42 @@ public class StudySessionParticipantService {
         return participants;
     }
 
+    public List<StudySessionParticipant> createParticipantsForSessions(Long groupId,
+            CreateStudySessionRequest request, List<StudySession> savedSessions) {
+
+        List<GroupMember> activeMembers = groupMemberRepository.findByGroupIdAndStatus(groupId,
+                GroupMemberStatus.ACTIVE);
+        if (activeMembers.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Group has no active members");
+        }
+
+        List<Long> userIds = activeMembers.stream()
+                .map(GroupMember::getUserId)
+                .distinct()
+                .toList();
+
+        Map<Long, String> userNames = fetchUserNames(userIds);
+        List<StudySessionParticipant> allParticipants = new ArrayList<>();
+
+        for (StudySession session : savedSessions) {
+            List<StudySessionParticipant> sessionParticipants = activeMembers.stream()
+                    .map(member -> {
+                        Long memberUserId = member.getUserId();
+                        boolean isHost = memberUserId.equals(request.getCreatedByUserId());
+                        String userName = userNames.getOrDefault(memberUserId, "user_" + memberUserId);
+
+                        return studySessionParticipantMapper.mapToStudySessionParticipant(memberUserId, isHost, userName,
+                                session);
+                    })
+                    .toList();
+            allParticipants.addAll(sessionParticipants);
+        }
+
+        participantRepository.saveAll(allParticipants);
+
+        return allParticipants;
+    }
+
     private Map<Long, String> fetchUserNames(List<Long> userIds) {
         Map<Long, String> result = new HashMap<>();
         try {

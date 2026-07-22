@@ -14,12 +14,24 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class StudySessionCreatedRequest {
-    private Long sessionId;
-    private String sessionTitle;
-    private String startTime;
-    private String meetingUrl;
+    private List<SessionInfo> sessions;
     private String groupName;
     private String sessionType;
     private String creatorName;
     private List<Long> userIds;
+    private String recurrenceId;
+    private String recurrenceType;
+    private Integer totalSessions;
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class SessionInfo {
+        private Long sessionId;
+        private String sessionTitle;
+        private String startTime;
+        private String meetingUrl;
+    }
 }

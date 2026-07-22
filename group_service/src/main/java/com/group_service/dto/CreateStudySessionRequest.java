@@ -7,7 +7,9 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.List;
 
 @Data
 public class CreateStudySessionRequest {
@@ -19,10 +21,15 @@ public class CreateStudySessionRequest {
     private String description;
 
     @NotNull
-    private LocalDateTime startTime;
+    private LocalDate startDate;
+
+    private LocalDate endDate;
 
     @NotNull
-    private LocalDateTime endTime;
+    private LocalTime startTime;
+
+    @NotNull
+    private LocalTime endTime;
 
     @NotNull
     private GroupStudySessionMode studyMode;
@@ -46,4 +53,8 @@ public class CreateStudySessionRequest {
     private String partnerUserName;
 
     private Long subjectId;
+
+    private String recurrenceType;
+
+    private List<String> repeatDays;
 }

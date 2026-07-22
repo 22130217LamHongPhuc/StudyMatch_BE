@@ -29,6 +29,9 @@ public record StudySessionResponse(
         Long membersCount,
         String subjectName,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        LocalDateTime updatedAt,
+        Integer totalCreated,
+        String recurrenceId,
+        String recurrenceType
 ) {
 }

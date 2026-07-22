@@ -29,8 +29,8 @@ public class StudySessionMapper {
                 .groupId(groupId)
                 .title(request.getTitle().trim())
                 .description(request.getDescription())
-                .startTime(request.getStartTime())
-                .endTime(request.getEndTime())
+                .startTime(java.time.LocalDateTime.of(request.getStartDate(), request.getStartTime()))
+                .endTime(java.time.LocalDateTime.of(request.getStartDate(), request.getEndTime()))
                 .studyMode(request.getStudyMode())
                 .location(request.getLocation())
                 .meetingUrl(request.getMeetingUrl())
@@ -44,6 +44,10 @@ public class StudySessionMapper {
     }
 
     public StudySessionResponse mapToStudySessionResponse(StudySession s, Long currentUserId) {
+        return mapToStudySessionResponse(s, currentUserId, 1);
+    }
+
+    public StudySessionResponse mapToStudySessionResponse(StudySession s, Long currentUserId, Integer totalCreated) {
 
         StudySessionParticipantStatus participantStatus = null;
         if (currentUserId != null) {
@@ -96,6 +100,9 @@ public class StudySessionMapper {
                 membersCount,
                 s.getSubjectName(),
                 s.getCreatedAt(),
-                s.getUpdatedAt());
+                s.getUpdatedAt(),
+                totalCreated,
+                s.getRecurrenceId(),
+                s.getRecurrenceType());
     }
 }

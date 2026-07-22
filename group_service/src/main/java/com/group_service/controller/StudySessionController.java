@@ -128,6 +128,20 @@ public class StudySessionController {
         ));
     }
 
+    @GetMapping("/recurrence/{recurrenceId}")
+    public ResponseEntity<ApiResponse<List<StudySessionResponse>>> getSessionsByRecurrenceId(
+            @PathVariable String recurrenceId,
+            @RequestParam Long userId
+    ) {
+        List<StudySessionResponse> response = studySessionService.getSessionsByRecurrenceId(recurrenceId, userId);
+        return ResponseEntity.ok(new ApiResponse<>(
+                true,
+                StatusCode.SUCCESS,
+                "Get sessions by recurrence id successfully",
+                response
+        ));
+    }
+
     @PostMapping("/{sessionId}/join")
     public ResponseEntity<ApiResponse<JoinStudySessionResponse>> joinSession(
             @PathVariable Long sessionId,
@@ -219,6 +233,20 @@ public class StudySessionController {
                 StatusCode.SUCCESS,
                 "Respond to session successfully",
                 response
+        ));
+    }
+
+    @PatchMapping("/participants/{userId}/respond-bulk")
+    public ResponseEntity<ApiResponse<Void>> respondToMultipleSessions(
+            @PathVariable Long userId,
+            @Valid @RequestBody RespondMultipleSessionsRequest request
+    ) {
+        studySessionService.respondToMultipleSessions(userId, request.getSessionIds(), request.getStatus());
+        return ResponseEntity.ok(new ApiResponse<>(
+                true,
+                StatusCode.SUCCESS,
+                "Respond to multiple sessions successfully",
+                null
         ));
     }
 

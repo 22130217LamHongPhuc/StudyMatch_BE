@@ -29,11 +29,15 @@ public interface StudySessionService {
 
     List<StudySessionResponse> getSessionsByGroupId(Long groupId, Long userId);
 
+    List<StudySessionResponse> getSessionsByRecurrenceId(String recurrenceId, Long userId);
+
     StudySessionResponse getSessionById(Long sessionId, Long userId);
 
     JoinStudySessionResponse joinSession(Long sessionId, Long userId);
 
     StudySessionResponse respondToSession(Long sessionId, Long userId, StudySessionParticipantStatus status);
+
+    void respondToMultipleSessions(Long userId, List<Long> sessionIds, StudySessionParticipantStatus status);
 
     StudySessionResponse updateSessionStatus(Long sessionId, Long userId, GroupStudySessionStatus status);
 
