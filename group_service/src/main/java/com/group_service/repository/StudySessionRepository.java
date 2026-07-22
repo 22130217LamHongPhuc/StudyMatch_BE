@@ -24,6 +24,8 @@ public interface StudySessionRepository extends JpaRepository<StudySession, Long
 
     List<StudySession> findByGroupIdOrderByStartTimeAsc(Long groupId);
 
+    List<StudySession> findByRecurrenceIdOrderByStartTimeAsc(String recurrenceId);
+
     @Query("""
         SELECT DISTINCT s FROM StudySession s
         JOIN StudySessionParticipant p ON p.sessionId = s.id
@@ -140,4 +142,30 @@ public interface StudySessionRepository extends JpaRepository<StudySession, Long
 
     @Query("SELECT p.sessionId, COUNT(p.id) FROM StudySessionParticipant p WHERE p.sessionId IN :sessionIds GROUP BY p.sessionId")
     List<Object[]> countParticipantsBySessionIds(@Param("sessionIds") List<Long> sessionIds);
+
+    @Query("""
+        SELECT s FROM StudySession s
+        JOIN StudySessionParticipant p ON p.sessionId = s.id
+        WHERE p.userId = :userId
+          AND s.status <> com.group_service.entity.enums.GroupStudySessionStatus.CANCELLED
+          AND p.status IN (com.group_service.entity.enums.StudySessionParticipantStatus.ACCEPTED, com.group_service.entity.enums.StudySessionParticipantStatus.JOINED)
+          AND s.endTime > :time
+    """)
+    List<StudySession> findActiveSessionsAfter(
+            @Param("userId") Long userId,
+            @Param("time") LocalDateTime time
+    );
+
+    @Query("""
+        SELECT s FROM StudySession s
+        JOIN StudySessionParticipant p ON p.sessionId = s.id
+        WHERE p.userId IN :userIds
+          AND s.status = com.group_service.entity.enums.GroupStudySessionStatus.SCHEDULED
+          AND s.startTime < :endTime AND s.endTime > :startTime
+    """)
+    List<StudySession> findOverlappingSessions(
+            @Param("userIds") List<Long> userIds,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime
+    );
 }

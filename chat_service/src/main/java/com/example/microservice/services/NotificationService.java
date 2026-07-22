@@ -83,13 +83,13 @@ public class NotificationService {
             }
 
             Map<String, Object> data = new HashMap<>();
-            data.put("sessionId", request.getSessionId());
-            data.put("sessionTitle", request.getSessionTitle());
-            data.put("startTime", request.getStartTime());
-            data.put("meetingUrl", request.getMeetingUrl());
+            data.put("sessions", request.getSessions());
             data.put("groupName", request.getGroupName());
             data.put("sessionType", request.getSessionType());
             data.put("creatorName", request.getCreatorName());
+            data.put("recurrenceId", request.getRecurrenceId());
+            data.put("recurrenceType", request.getRecurrenceType());
+            data.put("totalSessions", request.getTotalSessions());
 
             SocketEnvelope<Map<String, Object>> envelope = new SocketEnvelope<>(
                     EnumEvent.STUDY_SESSION_CREATED.toString(),

@@ -88,6 +88,12 @@ public class StudySession {
 
     @Column(name = "reminder_sent")
     private boolean reminderSent = false;
+
+    @Column(name = "recurrence_id")
+    private String recurrenceId;
+
+    @Column(name = "recurrence_type")
+    private String recurrenceType;
 }
 
 

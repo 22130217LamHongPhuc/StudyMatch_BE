@@ -24,9 +24,13 @@ public class StudySessionNotificationService {
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy");
 
-    public void sendSessionCreatedNotification(StudyGroup group, StudySession saved,
-            CreateStudySessionRequest request, List<StudySessionParticipant> participants) {
+    public void sendSessionCreatedNotification(StudyGroup group, List<StudySession> savedSessions,
+            CreateStudySessionRequest request, List<StudySessionParticipant> participants, Integer totalSessions) {
         try {
+            if (savedSessions == null || savedSessions.isEmpty()) {
+                return;
+            }
+            StudySession firstSession = savedSessions.get(0);
 
             List<Long> recipients = participants.stream()
                     .map(StudySessionParticipant::getUserId)
@@ -39,20 +43,33 @@ public class StudySessionNotificationService {
                     .findFirst()
                     .orElse(request.getCreatedByUserId().toString());
 
+            String groupName = group.getName();
+            if (firstSession.getRecurrenceId() != null) {
+                groupName += " (Lịch lặp)";
+            }
+
+            List<StudySessionCreatedRequest.SessionInfo> sessionsInfo = savedSessions.stream()
+                    .map(s -> StudySessionCreatedRequest.SessionInfo.builder()
+                            .sessionId(s.getId())
+                            .sessionTitle(s.getTitle())
+                            .startTime(s.getStartTime().format(FORMATTER))
+                            .meetingUrl(s.getMeetingUrl())
+                            .build())
+                    .toList();
+
             StudySessionCreatedRequest notificationReq = StudySessionCreatedRequest.builder()
-                    .sessionId(saved.getId())
-                    .sessionTitle(saved.getTitle())
-                    .startTime(saved.getStartTime().format(FORMATTER))
-                    .meetingUrl(saved.getMeetingUrl())
-                    .groupName(group.getName())
-                    .sessionType(saved.getSessionType().name())
+                    .sessions(sessionsInfo)
+                    .groupName(groupName)
+                    .sessionType(firstSession.getSessionType().name())
                     .creatorName(creatorName)
                     .userIds(recipients)
+                    .recurrenceId(firstSession.getRecurrenceId())
+                    .recurrenceType(request.getRecurrenceType())
+                    .totalSessions(totalSessions)
                     .build();
             chatClient.sendSessionCreatedNotification(notificationReq);
         } catch (Exception e) {
-            log.warn("Failed to send session created notification for sessionId={}: {}",
-                    saved.getId(), e.getMessage());
+            log.warn("Failed to send session created notification: {}", e.getMessage());
         }
 
     }
