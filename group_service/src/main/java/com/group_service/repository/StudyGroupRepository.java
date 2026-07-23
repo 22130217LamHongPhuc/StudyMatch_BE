@@ -16,8 +16,25 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.Collection;
+import java.util.List;
 
 public interface StudyGroupRepository extends JpaRepository<StudyGroup, Long> {
+
+    @Query(value = """
+            SELECT COALESCE(NULLIF(TRIM(g.subject_name), ''), 'Chưa phân loại') AS subject_name,
+                   COUNT(DISTINCT CASE WHEN g.visibility = 'PUBLIC' THEN g.id END) AS public_count,
+                   COUNT(DISTINCT CASE WHEN g.visibility = 'PRIVATE' THEN g.id END) AS private_count,
+                   COUNT(DISTINCT g.id) AS total_groups,
+                   COUNT(DISTINCT CASE WHEN gm.status = 'ACTIVE' THEN gm.id END) AS total_members
+            FROM study_groups g
+            LEFT JOIN group_members gm ON gm.group_id = g.id
+            WHERE g.status = 'ACTIVE'
+              AND g.visibility IN ('PUBLIC', 'PRIVATE')
+            GROUP BY COALESCE(NULLIF(TRIM(g.subject_name), ''), 'Chưa phân loại')
+            ORDER BY total_groups DESC, total_members DESC
+            LIMIT 10
+            """, nativeQuery = true)
+    List<Object[]> findAdminTopSubjects();
 
     boolean existsByNameIgnoreCaseAndOwnerUserIdAndTermIdAndMainSubjectId(
             String name,

@@ -9,8 +9,27 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDateTime;
 
 public interface MessageRepo extends JpaRepository<Message, Long> {
+        @Query(value = """
+                        SELECT DATE(m.created_at) AS message_date,
+                               SUM(CASE WHEN gc.conversation_id IS NOT NULL THEN 1 ELSE 0 END) AS group_messages,
+                               SUM(CASE WHEN gc.conversation_id IS NULL THEN 1 ELSE 0 END) AS private_messages,
+                               COUNT(*) AS total_messages
+                        FROM messages m
+                        LEFT JOIN group_conversations gc
+                               ON gc.conversation_id = m.conversation_id
+                        WHERE m.created_at >= :startDate
+                          AND m.created_at < :endDate
+                          AND (m.is_deleted = 0 OR m.is_deleted IS NULL)
+                        GROUP BY DATE(m.created_at)
+                        ORDER BY message_date
+                        """, nativeQuery = true)
+        List<Object[]> findAdminMessagesTimeline(
+                @Param("startDate") LocalDateTime startDate,
+                @Param("endDate") LocalDateTime endDate);
+
         Page<Message> findByConversationIdOrderByCreatedAtDesc(Long conversationId, Pageable pageable);
 
         Message findMessageById(Long id);

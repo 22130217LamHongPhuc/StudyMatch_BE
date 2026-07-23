@@ -11,8 +11,12 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.time.LocalDateTime;
 
 public interface ReportRepository extends JpaRepository<Report, Long> {
+
+    List<Report> findByCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+            LocalDateTime start, LocalDateTime end);
 
     /**
      * Kiểm tra báo cáo trùng lặp (chống spam):

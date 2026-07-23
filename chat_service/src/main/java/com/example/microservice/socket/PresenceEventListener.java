@@ -11,9 +11,11 @@ import java.util.Map;
 @Component
 public class PresenceEventListener {
     private final SimpMessagingTemplate messagingTemplate;
+    private final WebSocketSessionManager sessionManager;
 
-    public PresenceEventListener(SimpMessagingTemplate messagingTemplate) {
+    public PresenceEventListener(SimpMessagingTemplate messagingTemplate, WebSocketSessionManager sessionManager) {
         this.messagingTemplate = messagingTemplate;
+        this.sessionManager = sessionManager;
     }
 
     @EventListener
@@ -26,5 +28,9 @@ public class PresenceEventListener {
                 )
         );
         messagingTemplate.convertAndSend("/topic/presence", payload);
+
+        // Broadcast actual online count from ConcurrentHashMap to /topic/online-users
+        int currentOnlineCount = sessionManager.getOnlineUsersCount();
+        messagingTemplate.convertAndSend("/topic/online-users", Map.of("onlineCount", currentOnlineCount));
     }
 }
