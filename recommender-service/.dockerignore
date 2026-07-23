@@ -1,0 +1,10 @@
+__pycache__
+*.pyc
+.venv
+venv
+.env
+.git
+.idea
+.vscode
+tests
+canonical_profiles_debug.csv

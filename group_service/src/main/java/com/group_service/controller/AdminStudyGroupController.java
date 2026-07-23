@@ -1,5 +1,6 @@
 package com.group_service.controller;
 
+import com.group_service.annotation.AuditLog;
 import com.group_service.dto.AdminGroupResponse;
 import com.group_service.dto.AdminGroupDetailResponse;
 import com.group_service.dto.ApiResponse;
@@ -75,6 +76,7 @@ public class AdminStudyGroupController {
     }
 
     @PatchMapping("/{groupId}/status")
+    @AuditLog(action = "UPDATE_GROUP_STATUS", targetType = "STUDY_GROUP", targetId = "#groupId", details = "'Cập nhật trạng thái nhóm học tập: ' + #request.status")
     public ResponseEntity<ApiResponse<AdminGroupDetailResponse>> updateGroupStatusForAdmin(
             @PathVariable Long groupId,
             @Valid @RequestBody UpdateGroupStatusRequest request
@@ -90,6 +92,7 @@ public class AdminStudyGroupController {
     }
 
     @DeleteMapping("/{groupId}/members/{userId}")
+    @AuditLog(action = "REMOVE_GROUP_MEMBER", targetType = "STUDY_GROUP", targetId = "#groupId", details = "'Xóa thành viên ID: ' + #userId + ' khỏi nhóm'")
     public ResponseEntity<ApiResponse<Void>> removeGroupMemberForAdmin(
             @PathVariable Long groupId,
             @PathVariable Long userId
@@ -104,6 +107,7 @@ public class AdminStudyGroupController {
     }
 
     @PutMapping("/{groupId}/owner/{newOwnerUserId}")
+    @AuditLog(action = "CHANGE_GROUP_OWNER", targetType = "STUDY_GROUP", targetId = "#groupId", details = "'Chuyển quyền sở hữu nhóm cho thành viên ID: ' + #newOwnerUserId")
     public ResponseEntity<ApiResponse<Void>> changeGroupOwnerForAdmin(
             @PathVariable Long groupId,
             @PathVariable Long newOwnerUserId

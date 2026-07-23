@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+pandas
+faiss-cpu
+sentence-transformers
+numpy
+requests
+sqlalchemy
+pymysql
+cryptography

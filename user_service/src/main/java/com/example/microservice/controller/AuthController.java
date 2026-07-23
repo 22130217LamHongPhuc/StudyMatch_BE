@@ -214,6 +214,36 @@ public class AuthController {
         ));
     }
 
+    @PostMapping("/admin/forget-password")
+    public ResponseEntity<ApiResponse<String>> adminForgotPassword(@RequestBody ForgotPasswordRequest request) {
+        PasswordResetToken resetToken = authService.saveForgetPasswordTokenAdmin(request.getEmail());
+
+        String link = frontendUrl + "/admin/reset-password?token=" + resetToken.getToken();
+
+        mailService.sendMailTo(request.getEmail(), "Yêu cầu đặt lại mật khẩu quản trị viên",
+                "reset-password",
+                 link
+        );
+
+        return ResponseEntity.ok(new ApiResponse<>(
+                true,
+                StatusCode.SUCCESS,
+                "Đã gửi email đặt lại mật khẩu cho quản trị viên",
+                null
+        ));
+    }
+
+    @PostMapping("/admin/reset-password")
+    public ResponseEntity<ApiResponse<String>> adminResetPassword(@RequestBody ResetPasswordRequest request){
+        authService.resetPasswordAdmin(request.getNewPassword(), request.getToken());
+        return ResponseEntity.ok(new ApiResponse<>(
+                true,
+                StatusCode.SUCCESS,
+                "Đặt lại mật khẩu quản trị viên thành công",
+                null
+        ));
+    }
+
     @PostMapping("/reset-verify-email")
     public ResponseEntity<ApiResponse<String>> resetVerifyEmail(@RequestBody ForgotPasswordRequest request){
         User user = userRepository.findByEmail(request.getEmail()).orElseThrow(

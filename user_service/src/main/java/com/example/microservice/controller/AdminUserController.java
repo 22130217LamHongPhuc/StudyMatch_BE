@@ -3,6 +3,9 @@ package com.example.microservice.controller;
 import com.example.microservice.dto.respone.*;
 import com.example.microservice.enums.StatusCode;
 import com.example.microservice.service.UserService;
+import com.example.microservice.service.CustomUserDetails;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -26,12 +29,28 @@ public class AdminUserController {
                         @RequestParam(required = false) String keyword,
                         @RequestParam(required = false) String role) {
 
+                String resolvedRole = role;
+                Long callerUserId = null;
+                Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+                if (authentication != null && authentication.isAuthenticated()) {
+                        Object principal = authentication.getPrincipal();
+                        if (principal instanceof CustomUserDetails) {
+                                CustomUserDetails userDetails = (CustomUserDetails) principal;
+                                String callerRole = userDetails.getUser().getRole();
+                                if ("admin".equalsIgnoreCase(callerRole)) {
+                                        resolvedRole = "student";
+                                }
+                                callerUserId = userDetails.getUser().getUserId();
+                        }
+                }
+
                 PageResponse<AdminUserListItemResponse> response = userService.getUsersForAdmin(
                                 page,
                                 limit,
                                 keyword,
                                 status,
-                                role);
+                                resolvedRole,
+                                callerUserId);
                 return ResponseEntity.ok(new ApiResponse<>(
                                 true,
                                 StatusCode.SUCCESS,

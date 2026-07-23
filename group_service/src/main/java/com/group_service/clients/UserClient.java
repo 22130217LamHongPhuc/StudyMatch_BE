@@ -31,4 +31,9 @@ public interface UserClient {
     com.group_service.dto.TokenValidateResponse validateToken(
             @org.springframework.web.bind.annotation.RequestHeader("Authorization") String authorization
     );
+
+    @PostMapping("/api/super-admin/audit-logs/internal")
+    org.springframework.http.ResponseEntity<ApiResponse<Void>> saveAuditLogInternal(
+            @RequestBody com.group_service.dto.AuditLogSaveRequest request
+    );
 }

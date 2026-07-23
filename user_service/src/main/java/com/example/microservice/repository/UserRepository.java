@@ -40,11 +40,17 @@ public interface UserRepository extends JpaRepository<User, Long> {
                 OR :role = ''
                 OR LOWER(u.role) = LOWER(:role)
             )
+            AND
+            (
+                :excludeUserId IS NULL
+                OR u.userId <> :excludeUserId
+            )
     """)
     Page<User> findUsersForAdmin(
             @Param("keyword") String keyword,
             @Param("status") String status,
             @Param("role") String role,
+            @Param("excludeUserId") Long excludeUserId,
             Pageable pageable
     );}
 
