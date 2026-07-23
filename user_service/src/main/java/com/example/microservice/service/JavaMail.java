@@ -54,6 +54,8 @@ public class JavaMail {
                 htmlContent = buildEmailTemplate(toEmail, link);
             }else if(type.equals("reset-password")){
                 htmlContent = buildResetPasswordTemplate(toEmail, link);
+            }else if(type.equals("admin-invitation")){
+                htmlContent = buildAdminInvitationTemplate(toEmail, link);
             }
 
             message.setContent(htmlContent, "text/html; charset=utf-8");
@@ -303,6 +305,45 @@ public class JavaMail {
         } catch (MessagingException e) {
             e.printStackTrace();
         }
+    }
+
+    private String buildAdminInvitationTemplate(String userName, String link) {
+        return """
+        <div style="font-family: Arial, sans-serif; background-color: #f4f6f8; padding: 40px;">
+            <div style="max-width: 600px; margin: auto; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                <div style="background: linear-gradient(90deg, #4F46E5, #3730A3); padding: 20px; text-align: center;">
+                    <h1 style="color: white; margin: 0;">StudyMatch Admin Portal</h1>
+                </div>
+                <div style="padding: 30px; text-align: center;">
+                    <h2 style="color: #333;">Lời mời tham gia ban quản trị</h2>
+                    <p style="color: #555; font-size: 16px;">
+                        Bạn đã được mời trở thành Quản trị viên (Admin) của hệ thống <b>StudyMatch</b>.
+                    </p>
+                    <p style="color: #555; font-size: 16px;">
+                        Vui lòng nhấp vào nút dưới đây để thiết lập mật khẩu và kích hoạt tài khoản của bạn:
+                    </p>
+                    <a href="%s"
+                       style="display: inline-block; margin-top: 20px; padding: 14px 28px; 
+                              font-size: 16px; color: white; background-color: #4F46E5; 
+                              border-radius: 6px; text-decoration: none; font-weight: bold;">
+                        Thiết lập tài khoản
+                    </a>
+                    <p style="margin-top: 20px; font-size: 14px; color: #999;">
+                        Liên kết này có hiệu lực trong vòng 24 giờ.
+                    </p>
+                    <p style="margin-top: 20px; font-size: 14px; color: #999;">
+                        Nếu nút không hoạt động, vui lòng sao chép liên kết dưới đây:
+                    </p>
+                    <p style="word-break: break-all; font-size: 13px; color: #777;">
+                        %s
+                    </p>
+                </div>
+                <div style="background: #f1f1f1; padding: 15px; text-align: center; font-size: 12px; color: #888;">
+                    © 2026 StudyMatch. All rights reserved.
+                </div>
+            </div>
+        </div>
+        """.formatted(link, link);
     }
 }
 

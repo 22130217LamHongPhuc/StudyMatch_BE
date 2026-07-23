@@ -37,7 +37,8 @@ public class AdminAuthorizationFilter implements GlobalFilter, Ordered {
         String path = exchange.getRequest().getURI().getPath();
 
         boolean isAdminPath = "/api/admin".equals(path) || path.startsWith("/api/admin/");
-        if (HttpMethod.OPTIONS.matches(exchange.getRequest().getMethod().name()) || !isAdminPath) {
+        boolean isSuperAdminPath = "/api/super-admin".equals(path) || path.startsWith("/api/super-admin/");
+        if (HttpMethod.OPTIONS.matches(exchange.getRequest().getMethod().name()) || (!isAdminPath && !isSuperAdminPath)) {
             return chain.filter(exchange);
         }
 
@@ -61,13 +62,24 @@ public class AdminAuthorizationFilter implements GlobalFilter, Ordered {
                     .getBody();
 
             String role = claims.get("role", String.class);
-            if (!"admin".equalsIgnoreCase(role)) {
-                return writeError(
-                        exchange,
-                        HttpStatus.FORBIDDEN,
-                        "ACCESS_DENIED",
-                        "Bạn không có quyền truy cập tài nguyên quản trị"
-                );
+            if (isSuperAdminPath) {
+                if (!"super_admin".equalsIgnoreCase(role)) {
+                    return writeError(
+                            exchange,
+                            HttpStatus.FORBIDDEN,
+                            "ACCESS_DENIED",
+                            "Bạn không có quyền truy cập tài nguyên quản trị cao cấp"
+                    );
+                }
+            } else if (isAdminPath) {
+                if (!"admin".equalsIgnoreCase(role) && !"super_admin".equalsIgnoreCase(role)) {
+                    return writeError(
+                            exchange,
+                            HttpStatus.FORBIDDEN,
+                            "ACCESS_DENIED",
+                            "Bạn không có quyền truy cập tài nguyên quản trị"
+                    );
+                }
             }
 
             return chain.filter(exchange);

@@ -1,0 +1,65 @@
+steps:
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE}:${_TAG}'
+      - '${_SUBDIR}'
+
+  # Push the container image to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE}:${_TAG}'
+
+  # Deploy container image to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - '${_SERVICE}'
+      - '--image'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE}:${_TAG}'
+      - '--region'
+      - '${_REGION}'
+      - '--platform'
+      - 'managed'
+      - '--service-account'
+      - 'studymatch-runtime@$PROJECT_ID.iam.gserviceaccount.com'
+      - '--add-cloudsql-instances'
+      - '$PROJECT_ID:${_REGION}:studymatch-mysql'
+      - '--set-env-vars'
+      - 'EUREKA_ENABLED=false,SPRING_PROFILES_ACTIVE=prod,DB_USERNAME=studymatch_app'
+      - '--set-env-vars'
+      - 'DB_URL=${_DB_URL}'
+      - '--set-env-vars'
+      - 'USER_SERVICE_URL=${_USER_SERVICE_URL},SOCIAL_SERVICE_URL=${_SOCIAL_SERVICE_URL},GROUP_SERVICE_URL=${_GROUP_SERVICE_URL}'
+      - '--set-secrets'
+      - 'DB_PASSWORD=studymatch-db-password:latest'
+      - '--port'
+      - '8080'
+      - '--min-instances'
+      - '0'
+      - '--max-instances'
+      - '1'
+      - '--allow-unauthenticated'
+      - '--quiet'
+
+images:
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE}:${_TAG}'
+
+substitutions:
+  _REGION: asia-southeast1
+  _REPOSITORY: studymatch-images
+  _SERVICE: chat-service
+  _SUBDIR: ./chat_service
+  _TAG: latest
+  _DB_URL: jdbc:mysql:///chat_service_v4?cloudSqlInstance=studymatch-502204:asia-southeast1:studymatch-mysql&socketFactory=com.google.cloud.sql.mysql.SocketFactory&useSSL=false&allowPublicKeyRetrieval=true
+  _USER_SERVICE_URL: https://user-service-36417266010.asia-southeast1.run.app
+  _SOCIAL_SERVICE_URL: https://social-service-36417266010.asia-southeast1.run.app
+  _GROUP_SERVICE_URL: https://group-service-36417266010.asia-southeast1.run.app
+
+options:
+  logging: CLOUD_LOGGING_ONLY
