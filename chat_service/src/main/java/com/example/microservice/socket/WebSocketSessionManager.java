@@ -1,10 +1,12 @@
 package com.example.microservice.socket;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Slf4j
 @Component
 public class WebSocketSessionManager {
     private final Map<Long, Set<String>> userSessions = new ConcurrentHashMap<>();
@@ -17,6 +19,10 @@ public class WebSocketSessionManager {
         boolean wasOffline = !isOnline(userId);
         userSessions.computeIfAbsent(userId, k -> ConcurrentHashMap.newKeySet()).add(sessionId);
         sessionToUser.put(sessionId, userId);
+
+        log.info("[WebSocketSessionManager] 🟢 User CONNECTED | User ID: {} | Session ID: {} | Online Count: {} | Active User IDs: {}",
+                userId, sessionId, userSessions.size(), userSessions.keySet());
+
         return wasOffline;
     }
 
@@ -36,6 +42,10 @@ public class WebSocketSessionManager {
                 userSessions.remove(userId);
             }
         }
+
+        log.info("[WebSocketSessionManager] 🔴 User DISCONNECTED | User ID: {} | Session ID: {} | Online Count: {} | Remaining User IDs: {}",
+                userId, sessionId, userSessions.size(), userSessions.keySet());
+
         return userId;
     }
 
@@ -45,14 +55,19 @@ public class WebSocketSessionManager {
 
     public boolean isOnline(Long userId) {
         Set<String> sessions = userSessions.get(userId);
-        return sessions != null && !sessions.isEmpty();
+        boolean online = sessions != null && !sessions.isEmpty();
+        log.info("[WebSocketSessionManager] 🔍 Check isOnline | User ID: {} -> {}", userId, online);
+        return online;
     }
 
     public Set<Long> getOnlineUserIds() {
+        log.info("[WebSocketSessionManager] 📋 Active Online User IDs: {} (Total: {})", userSessions.keySet(), userSessions.size());
         return Set.copyOf(userSessions.keySet());
     }
 
     public int getOnlineUsersCount() {
-        return userSessions.size();
+        int count = userSessions.size();
+        log.info("[WebSocketSessionManager] 📊 Current Online Users Count: {} | Active User IDs: {}", count, userSessions.keySet());
+        return count;
     }
 }
