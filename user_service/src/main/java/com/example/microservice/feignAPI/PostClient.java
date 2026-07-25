@@ -9,4 +9,7 @@ public interface PostClient {
 
     @GetMapping("/social/posts/{postId}/exists")
     boolean existsById(@PathVariable Long postId);
+
+    @GetMapping("/social/posts/{postId}")
+    java.util.Map<String, Object> getPost(@PathVariable("postId") Long postId);
 }

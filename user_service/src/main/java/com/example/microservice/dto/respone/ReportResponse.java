@@ -28,6 +28,9 @@ public class ReportResponse {
     @JsonProperty("target_id")
     private Long targetId;
 
+    @JsonProperty("target_name")
+    private String targetName;
+
     private ReportReason reason;
 
     private String description;

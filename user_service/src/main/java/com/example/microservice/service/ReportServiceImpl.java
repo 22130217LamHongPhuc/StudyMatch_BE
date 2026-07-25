@@ -12,6 +12,7 @@ import com.example.microservice.enums.StatusCode;
 import com.example.microservice.exception.AppException;
 import com.example.microservice.feignAPI.GroupClient;
 import com.example.microservice.feignAPI.PostClient;
+import com.example.microservice.feignAPI.SocialClient;
 import com.example.microservice.repository.ReportRepository;
 import com.example.microservice.repository.UserRepository;
 import lombok.AccessLevel;
@@ -25,6 +26,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @AllArgsConstructor
@@ -36,6 +41,7 @@ public class ReportServiceImpl implements ReportService {
     UserRepository userRepository;
     PostClient postClient;
     GroupClient groupClient;
+    SocialClient socialClient;
 
     @Override
     @Transactional
@@ -89,6 +95,7 @@ public class ReportServiceImpl implements ReportService {
             case USER -> validateUserExists(targetId);
             case POST -> validatePostExists(targetId);
             case GROUP -> validateGroupExists(targetId);
+            case DOCUMENT -> validateDocumentExists(targetId);
         }
     }
 
@@ -125,6 +132,19 @@ public class ReportServiceImpl implements ReportService {
         }
     }
 
+    private void validateDocumentExists(Long documentId) {
+        try {
+            boolean exists = socialClient.existsById(documentId);
+            if (!exists) {
+                throw new AppException("Tài liệu không tồn tại", StatusCode.TARGET_NOT_FOUND);
+            }
+        } catch (AppException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new AppException("Không thể xác minh tài liệu tồn tại", StatusCode.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     @Override
     public Page<ReportResponse> getAllReports(ReportStatus status, ReportTargetType targetType, ReportReason reason, Pageable pageable) {
         return reportRepository
@@ -153,5 +173,17 @@ public class ReportServiceImpl implements ReportService {
         Report saved = reportRepository.save(report);
         return reportMapper.toResponse(saved);
     }
-}
 
+    @Override
+    public Map<Long, Long> getUnresolvedReportCounts(ReportTargetType targetType, List<Long> targetIds) {
+        if (targetIds == null || targetIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<Object[]> results = reportRepository.countUnresolvedReportsByTargetIds(targetType, targetIds);
+        Map<Long, Long> counts = new HashMap<>();
+        for (Object[] row : results) {
+            counts.put((Long) row[0], (Long) row[1]);
+        }
+        return counts;
+    }
+}

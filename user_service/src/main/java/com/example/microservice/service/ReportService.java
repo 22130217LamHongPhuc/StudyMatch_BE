@@ -9,6 +9,9 @@ import com.example.microservice.enums.ReportTargetType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
+import java.util.Map;
+
 public interface ReportService {
 
     ReportResponse createReport(Long reporterUserId, CreateReportRequest request);
@@ -22,4 +25,6 @@ public interface ReportService {
     ReportResponse getReportDetailForAdmin(Long reportId);
 
     ReportResponse updateReportStatus(Long reportId, Long adminId, UpdateReportStatusRequest request);
+
+    Map<Long, Long> getUnresolvedReportCounts(ReportTargetType targetType, List<Long> targetIds);
 }
