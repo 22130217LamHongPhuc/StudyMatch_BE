@@ -7,5 +7,9 @@ public enum ReportReason {
     FAKE_INFORMATION,
     SCAM,
     CHEATING,
-    OTHER
+    OTHER,
+    COPYRIGHT,
+    INCORRECT_SUBJECT,
+    MALWARE_OR_UNSAFE,
+    DUPLICATE
 }

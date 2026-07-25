@@ -15,29 +15,22 @@ import java.time.LocalDateTime;
 
 public interface ReportRepository extends JpaRepository<Report, Long> {
 
+
     List<Report> findByCreatedAtGreaterThanEqualAndCreatedAtLessThan(
             LocalDateTime start, LocalDateTime end);
 
-    /**
-     * Kiểm tra báo cáo trùng lặp (chống spam):
-     * cùng reporter, cùng targetType, cùng targetId.
-     */
+  
+
     boolean existsByReporterUserIdAndTargetTypeAndTargetId(
             Long reporterUserId,
             ReportTargetType targetType,
             Long targetId
     );
 
-    /**
-     * Lấy danh sách báo cáo do một user gửi.
-     */
     List<Report> findByReporterUserIdOrderByCreatedAtDesc(Long reporterUserId);
 
     Page<Report> findByReporterUserIdOrderByCreatedAtDesc(Long reporterUserId, Pageable pageable);
 
-    /**
-     * Admin filter: lọc báo cáo theo status, targetType, reason (nullable).
-     */
     @Query("""
             SELECT r FROM Report r
             WHERE
@@ -51,5 +44,18 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
             @Param("targetType") ReportTargetType targetType,
             @Param("reason") ReportReason reason,
             Pageable pageable
+    );
+
+    @Query("""
+            SELECT r.targetId, COUNT(r.id)
+            FROM Report r
+            WHERE r.targetType = :targetType
+                AND r.targetId IN :targetIds
+                AND r.status = com.example.microservice.enums.ReportStatus.PENDING
+            GROUP BY r.targetId
+            """)
+    List<Object[]> countUnresolvedReportsByTargetIds(
+            @Param("targetType") ReportTargetType targetType,
+            @Param("targetIds") List<Long> targetIds
     );
 }

@@ -14,6 +14,8 @@ public interface GroupClient {
     @GetMapping("/api/groups/{groupId}/exists")
     boolean existsById(@PathVariable Long groupId);
 
+    @GetMapping("/api/groups/{groupId}")
+    java.util.Map<String, Object> getGroup(@PathVariable("groupId") Long groupId);
     @GetMapping("/api/admin/overview/subjects")
     List<AdminOverviewResponse.SubjectGroupStatDto> getTopSubjects();
 

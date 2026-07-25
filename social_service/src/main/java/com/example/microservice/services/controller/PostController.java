@@ -98,6 +98,12 @@ public class PostController {
         return ResponseEntity.ok(postService.existsById(postId));
     }
 
+    @GetMapping("/posts/{postId}")
+    public ResponseEntity<?> getPost(@PathVariable Long postId, @RequestParam(required = false) Long viewerId) {
+        PostResponse response = postService.getPostById(postId, viewerId);
+        return ResponseEntity.ok(new APIResponse<>(ResponseStatus.SUCCESS, response));
+    }
+
     @GetMapping("/users/{userId}/stats")
     public ResponseEntity<?> getStats(@PathVariable Long userId) {
         return ResponseEntity.ok(new APIResponse<>(ResponseStatus.SUCCESS, postService.getStats(userId)));
