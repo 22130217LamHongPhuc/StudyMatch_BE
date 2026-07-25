@@ -254,6 +254,11 @@ public class PostService {
                 .orElse(false);
     }
 
+    public PostResponse getPostById(Long postId, Long viewerId) {
+        Post post = getActivePost(postId);
+        return toResponse(post, viewerId, userMap(List.of(post.getAuthorId())));
+    }
+
     private Post getActivePost(Long postId) {
         Post post = postRepo.findById(postId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Post not found"));
