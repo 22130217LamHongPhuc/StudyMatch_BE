@@ -9,12 +9,15 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
+import java.time.LocalDateTime;
 
 public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
     boolean existsByEmail(String email);
     User findUsersByUserId(Long userId);
     List<User> findAllByUserIdIn(List<Long> userIds);
+    List<User> findByCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+            LocalDateTime start, LocalDateTime end);
 
 
 
