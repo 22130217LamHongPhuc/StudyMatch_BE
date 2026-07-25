@@ -99,7 +99,8 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
         LocalDate today = LocalDate.now();
         String normalized = preset == null ? "THIS_WEEK" : preset.toUpperCase();
         return switch (normalized) {
-            case "THIS_MONTH" -> new DateRange(today.withDayOfMonth(1).atStartOfDay(), today.plusDays(1).atStartOfDay());
+            case "THIS_MONTH" ->
+                new DateRange(today.withDayOfMonth(1).atStartOfDay(), today.plusDays(1).atStartOfDay());
             case "ALL_TIME" -> new DateRange(LocalDate.of(1970, 1, 1).atStartOfDay(), today.plusDays(1).atStartOfDay());
             case "CUSTOM" -> {
                 if (customStart == null || customEnd == null) {
@@ -141,6 +142,7 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
             case USER -> "User";
             case GROUP -> "Group";
             case POST -> "Post";
+            case DOCUMENT -> "Document";
         };
     }
 
