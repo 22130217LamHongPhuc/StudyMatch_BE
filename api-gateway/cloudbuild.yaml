@@ -62,7 +62,7 @@ substitutions:
   _AI_SERVICE_URL: https://ai-service-36417266010.asia-southeast1.run.app
   _CHAT_SERVICE_URL: https://chat-service-36417266010.asia-southeast1.run.app
   _SOCIAL_SERVICE_URL: https://social-service-36417266010.asia-southeast1.run.app
-  _CORS_ALLOWED_ORIGINS: 'http://localhost:3000,https://studymatch-frontend-36417266010.asia-southeast1.run.app'
+  _CORS_ALLOWED_ORIGINS: 'http://localhost:3000,https://studymatch-frontend-36417266010.asia-southeast1.run.app,https://studymatch.nlu.id.vn'
 
 options:
   logging: CLOUD_LOGGING_ONLY
