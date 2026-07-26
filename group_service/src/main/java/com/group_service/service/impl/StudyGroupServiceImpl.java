@@ -101,8 +101,6 @@ public class StudyGroupServiceImpl implements StudyGroupService {
         groupMemberRepository.save(ownerMember);
 
         addInvitedMembers(savedStudyGroup.getId(), ownerUserId, request.getMaxMembers(), request.getInvitedUserIds());
-        // saveFreeTimeSlots(savedStudyGroup.getId(), request.getTermId(),
-        // request.getFreeTimeSlots());
 
         return toResponse(savedStudyGroup, false);
     }
@@ -169,10 +167,11 @@ public class StudyGroupServiceImpl implements StudyGroupService {
         Pageable pageable = PageRequest.of(page, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
 
         String keyword = normalizeText(effectiveFilter.getKeyword());
+        String keywordParam = keyword != null ? "%" + keyword.toLowerCase() + "%" : null;
         Page<AdminGroupProjection> groups = studyGroupRepository.filterAdminGroups(
                 effectiveFilter.getType(),
                 effectiveFilter.getStatus(),
-                keyword,
+                keywordParam,
                 pageable);
 
         return groups.map(this::mapToAdminGroupResponse);
@@ -185,9 +184,10 @@ public class StudyGroupServiceImpl implements StudyGroupService {
         if (normalizedKeyword == null) {
             return Page.empty(pageable);
         }
+        String keywordParam = "%" + normalizedKeyword.toLowerCase() + "%";
 
         Page<AdminGroupProjection> groups = studyGroupRepository.searchAdminGroupsByKeyword(
-                normalizedKeyword,
+                keywordParam,
                 pageable);
 
         return groups.map(this::mapToAdminGroupResponse);
@@ -674,8 +674,6 @@ public class StudyGroupServiceImpl implements StudyGroupService {
         groupInvitationRepository.save(invitation);
 
         StudyGroup group = studyGroupRepository.findById(invitation.getGroupId()).orElse(null);
-        // Only notify if this is a genuine invitation rejection (not a self-sent join
-        // request cancellation)
         boolean isSelfJoinRequest = invitation.getInviterUserId().equals(invitation.getInviteeUserId());
         if (!isSelfJoinRequest) {
             try {

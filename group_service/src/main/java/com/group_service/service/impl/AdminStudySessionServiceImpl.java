@@ -90,10 +90,10 @@ public class AdminStudySessionServiceImpl implements AdminStudySessionService {
             int limit
     ) {
         Pageable pageable = PageRequest.of(page, limit, Sort.by(Sort.Direction.DESC, "startTime"));
-        String trimmedKeyword = (keyword != null && !keyword.trim().isEmpty()) ? keyword.trim() : null;
+        String keywordParam = (keyword != null && !keyword.trim().isEmpty()) ? "%" + keyword.trim().toLowerCase() + "%" : null;
 
         Page<StudySession> sessions = studySessionRepository.findAdminSessionsWithFilters(
-                trimmedKeyword, status, studyMode, sessionType, startFrom, startTo, pageable
+                keywordParam, status, studyMode, sessionType, startFrom, startTo, pageable
         );
 
         if (sessions.isEmpty()) {

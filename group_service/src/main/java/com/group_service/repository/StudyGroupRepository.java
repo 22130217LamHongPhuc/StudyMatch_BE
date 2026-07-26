@@ -105,13 +105,13 @@ LEFT JOIN GroupMember gm
 WHERE (CAST(:groupType AS string) IS NULL OR g.groupType = :groupType)
   AND (CAST(:groupStatus AS string) IS NULL OR g.status = :groupStatus)
   AND (
-        :keyWord IS NULL OR
-        LOWER(g.name) LIKE LOWER(CONCAT('%', :keyWord, '%'))
-      )
-GROUP BY g.id, g.name, g.avatarUrl, g.groupType, g.subjectName,
-         g.termId, g.createdByUserId, g.ownerUserId,
-         g.maxMembers, g.status, g.visibility, g.createdAt
-ORDER BY g.createdAt DESC
+         :keyWord IS NULL OR
+         LOWER(g.name) LIKE :keyWord
+       )
+ GROUP BY g.id, g.name, g.avatarUrl, g.groupType, g.subjectName,
+          g.termId, g.createdByUserId, g.ownerUserId,
+          g.maxMembers, g.status, g.visibility, g.createdAt
+ ORDER BY g.createdAt DESC
 """)
     Page<AdminGroupProjection> filterAdminGroups(
             @Param("groupType") GroupType groupType,
@@ -121,26 +121,26 @@ ORDER BY g.createdAt DESC
     );
 
     @Query("""
- SELECT g.id AS id,
-        g.name AS name,
-        g.avatarUrl AS avatarUrl,
-        g.groupType AS groupType,
-        g.subjectName AS subjectName,
-        g.termId AS termId,
-        g.createdByUserId AS createdByUserId,
-        g.ownerUserId AS ownerUserId,
-        g.maxMembers AS maxMembers,
-        g.status AS status,
-        g.visibility AS visibility,
-        g.createdAt AS createdAt,
-        COUNT(gm.id) AS memberCount
- FROM StudyGroup g
- LEFT JOIN GroupMember gm
-           ON gm.groupId = g.id
-          AND gm.status = com.group_service.entity.enums.GroupMemberStatus.ACTIVE
-          AND gm.role <> com.group_service.entity.enums.GroupMemberRole.ADMIN
- WHERE LOWER(g.name) LIKE LOWER(CONCAT('%', :keyWord, '%'))
-    OR LOWER(CAST(g.description AS string)) LIKE LOWER(CONCAT('%', :keyWord, '%'))
+  SELECT g.id AS id,
+         g.name AS name,
+         g.avatarUrl AS avatarUrl,
+         g.groupType AS groupType,
+         g.subjectName AS subjectName,
+         g.termId AS termId,
+         g.createdByUserId AS createdByUserId,
+         g.ownerUserId AS ownerUserId,
+         g.maxMembers AS maxMembers,
+         g.status AS status,
+         g.visibility AS visibility,
+         g.createdAt AS createdAt,
+         COUNT(gm.id) AS memberCount
+  FROM StudyGroup g
+  LEFT JOIN GroupMember gm
+            ON gm.groupId = g.id
+           AND gm.status = com.group_service.entity.enums.GroupMemberStatus.ACTIVE
+           AND gm.role <> com.group_service.entity.enums.GroupMemberRole.ADMIN
+  WHERE LOWER(g.name) LIKE :keyWord
+     OR LOWER(CAST(g.description AS string)) LIKE :keyWord
  GROUP BY g.id, g.name, g.avatarUrl, g.groupType, g.subjectName,
           g.termId, g.createdByUserId, g.ownerUserId,
           g.maxMembers, g.status, g.visibility, g.createdAt

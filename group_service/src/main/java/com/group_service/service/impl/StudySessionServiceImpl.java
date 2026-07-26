@@ -32,6 +32,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -351,12 +352,19 @@ public class StudySessionServiceImpl implements StudySessionService {
             GroupStudySessionStatus sessionStatus,
             LocalDateTime startFrom,
             LocalDateTime startTo,
+            String search,
             Pageable pageable) {
+        String searchParam = null;
+        if (search != null && !search.trim().isEmpty()) {
+            searchParam = "%" + search.trim().toLowerCase() + "%";
+        }
         Page<StudySession> sessions = studySessionRepository.findSessionsByUserIdWithFilters(
-                userId, sessionType, participantStatus, sessionStatus, startFrom, startTo, pageable);
+                userId, sessionType, participantStatus, sessionStatus, startFrom, startTo, searchParam, pageable);
 
         return sessions.map(session -> studySessionMapper.mapToStudySessionResponse(session, userId));
     }
+
+
 
     @Override
     @Transactional(readOnly = true)
@@ -477,21 +485,14 @@ public class StudySessionServiceImpl implements StudySessionService {
             participant.setStatus(StudySessionParticipantStatus.JOINED);
             participantRepository.save(participant);
         }
+
+        if (session.getStatus() == GroupStudySessionStatus.SCHEDULED) {
+            session.setStatus(GroupStudySessionStatus.ONGOING);
+            studySessionRepository.save(session);
+        }
         String roomId = ensureRoomId(session);
 
         String token = zegoCloudTokenService.generateToken(userId, roomId);
-
-        // return JoinStudySessionResponse.builder()
-        // .sessionId(session.getId())
-        // .userId(userId)
-        // .attendanceLogId(log.getId())
-        // .meetingUrl(session.getMeetingUrl())
-        // .roomId(session.getRoomId())
-        // .joinedAt(log.getJoinedAt())
-        // .joinCount(participant.getJoinCount())
-        // .totalDurationSeconds(participant.getTotalDurationSeconds())
-        // .attendanceStatus(participant.getAttendanceStatus())
-        // .build();
 
         return new JoinStudySessionResponse(
                 session.getId(),
@@ -567,6 +568,21 @@ public class StudySessionServiceImpl implements StudySessionService {
                         participant.setAttendanceStatus(calculateAttendanceStatus(session, totalDuration));
                         participantRepository.save(participant);
                     });
+        }
+
+        List<StudySessionParticipant> nonJoinedParticipants = participantRepository.findBySessionId(sessionId);
+        for (StudySessionParticipant participant : nonJoinedParticipants) {
+            if (participant.getStatus() == StudySessionParticipantStatus.PENDING ||
+                participant.getStatus() == StudySessionParticipantStatus.ACCEPTED) {
+                participant.setStatus(StudySessionParticipantStatus.ABSENT);
+                participant.setAttendanceStatus(StudySessionAttendanceStatus.NOT_JOINED);
+                participantRepository.save(participant);
+            }
+        }
+
+        if (session.getStatus() == GroupStudySessionStatus.ONGOING || session.getStatus() == GroupStudySessionStatus.SCHEDULED) {
+            session.setStatus(GroupStudySessionStatus.COMPLETED);
+            studySessionRepository.save(session);
         }
     }
 
@@ -853,7 +869,7 @@ public class StudySessionServiceImpl implements StudySessionService {
 
     private void validateStatusTransition(GroupStudySessionStatus current, GroupStudySessionStatus target) {
         boolean valid = switch (current) {
-            case SCHEDULED -> target == GroupStudySessionStatus.ONGOING || target == GroupStudySessionStatus.CANCELLED;
+            case SCHEDULED -> target == GroupStudySessionStatus.ONGOING || target == GroupStudySessionStatus.CANCELLED || target == GroupStudySessionStatus.COMPLETED;
             case ONGOING -> target == GroupStudySessionStatus.COMPLETED;
             case COMPLETED, CANCELLED -> false;
         };
@@ -920,6 +936,12 @@ public class StudySessionServiceImpl implements StudySessionService {
         participant.setTotalDurationSeconds(totalDuration);
         participant.setAttendanceStatus(calculateAttendanceStatus(session, totalDuration));
         participantRepository.save(participant);
+
+        if (now.isAfter(session.getEndTime()) && 
+            (session.getStatus() == GroupStudySessionStatus.ONGOING || session.getStatus() == GroupStudySessionStatus.SCHEDULED)) {
+            session.setStatus(GroupStudySessionStatus.COMPLETED);
+            studySessionRepository.save(session);
+        }
 
         return LeaveStudySessionResponse.builder()
                 .sessionId(sessionId)
@@ -1119,5 +1141,102 @@ public class StudySessionServiceImpl implements StudySessionService {
             participant.setRespondedAt(LocalDateTime.now());
             participantRepository.save(participant);
         }
+    }
+
+    @Override
+    @Transactional
+    public void autoCompleteEndedSessions() {
+        LocalDateTime now = LocalDateTime.now();
+        List<StudySession> endedSessions = studySessionRepository.findEndedSessions(now);
+        for (StudySession session : endedSessions) {
+            try {
+                autoCloseAttendanceLogs(session.getId());
+                log.info("Auto-completed study session id={}", session.getId());
+            } catch (Exception e) {
+                log.error("Failed to auto-complete session id={}: {}", session.getId(), e.getMessage());
+            }
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DetailedUserStatsResponse getDetailedUserStats(Long userId) {
+        List<StudySessionParticipant> participations = participantRepository.findAllCompletedParticipations(userId);
+
+        long joinedCount = 0;
+        long absentCount = 0;
+        long declinedCount = 0;
+        long pendingCount = 0;
+        long totalDurationSeconds = 0;
+
+        Map<LocalDate, Long> dailyDurationMap = new HashMap<>();
+        Map<LocalDate, Long> dailyCountMap = new HashMap<>();
+        Map<String, Long> subjectDurationMap = new HashMap<>();
+        Map<String, Long> subjectCountMap = new HashMap<>();
+
+        LocalDate thirtyDaysAgo = LocalDate.now().minusDays(30);
+
+        for (StudySessionParticipant p : participations) {
+            StudySession session = p.getStudySession();
+            if (session == null) continue;
+
+            if (p.getStatus() == StudySessionParticipantStatus.JOINED) {
+                joinedCount++;
+                long duration = p.getTotalDurationSeconds() != null ? p.getTotalDurationSeconds() : 0L;
+                totalDurationSeconds += duration;
+
+                LocalDate sessionDate = session.getStartTime().toLocalDate();
+                if (!sessionDate.isBefore(thirtyDaysAgo)) {
+                    dailyDurationMap.put(sessionDate, dailyDurationMap.getOrDefault(sessionDate, 0L) + duration);
+                    dailyCountMap.put(sessionDate, dailyCountMap.getOrDefault(sessionDate, 0L) + 1L);
+                }
+
+                String subject = session.getSubjectName() != null && !session.getSubjectName().isEmpty()
+                        ? session.getSubjectName()
+                        : "Khác";
+                subjectDurationMap.put(subject, subjectDurationMap.getOrDefault(subject, 0L) + duration);
+                subjectCountMap.put(subject, subjectCountMap.getOrDefault(subject, 0L) + 1L);
+
+            } else if (p.getStatus() == StudySessionParticipantStatus.ABSENT) {
+                absentCount++;
+            } else if (p.getStatus() == StudySessionParticipantStatus.DECLINED) {
+                declinedCount++;
+            } else if (p.getStatus() == StudySessionParticipantStatus.PENDING) {
+                pendingCount++;
+            }
+        }
+
+        long totalInvited = joinedCount + absentCount;
+        double attendanceRate = totalInvited > 0 ? ((double) joinedCount / totalInvited) * 100 : 0.0;
+
+        List<DailyStudyTrend> dailyTrends = new ArrayList<>();
+        for (int i = 30; i >= 0; i--) {
+            LocalDate date = LocalDate.now().minusDays(i);
+            dailyTrends.add(new DailyStudyTrend(
+                date,
+                dailyDurationMap.getOrDefault(date, 0L),
+                dailyCountMap.getOrDefault(date, 0L)
+            ));
+        }
+
+        List<SubjectStudyStats> subjectStats = new ArrayList<>();
+        for (String subject : subjectCountMap.keySet()) {
+            subjectStats.add(new SubjectStudyStats(
+                subject,
+                subjectDurationMap.getOrDefault(subject, 0L),
+                subjectCountMap.get(subject)
+            ));
+        }
+
+        return DetailedUserStatsResponse.builder()
+                .totalStudyDurationSeconds(totalDurationSeconds)
+                .attendanceRate(Math.round(attendanceRate * 10.0) / 10.0)
+                .joinedCount(joinedCount)
+                .absentCount(absentCount)
+                .declinedCount(declinedCount)
+                .pendingCount(pendingCount)
+                .dailyTrends(dailyTrends)
+                .subjectStats(subjectStats)
+                .build();
     }
 }

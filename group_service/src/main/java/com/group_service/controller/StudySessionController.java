@@ -29,7 +29,6 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDateTime;
 import java.util.List;
 
-//@CrossOrigin(origins = "*", allowedHeaders = "*")
 @RestController
 @RequestMapping("/api/study-sessions")
 @RequiredArgsConstructor
@@ -72,12 +71,13 @@ public class StudySessionController {
             @RequestParam(required = false) GroupStudySessionStatus sessionStatus,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startFrom,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTo,
+            @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "startTime"));
         Page<StudySessionResponse> sessions = studySessionService.getSessionsByUserId(
-                userId, sessionType, participantStatus, sessionStatus, startFrom, startTo, pageable
+                userId, sessionType, participantStatus, sessionStatus, startFrom, startTo, search, pageable
         );
         return ResponseEntity.ok(new ApiResponse<>(
                 true,
@@ -86,6 +86,7 @@ public class StudySessionController {
                 sessions
         ));
     }
+
 
     @GetMapping("/user/{userId}/upcoming")
     public ResponseEntity<ApiResponse<List<StudySessionResponse>>> getTopUpcomingSessions(
@@ -288,6 +289,19 @@ public class StudySessionController {
                 true,
                 StatusCode.SUCCESS,
                 "Get session stats successfully",
+                stats
+        ));
+    }
+
+    @GetMapping("/user/{userId}/detailed-stats")
+    public ResponseEntity<ApiResponse<DetailedUserStatsResponse>> getDetailedStats(
+            @PathVariable Long userId
+    ) {
+        DetailedUserStatsResponse stats = studySessionService.getDetailedUserStats(userId);
+        return ResponseEntity.ok(new ApiResponse<>(
+                true,
+                StatusCode.SUCCESS,
+                "Get detailed session stats successfully",
                 stats
         ));
     }

@@ -35,6 +35,10 @@ public interface StudySessionRepository extends JpaRepository<StudySession, Long
           AND (:sessionStatus IS NULL OR s.status = :sessionStatus)
           AND (:startFrom IS NULL OR s.startTime >= :startFrom)
           AND (:startTo IS NULL OR s.startTime <= :startTo)
+          AND (:search IS NULL 
+               OR LOWER(s.title) LIKE :search 
+               OR LOWER(CAST(s.description AS string)) LIKE :search
+               OR LOWER(s.subjectName) LIKE :search)
     """)
     Page<StudySession> findSessionsByUserIdWithFilters(
             @Param("userId") Long userId,
@@ -43,8 +47,10 @@ public interface StudySessionRepository extends JpaRepository<StudySession, Long
             @Param("sessionStatus") GroupStudySessionStatus sessionStatus,
             @Param("startFrom") LocalDateTime startFrom,
             @Param("startTo") LocalDateTime startTo,
+            @Param("search") String search,
             Pageable pageable
     );
+
 
     @Query("""
         SELECT COUNT(DISTINCT s.id) FROM StudySession s
@@ -120,9 +126,9 @@ public interface StudySessionRepository extends JpaRepository<StudySession, Long
         LEFT JOIN StudyGroup g ON s.groupId = g.id
         LEFT JOIN StudySessionParticipant p ON p.sessionId = s.id AND p.role = com.group_service.entity.enums.StudySessionParticipantRole.HOST
         WHERE (:keyword IS NULL OR 
-               LOWER(s.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
-               LOWER(g.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
-               LOWER(p.userName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+               LOWER(s.title) LIKE :keyword OR
+               LOWER(g.name) LIKE :keyword OR
+               LOWER(p.userName) LIKE :keyword
               )
           AND (:status IS NULL OR s.status = :status)
           AND (:studyMode IS NULL OR s.studyMode = :studyMode)
@@ -168,4 +174,14 @@ public interface StudySessionRepository extends JpaRepository<StudySession, Long
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime
     );
+
+    @Query("""
+        SELECT s FROM StudySession s
+        WHERE s.status IN (
+            com.group_service.entity.enums.GroupStudySessionStatus.SCHEDULED,
+            com.group_service.entity.enums.GroupStudySessionStatus.ONGOING
+        )
+          AND s.endTime <= :now
+    """)
+    List<StudySession> findEndedSessions(@Param("now") LocalDateTime now);
 }

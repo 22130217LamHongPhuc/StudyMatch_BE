@@ -24,8 +24,10 @@ public interface StudySessionService {
             GroupStudySessionStatus sessionStatus,
             LocalDateTime startFrom,
             LocalDateTime startTo,
+            String search,
             Pageable pageable
     );
+
 
     List<StudySessionResponse> getSessionsByGroupId(Long groupId, Long userId);
 
@@ -56,4 +58,8 @@ public interface StudySessionService {
     LeaveStudySessionResponse leaveSession(Long sessionId, Long userId, @Valid LeaveStudySessionRequest request);
 
     List<UserStudyDurationResponse> getTotalMinutesForAllUsers();
+
+    void autoCompleteEndedSessions();
+
+    DetailedUserStatsResponse getDetailedUserStats(Long userId);
 }
