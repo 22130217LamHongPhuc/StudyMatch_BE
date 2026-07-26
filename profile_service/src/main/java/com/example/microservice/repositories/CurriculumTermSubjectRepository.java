@@ -39,6 +39,11 @@ public interface CurriculumTermSubjectRepository extends JpaRepository<Curriculu
     """)
     List<SubjectInfoResponse> findDistinctSubjectsByCurriculumId(@Param("curriculumId") Long curriculumId);
 
+    List<CurriculumTermSubject> findByCurriculum_CurriculumId(Long curriculumId);
 
+    boolean existsBySubject_SubjectId(Long subjectId);
 
+    boolean existsByCurriculum_CurriculumId(Long curriculumId);
+
+    void deleteByCurriculum_CurriculumIdAndSubject_SubjectId(Long curriculumId, Long subjectId);
 }
