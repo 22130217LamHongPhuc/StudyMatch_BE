@@ -13,9 +13,12 @@ import jakarta.persistence.UniqueConstraint;
 import lombok.Getter;
 import lombok.Setter;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 @Setter
 @Getter
 @Entity
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Table(name = "curriculum_term_subjects", uniqueConstraints = {
         @UniqueConstraint(name = "uk_cts", columnNames = {"curriculum_id", "study_year_no", "semester_no", "subject_id"})
 })

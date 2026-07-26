@@ -32,6 +32,9 @@ public class ProfileLoadService {
     @Autowired
     private SubjectRepository subjectRepository;
 
+    @Autowired
+    private AcademicTermRepository academicTermRepository;
+
 
     public UserProfileFullResponse loadUserProfile(Long userId) {
         UserProfileFullResponse response = new UserProfileFullResponse();
@@ -223,6 +226,39 @@ public class ProfileLoadService {
         }
 
         return response;
+    }
+
+    public TermUpdateStatusResponse getTermUpdateStatus(Long userId) {
+        TermUpdateStatusResponse status = new TermUpdateStatusResponse();
+        status.setNeedsUpdate(false);
+
+        Optional<AcademicTerm> activeTermOpt = academicTermRepository.findFirstByStatus("active");
+        if (activeTermOpt.isEmpty()) {
+            return status;
+        }
+
+        AcademicTerm activeTerm = activeTermOpt.get();
+        status.setActiveTermId(activeTerm.getTermId());
+        status.setActiveTermName(activeTerm.getFullName());
+
+        Optional<StudentTermProfile> termProfileOpt = studentTermProfileRepository
+                .findByUserIdAndTerm_TermId(userId, activeTerm.getTermId());
+
+        if (termProfileOpt.isEmpty()) {
+            status.setNeedsUpdate(true);
+
+            List<StudentTermProfile> allTermProfiles = studentTermProfileRepository.findByUserId(userId);
+            if (!allTermProfiles.isEmpty()) {
+                StudentTermProfile lastProfile = allTermProfiles.get(allTermProfiles.size() - 1);
+                AcademicTerm lastTerm = lastProfile.getTerm();
+                if (lastTerm != null) {
+                    status.setLastUpdatedTermId(lastTerm.getTermId());
+                    status.setLastUpdatedTermName(lastTerm.getFullName());
+                }
+            }
+        }
+
+        return status;
     }
 }
 

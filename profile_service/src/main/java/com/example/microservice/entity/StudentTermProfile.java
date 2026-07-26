@@ -19,7 +19,7 @@ import java.math.BigDecimal;
 @Getter
 @Entity
 @Table(name = "student_term_profiles", uniqueConstraints = {
-        @UniqueConstraint(name = "uk_user_term", columnNames = {"user_id", "term_id"})
+        @UniqueConstraint(name = "uk_user_term", columnNames = { "user_id", "term_id" })
 })
 public class StudentTermProfile {
 
@@ -60,4 +60,3 @@ public class StudentTermProfile {
     }
 
 }
-

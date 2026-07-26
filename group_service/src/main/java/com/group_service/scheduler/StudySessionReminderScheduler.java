@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import com.group_service.service.StudySessionService;
 
 @Component
 @RequiredArgsConstructor
@@ -35,6 +36,7 @@ public class StudySessionReminderScheduler {
     private final StudyGroupRepository studyGroupRepository;
     private final ChatClient chatClient;
     private final UserClient userClient;
+    private final StudySessionService studySessionService;
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy");
 
@@ -153,5 +155,14 @@ public class StudySessionReminderScheduler {
         }
         Optional<StudyGroup> group = studyGroupRepository.findById(groupId);
         return group.map(StudyGroup::getName).orElse("Nhóm học");
+    }
+
+    @Scheduled(fixedRate = 60_000)
+    public void checkAndCompleteSessions() {
+        try {
+            studySessionService.autoCompleteEndedSessions();
+        } catch (Exception e) {
+            log.error("Error running autoCompleteEndedSessions scheduler: {}", e.getMessage());
+        }
     }
 }

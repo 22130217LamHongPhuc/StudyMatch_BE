@@ -23,5 +23,11 @@ public interface StudySessionParticipantRepository extends JpaRepository<StudySe
 
     List<StudySessionParticipant> findByUserIdAndStatus(Long userId, StudySessionParticipantStatus status);
 
-
+    @org.springframework.data.jpa.repository.Query("""
+        SELECT p FROM StudySessionParticipant p
+        JOIN FETCH p.studySession s
+        WHERE p.userId = :userId
+          AND s.status = com.group_service.entity.enums.GroupStudySessionStatus.COMPLETED
+    """)
+    List<StudySessionParticipant> findAllCompletedParticipations(@org.springframework.data.repository.query.Param("userId") Long userId);
 }
