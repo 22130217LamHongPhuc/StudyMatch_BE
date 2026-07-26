@@ -48,8 +48,8 @@ public class AuthService {
             throw new AppException("Mật khẩu không chính xác", StatusCode.PASSWORD_INCORRECT);
         }
 
-        if ("DELETED".equalsIgnoreCase(user.getStatus()) ||
-                "LOCKED".equalsIgnoreCase(user.getStatus())) {
+        String userStatus = user.getStatus() == null ? "" : user.getStatus().trim();
+        if (!"ACTIVE".equalsIgnoreCase(userStatus)) {
             throw new AppException("Tài khoản của bạn đã bị khóa hoặc ngừng hoạt động bởi quản trị viên",
                     StatusCode.USER_LOCKED);
         }

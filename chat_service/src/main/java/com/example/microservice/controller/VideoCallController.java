@@ -14,6 +14,7 @@ import com.example.microservice.feignClient.UserClient;
 import com.example.microservice.handle.ResponseStatus;
 import com.example.microservice.services.ChatService;
 import com.example.microservice.services.VideoCallService;
+import com.example.microservice.socket.ActiveCall;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpHeaders;
@@ -26,6 +27,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/video-calls")
@@ -41,6 +46,12 @@ public class VideoCallController {
     private final ChatService chatService;
     private final UserClient userClient;
     private final SimpMessagingTemplate messagingTemplate;
+    private final ScheduledExecutorService callTimeoutScheduler =
+            Executors.newSingleThreadScheduledExecutor(runnable -> {
+                Thread thread = new Thread(runnable, "video-call-timeout");
+                thread.setDaemon(true);
+                return thread;
+            });
 
     @PostMapping("/start")
     public ResponseEntity<APIResponse<VideoCallResponse>> startCall(
@@ -68,17 +79,26 @@ public class VideoCallController {
                 callerId,
                 request.getCallerName(),
                 request.getCallerAvatar(),
-                response.getCallType()
+                response.getCallType(),
+                response.getTargetUserId() == null
         );
-        messagingTemplate.convertAndSendToUser(
-                String.valueOf(response.getTargetUserId()),
-                "/queue/chat",
-                new SocketEnvelope<>(VIDEO_CALL_INVITE, invite)
-        );
+        if (response.getTargetUserId() != null) {
+            sendToUser(response.getTargetUserId(), new SocketEnvelope<>(VIDEO_CALL_INVITE, invite));
+        } else {
+            videoCallService.getInvitedGroupParticipantIds(response.getSessionId(), callerId).stream()
+                    .forEach(id -> sendToUser(id, new SocketEnvelope<>(VIDEO_CALL_INVITE, invite)));
+        }
         log.info("[VideoCall][BE][start][invite-sent] targetUserId={}, sessionId={}, conversationId={}",
                 response.getTargetUserId(),
                 response.getSessionId(),
                 response.getConversationId());
+        if (response.getTargetUserId() != null) {
+            callTimeoutScheduler.schedule(
+                    () -> expireMissedCall(response.getSessionId()),
+                    45,
+                    TimeUnit.SECONDS
+            );
+        }
 
         return ResponseEntity.ok(new APIResponse<>(ResponseStatus.SUCCESS, response));
     }
@@ -101,15 +121,14 @@ public class VideoCallController {
                 response.getToken() != null && !response.getToken().isBlank());
         if (response.getTargetUserId() != null) {
             VideoCallResponse callerResponse = videoCallService.getCallInfo(sessionId, response.getTargetUserId());
-            messagingTemplate.convertAndSendToUser(
-                    String.valueOf(response.getTargetUserId()),
-                    "/queue/chat",
-                    new SocketEnvelope<>(VIDEO_CALL_ACCEPTED, callerResponse)
-            );
-            log.info("[VideoCall][BE][join][accepted-sent] callerId={}, sessionId={}, roomId={}",
-                    response.getTargetUserId(),
-                    callerResponse.getSessionId(),
-                    callerResponse.getRoomId());
+            sendToUser(response.getTargetUserId(), new SocketEnvelope<>(VIDEO_CALL_ACCEPTED, callerResponse));
+        } else {
+            videoCallService.getCallerId(sessionId)
+                    .filter(callerId -> !userId.equals(callerId))
+                    .ifPresent(callerId -> {
+                        VideoCallResponse callerResponse = videoCallService.getCallInfo(sessionId, callerId);
+                        sendToUser(callerId, new SocketEnvelope<>(VIDEO_CALL_ACCEPTED, callerResponse));
+                    });
         }
         return ResponseEntity.ok(new APIResponse<>(ResponseStatus.SUCCESS, response));
     }
@@ -123,9 +142,26 @@ public class VideoCallController {
                 sessionId,
                 authorization != null && !authorization.isBlank());
         Long userId = currentUserId(authorization);
+        ActiveCall runtimeCall = videoCallService.findRuntimeCall(sessionId, userId);
+        if (runtimeCall != null) {
+            VideoCallService.CallResult result =
+                    videoCallService.finishRingingCall(sessionId, userId, "REJECTED");
+            sendCallHistory(
+                    result.call().getConversationId(),
+                    userId,
+                    result.call().getCallerId(),
+                    result.historyMessage()
+            );
+            sendToUser(result.call().getCallerId(), new SocketEnvelope<>(
+                    VIDEO_CALL_REJECTED,
+                    toInvite(result.call(), userId)
+            ));
+            return ResponseEntity.ok(new APIResponse<>(ResponseStatus.SUCCESS, null));
+        }
         VideoCallSession session = videoCallService.findActiveSession(sessionId);
         Long conversationId = session.getConversation().getId();
         Long targetUserId = chatService.findUserOther(conversationId, userId).orElse(null);
+        boolean groupCallerCancelling = targetUserId == null && videoCallService.isCaller(sessionId, userId);
         log.info("[VideoCall][BE][reject][session-found] sessionId={}, conversationId={}, userId={}, targetUserId={}",
                 sessionId,
                 conversationId,
@@ -133,24 +169,37 @@ public class VideoCallController {
                 targetUserId);
 
         videoCallService.endCall(sessionId, userId);
-        MessDTO historyMessage = videoCallService.saveCallHistory(sessionId, userId, "MISSED");
-        sendCallHistory(conversationId, userId, targetUserId, historyMessage);
-        if (targetUserId != null) {
-            messagingTemplate.convertAndSendToUser(
-                    String.valueOf(targetUserId),
-                    "/queue/chat",
-                    new SocketEnvelope<>(VIDEO_CALL_REJECTED, new VideoCallInviteData(
-                            sessionId,
-                            conversationId,
-                            videoCallService.buildRoomId(sessionId),
-                            userId,
-                            null,
-                            null,
-                            null
-                    ))
-            );
-            log.info("[VideoCall][BE][reject][socket-sent] targetUserId={}, sessionId={}", targetUserId, sessionId);
+        if (targetUserId != null || groupCallerCancelling) {
+            MessDTO historyMessage = videoCallService.saveCallHistory(sessionId, userId, "MISSED");
+            sendCallHistory(conversationId, userId, targetUserId, historyMessage);
         }
+        var rejected = new SocketEnvelope<>(VIDEO_CALL_REJECTED, new VideoCallInviteData(
+                sessionId, conversationId, videoCallService.buildRoomId(sessionId), userId, null, null, null,
+                targetUserId == null));
+        if (targetUserId != null) {
+            sendToUser(targetUserId, rejected);
+        } else if (groupCallerCancelling) {
+            chatService.findConversationParticipants(conversationId).stream()
+                    .filter(id -> !userId.equals(id))
+                    .forEach(id -> sendToUser(id, rejected));
+        }
+        return ResponseEntity.ok(new APIResponse<>(ResponseStatus.SUCCESS, null));
+    }
+
+    @PostMapping("/{sessionId}/cancel")
+    public ResponseEntity<APIResponse<Void>> cancelCall(
+            @PathVariable Long sessionId,
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization
+    ) {
+        Long userId = currentUserId(authorization);
+        VideoCallService.CallResult result =
+                videoCallService.finishRingingCall(sessionId, userId, "CANCELLED");
+        ActiveCall call = result.call();
+        sendCallHistory(call.getConversationId(), userId, call.getCalleeId(), result.historyMessage());
+        sendToUser(call.getCalleeId(), new SocketEnvelope<>(
+                EnumEvent.VIDEO_CALL_CANCELLED.toString(),
+                toInvite(call, userId)
+        ));
         return ResponseEntity.ok(new APIResponse<>(ResponseStatus.SUCCESS, null));
     }
 
@@ -167,30 +216,34 @@ public class VideoCallController {
         VideoCallSession session = videoCallService.findActiveSession(sessionId);
         Long conversationId = session.getConversation().getId();
         Long targetUserId = chatService.findUserOther(conversationId, userId).orElse(null);
+        boolean groupCallerEnding = targetUserId == null && videoCallService.isCaller(sessionId, userId);
         log.info("[VideoCall][BE][end][session-found] sessionId={}, conversationId={}, targetUserId={}",
                 sessionId,
                 conversationId,
                 targetUserId);
 
         videoCallService.endCall(sessionId, userId);
-        MessDTO historyMessage = videoCallService.saveCallHistory(sessionId, userId, "COMPLETED");
-        sendCallHistory(conversationId, userId, targetUserId, historyMessage);
+        boolean groupCall = targetUserId == null;
+        boolean lastPairDisconnected = groupCall
+                && videoCallService.getActiveParticipantIds(sessionId).size() <= 1;
+        boolean groupShouldEnd = groupCall && (groupCallerEnding || lastPairDisconnected);
+        if (groupShouldEnd) {
+            videoCallService.terminateCall(sessionId);
+        }
+        if (targetUserId != null || groupShouldEnd) {
+            MessDTO historyMessage = videoCallService.saveCallHistory(sessionId, userId, "COMPLETED");
+            sendCallHistory(conversationId, userId, targetUserId, historyMessage);
+        }
         log.info("[VideoCall][BE][end][service-success] sessionId={}, userId={}", sessionId, userId);
+        var ended = new SocketEnvelope<>(VIDEO_CALL_ENDED, new VideoCallInviteData(
+                sessionId, conversationId, videoCallService.buildRoomId(sessionId), userId, null, null, null,
+                targetUserId == null));
         if (targetUserId != null) {
-            messagingTemplate.convertAndSendToUser(
-                    String.valueOf(targetUserId),
-                    "/queue/chat",
-                    new SocketEnvelope<>(VIDEO_CALL_ENDED, new VideoCallInviteData(
-                            sessionId,
-                            conversationId,
-                            videoCallService.buildRoomId(sessionId),
-                            userId,
-                            null,
-                            null,
-                            null
-                    ))
-            );
-            log.info("[VideoCall][BE][end][socket-sent] targetUserId={}, sessionId={}", targetUserId, sessionId);
+            sendToUser(targetUserId, ended);
+        } else if (groupShouldEnd) {
+            chatService.findConversationParticipants(conversationId).stream()
+                    .filter(id -> !userId.equals(id))
+                    .forEach(id -> sendToUser(id, ended));
         }
         return ResponseEntity.ok(new APIResponse<>(ResponseStatus.SUCCESS, null));
     }
@@ -210,6 +263,44 @@ public class VideoCallController {
         return response.getUserId();
     }
 
+    private void sendToUser(Long userId, Object payload) {
+        messagingTemplate.convertAndSendToUser(String.valueOf(userId), "/queue/chat", payload);
+    }
+
+    private void expireMissedCall(Long sessionId) {
+        try {
+            VideoCallService.CallResult result = videoCallService.expireRingingCall(sessionId);
+            if (result == null) return;
+            ActiveCall call = result.call();
+            sendCallHistory(
+                    call.getConversationId(),
+                    call.getCallerId(),
+                    call.getCalleeId(),
+                    result.historyMessage()
+            );
+            SocketEnvelope<VideoCallInviteData> ended = new SocketEnvelope<>(
+                    EnumEvent.VIDEO_CALL_MISSED.toString(),
+                    toInvite(call, call.getCallerId())
+            );
+            sendToUser(call.getCallerId(), ended);
+            sendToUser(call.getCalleeId(), ended);
+        } catch (Exception error) {
+            log.error("[VideoCall][BE][timeout-error] sessionId={}", sessionId, error);
+        }
+    }
+
+    private VideoCallInviteData toInvite(ActiveCall call, Long actorId) {
+        return new VideoCallInviteData(
+                call.getSessionId(),
+                call.getConversationId(),
+                videoCallService.buildRoomId(call.getSessionId()),
+                actorId,
+                null,
+                null,
+                call.getCallType()
+        );
+    }
+
     private void sendCallHistory(Long conversationId, Long currentUserId, Long targetUserId, MessDTO historyMessage) {
         if (historyMessage == null) {
             return;
@@ -221,6 +312,12 @@ public class VideoCallController {
         messagingTemplate.convertAndSendToUser(String.valueOf(currentUserId), "/queue/chat", envelope);
         if (targetUserId != null) {
             messagingTemplate.convertAndSendToUser(String.valueOf(targetUserId), "/queue/chat", envelope);
+        } else {
+            chatService.findConversationParticipants(conversationId).stream()
+                    .filter(userId -> !userId.equals(currentUserId))
+                    .forEach(userId ->
+                            messagingTemplate.convertAndSendToUser(String.valueOf(userId), "/queue/chat", envelope)
+                    );
         }
         log.info("[VideoCall][BE][history][socket-sent] conversationId={}, messageId={}, currentUserId={}, targetUserId={}",
                 conversationId,

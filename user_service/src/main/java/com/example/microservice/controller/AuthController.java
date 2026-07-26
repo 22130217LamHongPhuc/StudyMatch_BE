@@ -131,8 +131,8 @@ public class AuthController {
                 picture
         );
 
-        if ("DELETED".equalsIgnoreCase(user.getStatus()) ||
-            "LOCKED".equalsIgnoreCase(user.getStatus())) {
+        String userStatus = user.getStatus() == null ? "" : user.getStatus().trim();
+        if (!"ACTIVE".equalsIgnoreCase(userStatus)) {
             throw new AppException("Tài khoản của bạn đã bị khóa hoặc ngừng hoạt động bởi quản trị viên", StatusCode.USER_LOCKED);
         }
 
@@ -275,12 +275,9 @@ public class AuthController {
             return ResponseEntity.ok(TokenValidateResponse.invalid("Thiếu token"));
         }
         String token = authorization.substring(7);
-       String username = jwtService.extractUsername(token);
-        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-
-
-
         try {
+            String username = jwtService.extractUsername(token);
+            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
             boolean valid = jwtService.isTokenValid(token, userDetails);
             if (!valid) {
                 return ResponseEntity.ok(TokenValidateResponse.invalid("Token không hợp lệ"));

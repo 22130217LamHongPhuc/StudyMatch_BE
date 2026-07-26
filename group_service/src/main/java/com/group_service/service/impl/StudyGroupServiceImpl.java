@@ -318,6 +318,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     public Page<StudyGroupResponse> getGroupsByTypeAndSubject(
             GroupType groupType,
             Long mainSubjectId,
+            String keyword,
             Long currentUserId,
             int page,
             int limit) {
@@ -327,6 +328,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 GroupStatus.ACTIVE,
                 groupType,
                 mainSubjectId,
+                normalizeText(keyword),
                 currentUserId,
                 List.of(GroupMemberStatus.ACTIVE),
                 GroupMemberStatus.ACTIVE,

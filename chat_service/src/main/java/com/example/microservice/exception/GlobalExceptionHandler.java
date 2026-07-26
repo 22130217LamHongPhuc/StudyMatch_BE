@@ -10,6 +10,12 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
+    @ExceptionHandler(CallUnavailableException.class)
+    public ResponseEntity<APIResponse<?>> handleCallUnavailable(CallUnavailableException ex) {
+        APIResponse<?> response = new APIResponse<>(409, ex.getCode(), null);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+    }
+
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<APIResponse<?>> handleResourceNotFound(ResourceNotFoundException ex) {
         log.warn("[VideoCall][BE][exception][not-found] message={}", ex.getMessage());
