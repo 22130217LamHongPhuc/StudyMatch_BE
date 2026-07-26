@@ -108,6 +108,7 @@ public class StudyGroupController {
     public ResponseEntity<ApiResponse<Page<StudyGroupResponse>>> browseGroups(
             @RequestParam(required = false) GroupType type,
             @RequestParam(required = false) Long subject,
+            @RequestParam(required = false) String keyword,
             @PathVariable Long userId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int limit
@@ -115,6 +116,7 @@ public class StudyGroupController {
         Page<StudyGroupResponse> response = studyGroupService.getGroupsByTypeAndSubject(
                 type,
                 subject,
+                keyword,
                 userId,
                 page,
                 limit

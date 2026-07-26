@@ -59,8 +59,8 @@ app:
       secret-key: ${JWT_SECRET_KEY:nlu_echo_by_phuc_lam_2004_this_is_be_for_applicati}
 
   zego:
-    app-id: ${ZEGO_APP_ID:1819128302}
-    server-secret: ${ZEGO_SERVER_SECRET:e4bfc0adb25087cb3fa119b007b00d50}
+    app-id: ${ZEGO_APP_ID:1620816700}
+    server-secret: ${ZEGO_SERVER_SECRET:3b2c34d281b1ff0821d099d7d5248ce0}
     token-ttl-seconds: 7200
 
 google:

@@ -8,6 +8,7 @@ import com.example.microservice.service.JwtService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.JwtException;
 import io.micrometer.common.lang.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,6 +25,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 @Component
+@Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Autowired
     JwtService jwtService;
@@ -44,7 +46,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
         String token = authHeader.substring(7);
-        System.out.println(token + "đây là token nè");
+        if (token.chars().filter(character -> character == '.').count() != 2) {
+            log.warn(
+                    "[JWT][malformed] method={}, uri={}, reason=token-must-have-three-parts",
+                    request.getMethod(),
+                    request.getRequestURI()
+            );
+            filterChain.doFilter(request, response);
+            return;
+        }
         String username;
         try {
             username = jwtService.extractUsername(token);
@@ -62,7 +72,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             System.out.println("pricipal trong filter nè" + principal);
 
         } catch (JwtException e) {
-            System.out.println("nhảy vaào catch nè");
+            log.warn(
+                    "[JWT][authentication-failed] method={}, uri={}, errorType={}, message={}",
+                    request.getMethod(),
+                    request.getRequestURI(),
+                    e.getClass().getSimpleName(),
+                    e.getMessage(),
+                    e
+            );
         }
 //            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
 //            response.setContentType("application/json");

@@ -483,6 +483,15 @@ public class ChatController {
             return targets;
         }
 
+        if (chatService.isGroupConversationType(conversationType)) {
+            for (Long participantId : chatService.findConversationParticipants(conversationId)) {
+                if (participantId != null && !participantId.equals(actorUserId)) {
+                    targets.add(participantId);
+                }
+            }
+            return targets;
+        }
+
         for (Long messageId : messageIds) {
             Message message = messageService.findMessById(messageId);
             Long senderId = message.getSenderId();

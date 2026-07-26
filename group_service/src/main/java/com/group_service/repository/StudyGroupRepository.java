@@ -190,6 +190,12 @@ ORDER BY g.createdAt DESC
       AND g.visibility <> com.group_service.entity.enums.GroupVisibility.PRIVATE
       AND (:groupType IS NULL OR g.groupType = :groupType)
       AND (:mainSubjectId IS NULL OR g.mainSubjectId = :mainSubjectId)
+      AND (
+          :keyword IS NULL
+          OR LOWER(g.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
+          OR LOWER(COALESCE(g.subjectName, '')) LIKE LOWER(CONCAT('%', :keyword, '%'))
+          OR LOWER(CAST(g.description AS string)) LIKE LOWER(CONCAT('%', :keyword, '%'))
+      )
     GROUP BY g.id, g.name, g.avatarUrl, g.description, g.ownerUserId, g.termId,
              g.mainSubjectId, g.subjectName, g.maxMembers, g.visibility, g.status,
              g.createdAt, g.updatedAt
@@ -198,6 +204,7 @@ ORDER BY g.createdAt DESC
             @Param("status") GroupStatus status,
             @Param("groupType") GroupType groupType,
             @Param("mainSubjectId") Long mainSubjectId,
+            @Param("keyword") String keyword,
             @Param("currentUserId") Long currentUserId,
             @Param("memberStatuses") Collection<GroupMemberStatus> memberStatuses,
             @Param("activeMemberStatus") GroupMemberStatus activeMemberStatus,
