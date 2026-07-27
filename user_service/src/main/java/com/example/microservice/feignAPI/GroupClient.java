@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 
-@FeignClient(name = "GROUP-SERVICE", url = "${GROUP_SERVICE_URL:}")
+@FeignClient(name = "GROUP-SERVICE", url = "${GROUP_SERVICE_URL:http://localhost:8086}")
 public interface GroupClient {
 
     @GetMapping("/api/groups/{groupId}/exists")

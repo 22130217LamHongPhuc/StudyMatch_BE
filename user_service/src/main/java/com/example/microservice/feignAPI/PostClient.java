@@ -4,7 +4,7 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
-@FeignClient(name = "SOCIAL-SERVICE", contextId = "postClient")
+@FeignClient(name = "SOCIAL-SERVICE", contextId = "postClient", url = "${SOCIAL_SERVICE_URL:http://localhost:8083}")
 public interface PostClient {
 
     @GetMapping("/social/posts/{postId}/exists")

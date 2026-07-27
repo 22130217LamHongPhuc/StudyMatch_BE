@@ -73,14 +73,11 @@ public class OnboardingService {
                 }
             } catch (Exception e) {
                 System.err.println("Lỗi khi lấy tên từ USER-SERVICE: " + e.getMessage());
+                e.printStackTrace();
             }
 
             if (fullName == null || fullName.trim().isEmpty()) {
-                fullName = request.getFullName();
-            }
-
-            if (fullName == null || fullName.trim().isEmpty()) {
-                throw new RuntimeException("Họ tên không được để trống");
+                throw new RuntimeException("Họ tên không được để trống (Không tìm thấy họ tên từ USER-SERVICE cho userId: " + userId + ")");
             }
 
             studentProfile.setFullName(fullName);

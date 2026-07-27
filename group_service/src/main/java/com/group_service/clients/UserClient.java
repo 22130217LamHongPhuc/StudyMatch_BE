@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import java.util.List;
 import java.util.Map;
 
-@FeignClient(name = "USER-SERVICE")
+@FeignClient(name = "USER-SERVICE", url = "${USER_SERVICE_URL:http://localhost:8085}")
 public interface UserClient {
 
     @GetMapping("/api/users/{userId}")

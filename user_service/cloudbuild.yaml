@@ -33,7 +33,7 @@ steps:
       - '--set-env-vars'
       - 'EUREKA_ENABLED=false,SPRING_PROFILES_ACTIVE=prod,DB_USERNAME=studymatch_app'
       - '--set-env-vars'
-      - 'DB_URL=${_DB_URL},SOCIAL_SERVICE_URL=${_SOCIAL_SERVICE_URL},PROFILE_SERVICE_URL=${_PROFILE_SERVICE_URL},GROUP_SERVICE_URL=${_GROUP_SERVICE_URL},FRONTEND_URL=${_FRONTEND_URL},API_GATEWAY_URL=${_API_GATEWAY_URL}'
+      - 'DB_URL=${_DB_URL},SOCIAL_SERVICE_URL=${_SOCIAL_SERVICE_URL},PROFILE_SERVICE_URL=${_PROFILE_SERVICE_URL},GROUP_SERVICE_URL=${_GROUP_SERVICE_URL},FRONTEND_URL=${_FRONTEND_URL},API_GATEWAY_URL=${_API_GATEWAY_URL},USER_SERVICE_URL=${_USER_SERVICE_URL}'
       - '--set-secrets'
       - 'DB_PASSWORD=studymatch-db-password:latest,JWT_SECRET_KEY=studymatch-jwt-secret:latest'
       - '--port'
@@ -60,6 +60,7 @@ substitutions:
   _GROUP_SERVICE_URL: https://group-service-36417266010.asia-southeast1.run.app
   _FRONTEND_URL: https://studymatch-frontend-36417266010.asia-southeast1.run.app
   _API_GATEWAY_URL: https://api-gateway-36417266010.asia-southeast1.run.app
+  _USER_SERVICE_URL: https://user-service-36417266010.asia-southeast1.run.app
 
 options:
   logging: CLOUD_LOGGING_ONLY

@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import java.util.List;
 import java.util.Map;
 
-@FeignClient(name = "CHAT-SERVICE", url = "${CHAT_SERVICE_URL:}")
+@FeignClient(name = "CHAT-SERVICE", url = "${CHAT_SERVICE_URL:http://localhost:8089}")
 public interface ChatClient {
 
     @PostMapping("/api/chat/notify-force-logout")

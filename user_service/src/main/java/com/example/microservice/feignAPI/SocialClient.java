@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
-@FeignClient(name = "SOCIAL-SERVICE")
+@FeignClient(name = "SOCIAL-SERVICE", url = "${SOCIAL_SERVICE_URL:http://localhost:8083}")
 public interface SocialClient {
     @GetMapping("/social/friends/{id}/count")
     public Long getTotalFriends(@PathVariable("id") Long id);

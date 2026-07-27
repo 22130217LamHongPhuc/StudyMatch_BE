@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.PathVariable;
 import java.util.List;
 
-@FeignClient(name = "CHAT-SERVICE")
+@FeignClient(name = "CHAT-SERVICE", url = "${CHAT_SERVICE_URL:http://localhost:8089}")
 public interface ChatClient {
 
     @PostMapping("/api/chat/online-check")
