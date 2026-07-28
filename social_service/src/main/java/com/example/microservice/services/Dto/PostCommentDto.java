@@ -14,4 +14,5 @@ public class PostCommentDto {
     private String authorAvatarUrl;
     private String content;
     private LocalDateTime createdAt;
+    private String moderationStatus;
 }

@@ -13,6 +13,7 @@ public enum ErrorCode {
     INVALID_DOCUMENT_FILE_TYPE(HttpStatus.BAD_REQUEST, "INVALID_DOCUMENT_FILE_TYPE", "Định dạng file tài liệu không hợp lệ"),
     INVALID_DOCUMENT_FILE_SIZE(HttpStatus.BAD_REQUEST, "INVALID_DOCUMENT_FILE_SIZE", "Dung lượng file tài liệu không hợp lệ"),
     INVALID_DOCUMENT_CATEGORY(HttpStatus.BAD_REQUEST, "INVALID_DOCUMENT_CATEGORY", "Danh mục tài liệu không hợp lệ"),
+    CONTENT_VIOLATION(HttpStatus.BAD_REQUEST, "CONTENT_VIOLATION", "Nội dung chứa thông tin không lành mạnh/bậy bạ"),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_SERVER_ERROR", "Đã xảy ra lỗi hệ thống không mong muốn");
 
     private final HttpStatus status;

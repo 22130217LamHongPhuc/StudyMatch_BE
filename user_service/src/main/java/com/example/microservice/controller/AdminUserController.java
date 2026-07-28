@@ -1,6 +1,7 @@
 package com.example.microservice.controller;
 
 import com.example.microservice.dto.respone.*;
+import com.example.microservice.dto.request.UpdateUserProfileRequest;
 import com.example.microservice.enums.StatusCode;
 import com.example.microservice.service.UserService;
 import com.example.microservice.service.CustomUserDetails;
@@ -71,5 +72,17 @@ public class AdminUserController {
                                 StatusCode.SUCCESS,
                                 "Cập nhật trạng thái người dùng thành công",
                                 response));
+        }
+
+        @PutMapping("/{userId}")
+        public ResponseEntity<ApiResponse<Void>> updateUserProfileForAdmin(
+                        @PathVariable Long userId,
+                        @Valid @RequestBody UpdateUserProfileRequest request) {
+                userService.updateProfile(userId, request);
+                return ResponseEntity.ok(new ApiResponse<>(
+                                true,
+                                StatusCode.SUCCESS,
+                                "Cập nhật thông tin người dùng thành công",
+                                null));
         }
 }

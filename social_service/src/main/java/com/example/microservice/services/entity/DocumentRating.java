@@ -38,6 +38,9 @@ public class DocumentRating {
     @Column(name = "review", columnDefinition = "TEXT")
     private String review;
 
+    @Column(name = "moderation_status")
+    private String moderationStatus = "NONE";
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 

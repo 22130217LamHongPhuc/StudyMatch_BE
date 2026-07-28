@@ -106,6 +106,7 @@ public class LearningDocumentMapper {
         response.setReview(rating.getReview());
         response.setCreatedAt(rating.getCreatedAt());
         response.setUpdatedAt(rating.getUpdatedAt());
+        response.setModerationStatus(rating.getModerationStatus());
         return response;
     }
 

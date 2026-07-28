@@ -35,12 +35,16 @@ public class PostService {
     FriendRepo friendRepo;
     @Autowired
     UserServiceClient userServiceClient;
+    @Autowired
+    ContentModerationService contentModerationService;
+
 
     @Transactional
     public PostResponse createPost(CreatePostRequest request, Long viewerId) {
         if (request.getAuthorId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "authorId is required");
         }
+        contentModerationService.validateText(request.getContent());
         Post post = new Post();
         post.setAuthorId(request.getAuthorId());
         post.setContent(normalizeText(request.getContent()));
@@ -74,21 +78,32 @@ public class PostService {
         return toResponse(saved, viewerId, userMap(authorIds));
     }
 
-    public List<PostResponse> getProfileFeed(Long profileUserId, Long viewerId) {
-        List<Post> posts = postRepo.findByAuthorIdAndIsDeletedFalseOrderByCreatedAtDesc(profileUserId);
+    public PageResponse<PostResponse> getProfileFeed(Long profileUserId, Long viewerId, int page, int size) {
+        if (page < 0 || size < 1) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "page must be >= 0 and size must be > 0");
+        }
+
+        Page<Post> posts = postRepo.findVisibleProfilePosts(profileUserId, viewerId, PageRequest.of(page, size));
         List<Long> authorIds = new ArrayList<>();
-        for (Post p : posts) {
+        for (Post p : posts.getContent()) {
             authorIds.add(p.getAuthorId());
             if (p.getSharedPost() != null) {
                 authorIds.add(p.getSharedPost().getAuthorId());
             }
         }
         Map<Long, BasicUserResponse> users = userMap(authorIds.stream().distinct().toList());
-        return posts.stream()
-                .filter(post -> canViewPost(post, viewerId))
-                .map(post -> toResponse(post, viewerId, users))
-                .toList();
+        return new PageResponse<>(
+                posts.getContent().stream()
+                        .map(post -> toResponse(post, viewerId, users))
+                        .toList(),
+                posts.getNumber(),
+                posts.getSize(),
+                posts.getTotalElements(),
+                posts.getTotalPages(),
+                posts.hasNext()
+        );
     }
+
 
     public PageResponse<PostResponse> getFeed(Long viewerId, int page, int size) {
         if (viewerId == null) {
@@ -124,6 +139,7 @@ public class PostService {
     public PostResponse updatePost(Long postId, UpdatePostRequest request) {
         Post post = getActivePost(postId);
         assertOwner(post, request.getActorId());
+        contentModerationService.validateText(request.getContent());
         post.setContent(normalizeText(request.getContent()));
         post.setVisibility(normalizeVisibility(request.getVisibility()));
         post.getMedia().clear();
@@ -214,6 +230,7 @@ public class PostService {
         comment.setAuthorId(request.getAuthorId());
         comment.setContent(normalizeText(request.getContent()));
         PostComment saved = commentRepo.save(comment);
+        contentModerationService.moderatePostCommentAsync(saved.getId());
         return toCommentDto(saved, userMap(List.of(saved.getAuthorId())));
     }
 
@@ -353,7 +370,8 @@ public class PostService {
                 author != null ? author.getFullName() : "User " + comment.getAuthorId(),
                 author != null ? author.getAvatarUrl() : null,
                 comment.getContent(),
-                comment.getCreatedAt()
+                comment.getCreatedAt(),
+                comment.getModerationStatus()
         );
     }
 

@@ -29,6 +29,9 @@ public class PostComment {
     @Column(name = "is_deleted", nullable = false)
     private Boolean isDeleted = false;
 
+    @Column(name = "moderation_status")
+    private String moderationStatus = "NONE";
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 

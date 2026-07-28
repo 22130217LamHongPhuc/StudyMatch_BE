@@ -30,10 +30,16 @@ public class PostController {
     }
 
     @GetMapping("/posts/user/{userId}")
-    public ResponseEntity<?> getProfileFeed(@PathVariable Long userId, @RequestParam(required = false) Long viewerId) {
-        List<PostResponse> response = postService.getProfileFeed(userId, viewerId);
+    public ResponseEntity<?> getProfileFeed(
+            @PathVariable Long userId,
+            @RequestParam(required = false) Long viewerId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        PageResponse<PostResponse> response = postService.getProfileFeed(userId, viewerId, page, size);
         return ResponseEntity.ok(new APIResponse<>(ResponseStatus.SUCCESS, response));
     }
+
 
     @GetMapping("/posts/feed")
     public ResponseEntity<?> getFeed(

@@ -61,8 +61,13 @@ public class LearningDocumentService {
     @Autowired
     private DocumentFileValidator fileValidator;
 
+    @Autowired
+    private ContentModerationService contentModerationService;
+
+
     @Transactional
     public LearningDocumentResponse uploadDocument(CreateLearningDocumentRequest request, Long uploaderId) {
+        contentModerationService.validateTexts(request.getTitle(), request.getDescription());
         fileValidator.validate(
                 request.getFileUrl(),
                 request.getStorageKey(),
@@ -283,6 +288,7 @@ public class LearningDocumentService {
             rating.setReview(review);
         }
         DocumentRating savedRating = documentRatingRepo.save(rating);
+        contentModerationService.moderateDocumentRatingAsync(savedRating.getId());
 
         Double avg = documentRatingRepo.averageScoreByDocumentId(documentId);
         Long count = documentRatingRepo.countByDocumentId(documentId);

@@ -16,6 +16,33 @@ public interface PostRepo extends JpaRepository<Post, Long> {
     @Query("""
         select p
         from Post p
+        where p.authorId = :profileUserId
+          and p.isDeleted = false
+          and (
+              (:viewerId is not null and p.authorId = :viewerId)
+              or p.visibility = 'PUBLIC'
+              or (
+                  p.visibility = 'FRIENDS'
+                  and :viewerId is not null
+                  and exists (
+                      select 1
+                      from Friend f
+                      where (f.user1Id = p.authorId and f.user2Id = :viewerId)
+                         or (f.user1Id = :viewerId and f.user2Id = p.authorId)
+                  )
+              )
+          )
+        order by p.createdAt desc, p.id desc
+    """)
+    org.springframework.data.domain.Page<Post> findVisibleProfilePosts(
+        @Param("profileUserId") Long profileUserId,
+        @Param("viewerId") Long viewerId,
+        org.springframework.data.domain.Pageable pageable
+    );
+
+    @Query("""
+        select p
+        from Post p
         where p.isDeleted = false
           and (
               p.visibility = 'PUBLIC'

@@ -14,4 +14,5 @@ public class DocumentRatingResponse {
     private String userAvatar;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private String moderationStatus;
 }
