@@ -14,6 +14,9 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -60,6 +63,28 @@ public class AdminStudySessionController {
                 StatusCode.SUCCESS,
                 "Get session stats successfully",
                 response
+        ));
+    }
+
+    @PatchMapping("/{sessionId}/cancel")
+    public ResponseEntity<ApiResponse<Void>> cancelSessionForAdmin(@PathVariable Long sessionId) {
+        adminStudySessionService.cancelSessionForAdmin(sessionId);
+        return ResponseEntity.ok(new ApiResponse<>(
+                true,
+                StatusCode.SUCCESS,
+                "Cancel session successfully",
+                null
+        ));
+    }
+
+    @DeleteMapping("/{sessionId}")
+    public ResponseEntity<ApiResponse<Void>> deleteSessionForAdmin(@PathVariable Long sessionId) {
+        adminStudySessionService.deleteSessionForAdmin(sessionId);
+        return ResponseEntity.ok(new ApiResponse<>(
+                true,
+                StatusCode.SUCCESS,
+                "Delete session successfully",
+                null
         ));
     }
 }

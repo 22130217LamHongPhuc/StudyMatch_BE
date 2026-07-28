@@ -22,5 +22,9 @@ public interface AdminStudySessionService {
             int page,
             int limit
     );
+
+    void cancelSessionForAdmin(Long sessionId);
+
+    void deleteSessionForAdmin(Long sessionId);
 }
 

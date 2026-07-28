@@ -58,6 +58,8 @@ public interface StudyGroupService {
 
     void changeGroupOwnerForAdmin(Long groupId, Long newOwnerUserId);
 
+    void updateStudyGroupForAdmin(Long groupId, CreateStudyGroupRequest.UpdateStudyGroupRequest request, org.springframework.web.multipart.MultipartFile avatar);
+
     void updateStudyGroup(Long groupId, CreateStudyGroupRequest.UpdateStudyGroupRequest request, org.springframework.web.multipart.MultipartFile avatar, String token);
 
     void deleteStudyGroup(Long groupId, String token);

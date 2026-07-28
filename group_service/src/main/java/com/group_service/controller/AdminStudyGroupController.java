@@ -6,6 +6,7 @@ import com.group_service.dto.AdminGroupDetailResponse;
 import com.group_service.dto.ApiResponse;
 import com.group_service.dto.GroupFilterRequest;
 import com.group_service.dto.UpdateGroupStatusRequest;
+import com.group_service.dto.CreateStudyGroupRequest;
 import com.group_service.dto.projection.GroupStats;
 import com.group_service.entity.enums.GroupStatus;
 import com.group_service.entity.enums.GroupType;
@@ -117,6 +118,22 @@ public class AdminStudyGroupController {
                 true,
                 StatusCode.SUCCESS,
                 "Change group owner successfully",
+                null
+        ));
+    }
+
+    @PutMapping(value = "/{groupId}", consumes = {"multipart/form-data"})
+    @AuditLog(action = "UPDATE_GROUP_DETAILS", targetType = "STUDY_GROUP", targetId = "#groupId", details = "'Cập nhật thông tin chi tiết nhóm học: ' + #request.name")
+    public ResponseEntity<ApiResponse<Void>> updateGroupDetailsForAdmin(
+            @PathVariable Long groupId,
+            @RequestPart("request") @Valid CreateStudyGroupRequest.UpdateStudyGroupRequest request,
+            @RequestPart(value = "avatar", required = false) org.springframework.web.multipart.MultipartFile avatar
+    ) {
+        studyGroupService.updateStudyGroupForAdmin(groupId, request, avatar);
+        return ResponseEntity.ok(new ApiResponse<>(
+                true,
+                StatusCode.SUCCESS,
+                "Update group details successfully",
                 null
         ));
     }

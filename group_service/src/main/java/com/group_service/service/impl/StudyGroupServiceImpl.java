@@ -1118,4 +1118,54 @@ public class StudyGroupServiceImpl implements StudyGroupService {
         studyGroupRepository.save(group);
         trySyncGroupParticipants(groupId, "deleteStudyGroup");
     }
+
+    @Override
+    @Transactional
+    public void updateStudyGroupForAdmin(Long groupId,
+            com.group_service.dto.CreateStudyGroupRequest.UpdateStudyGroupRequest request,
+            org.springframework.web.multipart.MultipartFile avatar) {
+        StudyGroup group = findGroupOrThrow(groupId);
+
+        if (avatar != null && !avatar.isEmpty()) {
+            try {
+                group.setAvatarUrl(cloudinaryService.uploadFile(avatar));
+            } catch (IOException e) {
+                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to upload avatar", e);
+            }
+        }
+
+        if (request.getName() != null && !request.getName().trim().isEmpty()) {
+            group.setName(request.getName().trim());
+        }
+
+        if (request.getDescription() != null) {
+            group.setDescription(request.getDescription().trim());
+        }
+
+        if (request.getMainSubjectId() != null) {
+            group.setMainSubjectId(request.getMainSubjectId());
+        }
+
+        if (request.getSubjectName() != null && !request.getSubjectName().trim().isEmpty()) {
+            group.setSubjectName(request.getSubjectName().trim());
+        }
+
+        if (request.getMaxMembers() != null) {
+            if (request.getMaxMembers() < 1) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Max members must be at least 1");
+            }
+            group.setMaxMembers(request.getMaxMembers());
+        }
+
+        if (request.getVisibility() != null) {
+            String visStr = request.getVisibility().toUpperCase();
+            if (!visStr.equals("PUBLIC") && !visStr.equals("PRIVATE") && !visStr.equals("COMMUNITY")) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid visibility");
+            }
+            group.setVisibility(GroupVisibility.valueOf(visStr));
+        }
+
+        studyGroupRepository.save(group);
+        trySyncGroupParticipants(groupId, "updateStudyGroupForAdmin");
+    }
 }

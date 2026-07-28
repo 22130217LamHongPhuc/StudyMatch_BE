@@ -18,8 +18,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -172,6 +174,33 @@ public class AdminStudySessionServiceImpl implements AdminStudySessionService {
         } catch (Exception e) {
         }
         return result;
+    }
+
+    @Override
+    @Transactional
+    public void cancelSessionForAdmin(Long sessionId) {
+        StudySession session = studySessionRepository.findById(sessionId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Study session not found"));
+
+        if (session.getStatus() == GroupStudySessionStatus.COMPLETED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot cancel a completed session");
+        }
+
+        if (session.getStatus() == GroupStudySessionStatus.CANCELLED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Session is already cancelled");
+        }
+
+        session.setStatus(GroupStudySessionStatus.CANCELLED);
+        studySessionRepository.save(session);
+    }
+
+    @Override
+    @Transactional
+    public void deleteSessionForAdmin(Long sessionId) {
+        StudySession session = studySessionRepository.findById(sessionId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Study session not found"));
+
+        studySessionRepository.delete(session);
     }
 }
 
