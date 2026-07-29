@@ -1121,6 +1121,110 @@ def generate_user_explanation_db(
     return " | ".join([fit_text, goal_text, level_text, mode_text, shared_text, score_text])
 
 
+
+# =========================================================
+# 2.2) HÀM HỖ TRỢ PHẢN HỒI THÔNG MINH (FEEDBACK LOOP)
+# =========================================================
+def analyze_user_feedback_preferences(current_user_id, student_meta):
+    """
+    Phân tích hành vi lịch sử của User (Implicit + Explicit Feedback) bằng cách gọi HTTP API sang AI Service.
+    """
+    import os
+    import requests
+    
+    API_GATEWAY_URL = os.getenv("API_GATEWAY_URL", "http://localhost:8080")
+    
+    pref = {
+        "reward_regions": [],
+        "penalty_regions": [],
+        "reward_slots": [],
+        "penalty_slots": [],
+        "target_gpa_gap": None
+    }
+    
+    positive_uids = []
+    negative_uids = []
+    
+    # Gọi API Lấy danh sách ID người dùng tích cực và tiêu cực từ feedback/action
+    pref_url = f"{API_GATEWAY_URL}/api/matching-items/preferences/{current_user_id}"
+    try:
+        resp = requests.get(pref_url, timeout=5)
+        if resp.status_code == 200:
+            body = resp.json()
+            if body.get("success") and isinstance(body.get("data"), dict):
+                data = body["data"]
+                positive_uids = [int(uid) for uid in (data.get("positiveUserIds") or [])]
+                negative_uids = [int(uid) for uid in (data.get("negativeUserIds") or [])]
+    except Exception as e:
+        print(f"⚠️ Cannot fetch feedback preferences from {pref_url}: {e}")
+
+    # Loại bỏ các ID trùng lặp
+    positive_uids = list(set(positive_uids))
+    negative_uids = list(set(negative_uids))
+
+    # 3. Trích xuất đặc trưng của nhóm tích cực và tiêu cực từ student_meta
+    pos_meta = student_meta[student_meta["user_id"].isin(positive_uids)]
+    neg_meta = student_meta[student_meta["user_id"].isin(negative_uids)]
+    
+    if not pos_meta.empty:
+        pref["reward_regions"] = pos_meta["region"].dropna().value_counts().head(2).index.tolist()
+        
+        time_cols = [f"time_slot_{i}" for i in range(42)]
+        slot_sums = pos_meta[time_cols].sum()
+        pref["reward_slots"] = [int(col.replace("time_slot_", "")) for col in slot_sums.nlargest(5).index if slot_sums[col] > 0]
+        
+        user_rows = student_meta[student_meta["user_id"] == current_user_id]
+        if not user_rows.empty:
+            user_gpa = float(user_rows.iloc[0].get("avg_score", 0))
+            gpa_gaps = pos_meta["avg_score"].apply(lambda val: abs(float(val) - user_gpa))
+            pref["target_gpa_gap"] = float(gpa_gaps.mean()) if not gpa_gaps.empty else None
+
+    if not neg_meta.empty:
+        pref["penalty_regions"] = neg_meta["region"].dropna().value_counts().head(2).index.tolist()
+        
+        time_cols = [f"time_slot_{i}" for i in range(42)]
+        slot_sums_neg = neg_meta[time_cols].sum()
+        pref["penalty_slots"] = [int(col.replace("time_slot_", "")) for col in slot_sums_neg.nlargest(5).index if slot_sums_neg[col] > 0]
+
+    return pref
+
+
+def compute_feedback_modifier(cand_row, user_row, pref):
+    """
+    Tính toán tổng điểm hiệu chỉnh (Reward/Penalty) cho ứng viên cand_row dựa trên preferences.
+    """
+    modifier = 0.0
+    
+    # 1. Hiệu chỉnh vùng miền (Region)
+    cand_region = cand_row.get("region")
+    if cand_region in pref["reward_regions"]:
+        modifier += 0.05
+    elif cand_region in pref["penalty_regions"]:
+        modifier -= 0.05
+        
+    # 2. Hiệu chỉnh thời gian (Time Slots)
+    time_score = 0.0
+    for slot in pref["reward_slots"]:
+        if float(cand_row.get(f"time_slot_{slot}", 0)) > 0:
+            time_score += 0.02
+    for slot in pref["penalty_slots"]:
+        if float(cand_row.get(f"time_slot_{slot}", 0)) > 0:
+            time_score -= 0.02
+            
+    modifier += max(-0.06, min(0.06, time_score))
+    
+    # 3. Hiệu chỉnh khoảng cách GPA (avg_score)
+    if pref["target_gpa_gap"] is not None:
+        user_gpa = float(user_row.get("avg_score", 0))
+        cand_gpa = float(cand_row.get("avg_score", 0))
+        current_gpa_gap = abs(cand_gpa - user_gpa)
+        gpa_deviation = abs(current_gpa_gap - pref["target_gpa_gap"])
+        if gpa_deviation > 0.5:
+            modifier -= 0.04
+            
+    return modifier
+
+
 # =========================================================
 # 3) HÀM GỢI Ý CHÍNH CHO SCHEMA MỚI
 # =========================================================
@@ -1252,6 +1356,8 @@ def recommend_content_based_db(
         }
 
     # H. Tính final score
+    pref = analyze_user_feedback_preferences(current_user_id, df_info)
+
     mode_bonus_list = []
     shared_score_list = []
     shared_detail_list = []
@@ -1266,6 +1372,10 @@ def recommend_content_based_db(
         shared_score, shared_detail = compute_shared_subject_score(user_row, cand_row)
 
         final_score = alpha * sim + beta * bonus + gamma * shared_score
+        
+        # Tích hợp cơ chế phản hồi thông minh (Feedback Loop)
+        feedback_modifier = compute_feedback_modifier(cand_row, user_row, pref)
+        final_score = max(0.0, min(1.0, final_score + feedback_modifier))
 
         mode_bonus_list.append(bonus)
         shared_score_list.append(shared_score)

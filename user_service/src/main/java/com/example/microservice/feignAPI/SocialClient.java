@@ -12,7 +12,8 @@ public interface SocialClient {
     public Long getTotalFriends(@PathVariable("id") Long id);
 
     @GetMapping("/social/friends/{id}/mutual")
-    public MutualFriendsDto getMutualFriends(@PathVariable("id") Long id, @RequestParam("targetUserId") Long targetUserId);
+    public MutualFriendsDto getMutualFriends(@PathVariable("id") Long id,
+            @RequestParam("targetUserId") Long targetUserId);
 
     @GetMapping("/api/documents/{documentId}/exists")
     public boolean existsById(@PathVariable("documentId") Long documentId);

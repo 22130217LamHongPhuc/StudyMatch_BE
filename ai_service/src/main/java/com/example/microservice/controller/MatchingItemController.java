@@ -96,4 +96,15 @@ public class MatchingItemController {
                                 "Get decided matching items successfully",
                                 response));
         }
+
+        @GetMapping("/preferences/{userId}")
+        public ResponseEntity<ApiResponse<java.util.Map<String, java.util.List<Long>>>> getUserFeedbackPreferences(
+                        @PathVariable Long userId) {
+                java.util.Map<String, java.util.List<Long>> response = matchingItemService.getUserFeedbackPreferences(userId);
+                return ResponseEntity.ok(new ApiResponse<>(
+                                true,
+                                StatusCode.SUCCESS,
+                                "Get user feedback preferences successfully",
+                                response));
+        }
 }

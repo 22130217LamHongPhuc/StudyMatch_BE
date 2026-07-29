@@ -18,4 +18,6 @@ public interface MatchingItemService {
     MatchingItemResponse updateMatchingItemStatus(UpdateMatchingItemStatusRequest request);
 
     DecidedMatchingItemsDto getDecidedMatchingItems(Long userId, Integer page, Integer size);
+
+    java.util.Map<String, java.util.List<Long>> getUserFeedbackPreferences(Long userId);
 }

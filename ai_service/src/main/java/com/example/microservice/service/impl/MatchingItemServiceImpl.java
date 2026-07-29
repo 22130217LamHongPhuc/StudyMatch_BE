@@ -24,6 +24,7 @@ import java.util.List;
 public class MatchingItemServiceImpl implements MatchingItemService {
 
     private final MatchingItemRepository matchingItemRepository;
+    private final com.example.microservice.repository.StudyFeedbackRepository studyFeedbackRepository;
 
     @Override
     @Transactional
@@ -331,5 +332,71 @@ public class MatchingItemServiceImpl implements MatchingItemService {
                 .rejected(rejected)
                 .skipped(skipped)
                 .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.Map<String, java.util.List<Long>> getUserFeedbackPreferences(Long userId) {
+        java.util.List<Long> positiveUids = new java.util.ArrayList<>();
+        java.util.List<Long> negativeUids = new java.util.ArrayList<>();
+
+        // 1. Lấy actions tích cực (ACCEPTED, FRIEND_REQUEST_SENT)
+        java.util.List<com.example.microservice.enums.MatchingActionStatus> positiveStatuses = java.util.List.of(
+                com.example.microservice.enums.MatchingActionStatus.ACCEPTED,
+                com.example.microservice.enums.MatchingActionStatus.FRIEND_REQUEST_SENT
+        );
+        java.util.List<MatchingItem> positiveItems = matchingItemRepository
+                .findRelatedByUserIdAndActionStatusInOrderByUpdatedAtDesc(userId, positiveStatuses, org.springframework.data.domain.Pageable.unpaged());
+        for (MatchingItem item : positiveItems) {
+            if (item.getUserId().equals(userId)) {
+                positiveUids.add(item.getRecommendedUserId());
+            } else {
+                positiveUids.add(item.getUserId());
+            }
+        }
+
+        // 2. Lấy actions tiêu cực (REJECTED, SKIPPED)
+        java.util.List<MatchingItem> rejectedItems = matchingItemRepository
+                .findRelatedByUserIdAndActionStatusOrderByUpdatedAtDesc(userId, com.example.microservice.enums.MatchingActionStatus.REJECTED, org.springframework.data.domain.Pageable.unpaged());
+        for (MatchingItem item : rejectedItems) {
+            if (item.getUserId().equals(userId)) {
+                negativeUids.add(item.getRecommendedUserId());
+            } else {
+                negativeUids.add(item.getUserId());
+            }
+        }
+
+        java.util.List<MatchingItem> skippedItems = matchingItemRepository
+                .findRelatedByUserIdAndActionStatusOrderByUpdatedAtDesc(userId, com.example.microservice.enums.MatchingActionStatus.SKIPPED, org.springframework.data.domain.Pageable.unpaged());
+        for (MatchingItem item : skippedItems) {
+            if (item.getUserId().equals(userId)) {
+                negativeUids.add(item.getRecommendedUserId());
+            } else {
+                negativeUids.add(item.getUserId());
+            }
+        }
+
+        // 3. Lấy feedbacks (USER_PAIR)
+        java.util.List<com.example.microservice.entity.StudyFeedback> feedbacks = studyFeedbackRepository
+                .findByReviewerUserIdAndSessionTypeAndTargetUserIdIsNotNull(userId, com.example.microservice.enums.StudySessionType.USER_PAIR);
+        for (com.example.microservice.entity.StudyFeedback fb : feedbacks) {
+            if (fb.getRating() != null) {
+                if (fb.getRating() >= 4) {
+                    positiveUids.add(fb.getTargetUserId());
+                } else if (fb.getRating() <= 2) {
+                    negativeUids.add(fb.getTargetUserId());
+                }
+            }
+        }
+
+        // Loại bỏ trùng lặp và bản thân user
+        java.util.List<Long> uniquePos = positiveUids.stream().filter(id -> !id.equals(userId)).distinct().toList();
+        java.util.List<Long> uniqueNeg = negativeUids.stream().filter(id -> !id.equals(userId)).distinct().toList();
+
+        java.util.Map<String, java.util.List<Long>> result = new java.util.HashMap<>();
+        result.put("positiveUserIds", uniquePos);
+        result.put("negativeUserIds", uniqueNeg);
+
+        return result;
     }
 }

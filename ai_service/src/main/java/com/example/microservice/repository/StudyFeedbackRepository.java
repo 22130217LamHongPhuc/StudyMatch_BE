@@ -80,6 +80,8 @@ public interface StudyFeedbackRepository extends JpaRepository<StudyFeedback, Lo
     boolean existsBySessionIdAndReviewerUserId(Long sessionId, Long reviewerUserId);
 
     Optional<StudyFeedback> findBySessionIdAndReviewerUserId(Long sessionId, Long reviewerUserId);
+
+    java.util.List<StudyFeedback> findByReviewerUserIdAndSessionTypeAndTargetUserIdIsNotNull(Long reviewerUserId, StudySessionType sessionType);
 }
 
 
