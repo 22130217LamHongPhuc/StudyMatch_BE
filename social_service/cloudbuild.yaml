@@ -31,7 +31,7 @@ steps:
       - '--add-cloudsql-instances'
       - '$PROJECT_ID:${_REGION}:studymatch-mysql'
       - '--set-env-vars'
-      - 'EUREKA_ENABLED=false,SPRING_PROFILES_ACTIVE=prod,DB_USERNAME=social_app'
+      - 'EUREKA_ENABLED=false,SPRING_PROFILES_ACTIVE=prod,DB_USERNAME=social_app,MODERATION_API_URL=${_MODERATION_API_URL}'
       - '--set-env-vars'
       - 'DB_URL=${_DB_URL},USER_SERVICE_URL=${_USER_SERVICE_URL}'
       - '--set-secrets'
@@ -60,6 +60,7 @@ substitutions:
   _TAG: latest
   _DB_URL: jdbc:mysql:///social_service_v3?cloudSqlInstance=studymatch-502204:asia-southeast1:studymatch-mysql&socketFactory=com.google.cloud.sql.mysql.SocketFactory&useSSL=false&allowPublicKeyRetrieval=true
   _USER_SERVICE_URL: https://user-service-36417266010.asia-southeast1.run.app
+  _MODERATION_API_URL: https://hate-speech-service-36417266010.asia-southeast1.run.app/moderate/messages
 
 options:
   logging: CLOUD_LOGGING_ONLY
