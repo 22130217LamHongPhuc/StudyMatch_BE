@@ -15,6 +15,7 @@ com\example\microservice\services\Dto\DocumentRatingRequest.class
 com\example\microservice\services\client\UserServiceClient.class
 com\example\microservice\services\Dto\FriendRequestDto.class
 com\example\microservice\services\Dto\DocumentHideRequest.class
+com\example\microservice\services\service\ContentModerationService.class
 com\example\microservice\services\Dto\FriendDto$FriendDtoBuilder.class
 com\example\microservice\services\Dto\BasicUserResponse.class
 com\example\microservice\services\Dto\PostCommentDto.class
@@ -49,6 +50,7 @@ com\example\microservice\services\Dto\PostMediaDto.class
 com\example\microservice\services\config\APIResponse.class
 com\example\microservice\services\repository\DocumentBookmarkRepo.class
 com\example\microservice\services\entity\PostMedia.class
+com\example\microservice\services\service\ContentModerationService$2.class
 com\example\microservice\services\Dto\BasicUserResponse$BasicUserResponseBuilder.class
 com\example\microservice\services\entity\FriendRequest.class
 com\example\microservice\services\entity\PostComment.class
@@ -60,6 +62,7 @@ com\example\microservice\services\service\LearningDocumentService.class
 com\example\microservice\services\Dto\SharePostRequest.class
 com\example\microservice\services\repository\PostReactionRepo.class
 com\example\microservice\services\service\PostService.class
+com\example\microservice\services\service\ContentModerationService$1.class
 com\example\microservice\services\repository\PostCommentRepo.class
 com\example\microservice\services\entity\DocumentStatus.class
 com\example\microservice\services\Dto\CreateCommentRequest.class
@@ -68,6 +71,7 @@ com\example\microservice\services\controller\PostController.class
 com\example\microservice\services\service\AuditLogService.class
 com\example\microservice\services\entity\Unfriend.class
 com\example\microservice\services\Dto\UpdateFriendRequestStatusRequest.class
+com\example\microservice\services\service\ContentModerationService$ModerationRequest.class
 com\example\microservice\services\client\ApiResponseWrapper.class
 com\example\microservice\services\service\DocumentFileValidator.class
 com\example\microservice\services\Dto\FriendDto.class
@@ -80,5 +84,6 @@ com\example\microservice\services\Dto\AchievementDto.class
 com\example\microservice\services\Dto\AdminDocumentResponse.class
 com\example\microservice\services\entity\LearningDocument.class
 com\example\microservice\services\repository\FriendRequestRepo.class
+com\example\microservice\services\service\ContentModerationService$ModerationResponse.class
 com\example\microservice\services\entity\Friend.class
 com\example\microservice\services\controller\LearningDocumentController.class

@@ -84,6 +84,7 @@ public class UserController {
             response.put("fullName", user.getFullName());
             response.put("avatarUrl", user.getAvatarUrl());
             response.put("email", user.getEmail());
+            response.put("bio", user.getBio());
             response.put("username", user.getFullName());
         }
         return ResponseEntity.ok(response);

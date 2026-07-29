@@ -8,6 +8,7 @@ public record MatchingTrendResponse(
         long totalViewed,
         long totalFriendRequestSent,
         long totalAccepted,
-        long totalRejected
+        long totalRejected,
+        long totalSkipped
 ) {
 }

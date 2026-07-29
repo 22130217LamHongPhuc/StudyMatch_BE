@@ -71,6 +71,7 @@ D:\studymatch\backend\social_service\src\main\java\com\example\microservice\serv
 D:\studymatch\backend\social_service\src\main\java\com\example\microservice\services\repository\UnfriendRepo.java
 D:\studymatch\backend\social_service\src\main\java\com\example\microservice\services\repository\UserSkipRepo.java
 D:\studymatch\backend\social_service\src\main\java\com\example\microservice\services\service\AuditLogService.java
+D:\studymatch\backend\social_service\src\main\java\com\example\microservice\services\service\ContentModerationService.java
 D:\studymatch\backend\social_service\src\main\java\com\example\microservice\services\service\DocumentFileValidator.java
 D:\studymatch\backend\social_service\src\main\java\com\example\microservice\services\service\FriendRequestService.java
 D:\studymatch\backend\social_service\src\main\java\com\example\microservice\services\service\FriendService.java

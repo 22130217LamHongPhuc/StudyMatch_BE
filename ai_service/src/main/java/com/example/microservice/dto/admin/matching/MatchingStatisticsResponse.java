@@ -6,10 +6,12 @@ public record MatchingStatisticsResponse(
         long totalFriendRequestSent,
         long totalRejected,
         long totalAccepted,
+        long totalSkipped,
         double viewRate,
         double friendRequestRate,
         double acceptRate,
         double rejectRate,
+        double skipRate,
         double averageFinalScore,
         long totalFeedbacks,
         double averageRating

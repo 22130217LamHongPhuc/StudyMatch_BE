@@ -55,17 +55,21 @@ public class AdminMatchingServiceImpl implements AdminMatchingService {
                 fromDateTime, toDateTime);
         long totalAccepted = matchingItemRepository.countByActionStatusFiltered(MatchingActionStatus.ACCEPTED,
                 fromDateTime, toDateTime);
+        long totalSkipped = matchingItemRepository.countByActionStatusFiltered(MatchingActionStatus.SKIPPED,
+                fromDateTime, toDateTime);
 
         double viewRate = 0.0;
         double friendRequestRate = 0.0;
         double acceptRate = 0.0;
         double rejectRate = 0.0;
+        double skipRate = 0.0;
 
         if (totalRecommendationItems > 0) {
             viewRate = round((double) totalViewed / totalRecommendationItems);
             friendRequestRate = round((double) totalFriendRequestSent / totalRecommendationItems);
             acceptRate = round((double) totalAccepted / totalRecommendationItems);
             rejectRate = round((double) totalRejected / totalRecommendationItems);
+            skipRate = round((double) totalSkipped / totalRecommendationItems);
         }
 
         double averageFinalScore = round(
@@ -79,10 +83,12 @@ public class AdminMatchingServiceImpl implements AdminMatchingService {
                 totalFriendRequestSent,
                 totalRejected,
                 totalAccepted,
+                totalSkipped,
                 viewRate,
                 friendRequestRate,
                 acceptRate,
                 rejectRate,
+                skipRate,
                 averageFinalScore,
                 totalFeedbacks,
                 averageRating);
@@ -324,8 +330,9 @@ public class AdminMatchingServiceImpl implements AdminMatchingService {
             long totalFriendRequestSent = statusCounts.getOrDefault(MatchingActionStatus.FRIEND_REQUEST_SENT, 0L);
             long totalAccepted = statusCounts.getOrDefault(MatchingActionStatus.ACCEPTED, 0L);
             long totalRejected = statusCounts.getOrDefault(MatchingActionStatus.REJECTED, 0L);
+            long totalSkipped = statusCounts.getOrDefault(MatchingActionStatus.SKIPPED, 0L);
 
-            long totalRecommendations = totalViewed + totalFriendRequestSent + totalAccepted + totalRejected;
+            long totalRecommendations = totalViewed + totalFriendRequestSent + totalAccepted + totalRejected + totalSkipped;
 
             trend.add(new MatchingTrendResponse(
                     current,
@@ -333,7 +340,8 @@ public class AdminMatchingServiceImpl implements AdminMatchingService {
                     totalViewed,
                     totalFriendRequestSent,
                     totalAccepted,
-                    totalRejected));
+                    totalRejected,
+                    totalSkipped));
             current = current.plusDays(1);
         }
 
