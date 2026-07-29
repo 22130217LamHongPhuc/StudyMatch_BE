@@ -5,6 +5,7 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV PORT=8080
+ENV TZ=Asia/Ho_Chi_Minh
 
 # Install dependencies
 COPY requirements.txt .
