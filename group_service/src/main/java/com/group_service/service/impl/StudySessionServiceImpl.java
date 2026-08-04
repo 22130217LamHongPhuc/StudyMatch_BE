@@ -364,8 +364,6 @@ public class StudySessionServiceImpl implements StudySessionService {
         return sessions.map(session -> studySessionMapper.mapToStudySessionResponse(session, userId));
     }
 
-
-
     @Override
     @Transactional(readOnly = true)
     public List<StudySessionResponse> getTopUpcomingSessions(Long userId) {
@@ -573,14 +571,15 @@ public class StudySessionServiceImpl implements StudySessionService {
         List<StudySessionParticipant> nonJoinedParticipants = participantRepository.findBySessionId(sessionId);
         for (StudySessionParticipant participant : nonJoinedParticipants) {
             if (participant.getStatus() == StudySessionParticipantStatus.PENDING ||
-                participant.getStatus() == StudySessionParticipantStatus.ACCEPTED) {
+                    participant.getStatus() == StudySessionParticipantStatus.ACCEPTED) {
                 participant.setStatus(StudySessionParticipantStatus.ABSENT);
                 participant.setAttendanceStatus(StudySessionAttendanceStatus.NOT_JOINED);
                 participantRepository.save(participant);
             }
         }
 
-        if (session.getStatus() == GroupStudySessionStatus.ONGOING || session.getStatus() == GroupStudySessionStatus.SCHEDULED) {
+        if (session.getStatus() == GroupStudySessionStatus.ONGOING
+                || session.getStatus() == GroupStudySessionStatus.SCHEDULED) {
             session.setStatus(GroupStudySessionStatus.COMPLETED);
             studySessionRepository.save(session);
         }
@@ -869,7 +868,8 @@ public class StudySessionServiceImpl implements StudySessionService {
 
     private void validateStatusTransition(GroupStudySessionStatus current, GroupStudySessionStatus target) {
         boolean valid = switch (current) {
-            case SCHEDULED -> target == GroupStudySessionStatus.ONGOING || target == GroupStudySessionStatus.CANCELLED || target == GroupStudySessionStatus.COMPLETED;
+            case SCHEDULED -> target == GroupStudySessionStatus.ONGOING || target == GroupStudySessionStatus.CANCELLED
+                    || target == GroupStudySessionStatus.COMPLETED;
             case ONGOING -> target == GroupStudySessionStatus.COMPLETED;
             case COMPLETED, CANCELLED -> false;
         };
@@ -937,8 +937,9 @@ public class StudySessionServiceImpl implements StudySessionService {
         participant.setAttendanceStatus(calculateAttendanceStatus(session, totalDuration));
         participantRepository.save(participant);
 
-        if (now.isAfter(session.getEndTime()) && 
-            (session.getStatus() == GroupStudySessionStatus.ONGOING || session.getStatus() == GroupStudySessionStatus.SCHEDULED)) {
+        if (now.isAfter(session.getEndTime()) &&
+                (session.getStatus() == GroupStudySessionStatus.ONGOING
+                        || session.getStatus() == GroupStudySessionStatus.SCHEDULED)) {
             session.setStatus(GroupStudySessionStatus.COMPLETED);
             studySessionRepository.save(session);
         }
@@ -975,15 +976,15 @@ public class StudySessionServiceImpl implements StudySessionService {
             return StudySessionAttendanceStatus.NOT_JOINED;
         }
 
-        if (total < 1 * 60) {
-            return StudySessionAttendanceStatus.JOINED_SHORT;
-        }
+        // if (total < 1 * 60) {
+        // return StudySessionAttendanceStatus.JOINED_SHORT;
+        // }
 
-        long minRequired = calculateMinRequiredDurationSeconds(session);
+        // long minRequired = calculateMinRequiredDurationSeconds(session);
 
-        if (total < minRequired) {
-            return StudySessionAttendanceStatus.JOINED_PARTIAL;
-        }
+        // if (total < minRequired) {
+        // return StudySessionAttendanceStatus.JOINED_PARTIAL;
+        // }
 
         return StudySessionAttendanceStatus.COMPLETED;
     }
@@ -1178,7 +1179,8 @@ public class StudySessionServiceImpl implements StudySessionService {
 
         for (StudySessionParticipant p : participations) {
             StudySession session = p.getStudySession();
-            if (session == null) continue;
+            if (session == null)
+                continue;
 
             if (p.getStatus() == StudySessionParticipantStatus.JOINED) {
                 joinedCount++;
@@ -1213,19 +1215,17 @@ public class StudySessionServiceImpl implements StudySessionService {
         for (int i = 30; i >= 0; i--) {
             LocalDate date = LocalDate.now().minusDays(i);
             dailyTrends.add(new DailyStudyTrend(
-                date,
-                dailyDurationMap.getOrDefault(date, 0L),
-                dailyCountMap.getOrDefault(date, 0L)
-            ));
+                    date,
+                    dailyDurationMap.getOrDefault(date, 0L),
+                    dailyCountMap.getOrDefault(date, 0L)));
         }
 
         List<SubjectStudyStats> subjectStats = new ArrayList<>();
         for (String subject : subjectCountMap.keySet()) {
             subjectStats.add(new SubjectStudyStats(
-                subject,
-                subjectDurationMap.getOrDefault(subject, 0L),
-                subjectCountMap.get(subject)
-            ));
+                    subject,
+                    subjectDurationMap.getOrDefault(subject, 0L),
+                    subjectCountMap.get(subject)));
         }
 
         return DetailedUserStatsResponse.builder()
