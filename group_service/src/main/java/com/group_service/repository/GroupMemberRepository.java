@@ -3,6 +3,7 @@ package com.group_service.repository;
 import com.group_service.entity.GroupMember;
 import com.group_service.entity.StudyGroup;
 import com.group_service.entity.enums.GroupMemberStatus;
+import com.group_service.entity.enums.GroupMemberRole;
 import com.group_service.entity.enums.GroupStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -11,6 +12,8 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 import java.util.Optional;
 public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> {
+
+    List<GroupMember> findByUserIdAndStatusAndRoleIn(Long userId, GroupMemberStatus status, List<GroupMemberRole> roles);
 
     long countByGroupId(Long groupId);
 

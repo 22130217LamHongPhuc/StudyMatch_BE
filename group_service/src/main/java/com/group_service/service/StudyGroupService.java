@@ -42,6 +42,8 @@ public interface StudyGroupService {
 
     List<com.group_service.dto.GroupInvitationResponse> getSentPendingJoinRequests(String token);
 
+    List<com.group_service.dto.GroupInvitationResponse> getReceivedPendingJoinRequests(String token);
+
     List<com.group_service.dto.GroupInvitationResponse> getGroupInvitations(Long groupId, String token);
 
     void acceptInvitation(Long invitationId, String token);

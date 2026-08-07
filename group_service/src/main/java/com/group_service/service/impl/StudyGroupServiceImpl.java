@@ -369,6 +369,57 @@ public class StudyGroupServiceImpl implements StudyGroupService {
         }
 
         Long ownerUserId = studyGroup.getOwnerUserId();
+
+        if (studyGroup.getGroupType() == GroupType.COMMUNITY) {
+            Integer maxMembers = studyGroup.getMaxMembers();
+            if (maxMembers != null) {
+                long activeMembers = groupMemberRepository.countByGroupIdAndStatus(
+                        groupId,
+                        GroupMemberStatus.ACTIVE);
+                if (activeMembers >= maxMembers) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Group has reached max members");
+                }
+            }
+
+            GroupInvitation savedInvitation = groupInvitationRepository.save(GroupInvitation.builder()
+                    .groupId(groupId)
+                    .inviterUserId(userId)
+                    .inviteeUserId(userId)
+                    .message(request.getMessage())
+                    .status(GroupInvitationStatus.ACCEPTED)
+                    .respondedAt(LocalDateTime.now())
+                    .build());
+
+            Optional<GroupMember> existingMember = groupMemberRepository.findByGroupIdAndUserId(
+                    groupId,
+                    userId);
+            if (existingMember.isPresent()) {
+                GroupMember member = existingMember.get();
+                member.setRole(GroupMemberRole.MEMBER);
+                member.setStatus(GroupMemberStatus.ACTIVE);
+                groupMemberRepository.save(member);
+            } else {
+                groupMemberRepository.save(GroupMember.builder()
+                        .groupId(groupId)
+                        .userId(userId)
+                        .role(GroupMemberRole.MEMBER)
+                        .status(GroupMemberStatus.ACTIVE)
+                        .build());
+            }
+
+            return GroupInvitationResponse.builder()
+                    .invitationId(savedInvitation.getId())
+                    .groupId(groupId)
+                    .groupName(studyGroup.getName())
+                    .groupAvatarUrl(studyGroup.getAvatarUrl())
+                    .inviterUserId(savedInvitation.getInviterUserId())
+                    .inviteeUserId(savedInvitation.getInviteeUserId())
+                    .message(savedInvitation.getMessage())
+                    .status(savedInvitation.getStatus())
+                    .createdAt(savedInvitation.getCreatedAt())
+                    .build();
+        }
+
         GroupInvitation savedInvitation = groupInvitationRepository.save(GroupInvitation.builder()
                 .groupId(groupId)
                 .inviterUserId(userId)
@@ -532,6 +583,57 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 userId,
                 GroupInvitationStatus.PENDING)
                 .stream()
+                .map(invitation -> {
+                    StudyGroup group = studyGroupRepository.findById(invitation.getGroupId()).orElse(null);
+                    String inviterName = "User #" + invitation.getInviterUserId();
+                    try {
+                        Map<String, Object> userData = userClient.getUserById(invitation.getInviterUserId());
+                        if (userData != null) {
+                            inviterName = getStringValue(userData, inviterName, "fullName", "full_name");
+                        }
+                    } catch (Exception e) {
+                    }
+
+                    return GroupInvitationResponse.builder()
+                            .invitationId(invitation.getId())
+                            .groupId(invitation.getGroupId())
+                            .groupName(group != null ? group.getName() : "Unknown Group")
+                            .groupAvatarUrl(group != null ? group.getAvatarUrl() : null)
+                            .inviterUserId(invitation.getInviterUserId())
+                            .inviteeUserId(invitation.getInviteeUserId())
+                            .inviterName(inviterName)
+                            .message(invitation.getMessage())
+                            .status(invitation.getStatus())
+                            .createdAt(invitation.getCreatedAt())
+                            .build();
+                })
+                .toList();
+    }
+
+    @Override
+    public List<GroupInvitationResponse> getReceivedPendingJoinRequests(String token) {
+        Long userId = validateTokenOrThrow(token).getUserId();
+
+        List<GroupMember> memberships = groupMemberRepository.findByUserIdAndStatusAndRoleIn(
+                userId,
+                GroupMemberStatus.ACTIVE,
+                List.of(GroupMemberRole.OWNER, GroupMemberRole.ADMIN)
+        );
+
+        if (memberships.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        List<Long> groupIds = memberships.stream()
+                .map(GroupMember::getGroupId)
+                .toList();
+
+        List<GroupInvitation> invitations = groupInvitationRepository.findPendingJoinRequestsByGroupIds(
+                groupIds,
+                GroupInvitationStatus.PENDING
+        );
+
+        return invitations.stream()
                 .map(invitation -> {
                     StudyGroup group = studyGroupRepository.findById(invitation.getGroupId()).orElse(null);
                     String inviterName = "User #" + invitation.getInviterUserId();

@@ -126,6 +126,7 @@ public class ProfileUpdateService {
             }
             return response;
         } catch (Exception e) {
+            e.printStackTrace();
             UserProfileFullResponse response = new UserProfileFullResponse();
             response.setSuccess(false);
             response.setMessage("Lỗi khi cập nhật profile: " + e.getMessage());
