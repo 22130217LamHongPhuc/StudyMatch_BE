@@ -170,7 +170,10 @@ public class UserService {
     public List<BasicUserResponse> getBasicUsers(List<Long> userIds) {
         if (userIds == null || userIds.isEmpty()) return List.of();
         List<User> users = repo.findAllByUserIdIn(userIds);
-        return users.stream().map(BasicUserResponse::from).collect(Collectors.toList());
+        return users.stream()
+                .filter(user -> !"DELETED".equalsIgnoreCase(user.getStatus()) && !"LOCKED".equalsIgnoreCase(user.getStatus()))
+                .map(BasicUserResponse::from)
+                .collect(Collectors.toList());
     }
 
 

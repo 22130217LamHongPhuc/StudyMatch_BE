@@ -62,13 +62,12 @@ public class FriendService {
     }
 
     public Long totalFriend(Long userId) {
-
-        return friendRepo.countTotalFriend(userId);
+        return (long) getFriendList(userId).size();
     }
 
     public FriendStatsResponse getFriendStats(Long userId) {
         return new FriendStatsResponse(
-                friendRepo.countTotalFriend(userId),
+                totalFriend(userId),
                 friendRequestRepo.countByReceiverIdAndStatus(userId, "PENDING"));
     }
 
@@ -90,12 +89,13 @@ public class FriendService {
                 .collect(Collectors.toMap(BasicUserResponse::getUserId, user -> user));
 
         return friendIds.stream()
+                .filter(userMap::containsKey)
                 .map(id -> {
                     BasicUserResponse userInfo = userMap.get(id);
                     return FriendDto.builder()
                             .userId(id)
-                            .fullName(userInfo != null ? userInfo.getFullName() : null)
-                            .avatarUrl(userInfo != null ? userInfo.getAvatarUrl() : null)
+                            .fullName(userInfo.getFullName())
+                            .avatarUrl(userInfo.getAvatarUrl())
                             .build();
                 })
                 .collect(Collectors.toList());

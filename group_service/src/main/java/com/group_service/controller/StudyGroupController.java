@@ -11,6 +11,7 @@ import com.group_service.dto.StudyGroupResponse;
 import com.group_service.dto.UserGroupStatsResponse;
 import com.group_service.entity.enums.GroupType;
 import com.group_service.entity.enums.GroupMemberStatus;
+import com.group_service.entity.GroupMember;
 import com.group_service.enums.StatusCode;
 import com.group_service.repository.GroupMemberRepository;
 import com.group_service.service.StudyGroupService;
@@ -193,9 +194,32 @@ public class StudyGroupController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Status must be remove");
         }
 
-        var member = groupMemberRepository
-                .findByGroupIdAndUserIdAndStatus(groupId, userId, GroupMemberStatus.ACTIVE)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Active group member not found"));
+        var memberOpt = groupMemberRepository
+                .findByGroupIdAndUserId(groupId, userId);
+
+        if (memberOpt.isEmpty()) {
+            return ResponseEntity.ok(new ApiResponse<>(
+                    true,
+                    StatusCode.SUCCESS,
+                    "Member not found in group, no action needed",
+                    null
+            ));
+        }
+
+        GroupMember member = memberOpt.get();
+        if (member.getStatus() == GroupMemberStatus.REMOVED || member.getStatus() == GroupMemberStatus.LEFT) {
+            return ResponseEntity.ok(new ApiResponse<>(
+                    true,
+                    StatusCode.SUCCESS,
+                    "Member is already not in the group",
+                    null
+            ));
+        }
+
+        if (member.getRole() == com.group_service.entity.enums.GroupMemberRole.OWNER) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot kick group owner. Please transfer ownership first.");
+        }
+
         member.setStatus(GroupMemberStatus.REMOVED);
         groupMemberRepository.save(member);
 

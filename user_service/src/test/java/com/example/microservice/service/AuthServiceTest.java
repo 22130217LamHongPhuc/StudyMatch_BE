@@ -93,6 +93,7 @@ class AuthServiceTest {
         user.setRole(role);
         user.setEmailVerified(true);
         user.setOnboardingCompleted(true);
+        user.setStatus("ACTIVE");
         return user;
     }
 }

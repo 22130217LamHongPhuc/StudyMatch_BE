@@ -34,6 +34,8 @@ public class PostService {
     @Autowired
     FriendRepo friendRepo;
     @Autowired
+    FriendService friendService;
+    @Autowired
     UserServiceClient userServiceClient;
     @Autowired
     ContentModerationService contentModerationService;
@@ -245,7 +247,7 @@ public class PostService {
                 postRepo.countByAuthorIdAndIsDeletedFalse(userId),
                 reactionRepo.countByPostAuthorIdAndPostIsDeletedFalse(userId),
                 commentRepo.countByPostAuthorIdAndIsDeletedFalseAndPostIsDeletedFalse(userId),
-                friendRepo.countTotalFriend(userId)
+                friendService.totalFriend(userId)
         );
     }
 

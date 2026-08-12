@@ -1081,9 +1081,17 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     @Transactional
     public void removeGroupMemberForAdmin(Long groupId, Long userId) {
         findGroupOrThrow(groupId);
-        GroupMember member = groupMemberRepository
-                .findByGroupIdAndUserIdAndStatus(groupId, userId, GroupMemberStatus.ACTIVE)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Active group member not found"));
+        Optional<GroupMember> memberOpt = groupMemberRepository
+                .findByGroupIdAndUserId(groupId, userId);
+
+        if (memberOpt.isEmpty()) {
+            return;
+        }
+
+        GroupMember member = memberOpt.get();
+        if (member.getStatus() == GroupMemberStatus.REMOVED || member.getStatus() == GroupMemberStatus.LEFT) {
+            return;
+        }
 
         if (member.getRole() == GroupMemberRole.OWNER) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,

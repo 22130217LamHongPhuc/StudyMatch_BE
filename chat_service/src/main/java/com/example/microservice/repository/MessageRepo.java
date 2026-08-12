@@ -144,6 +144,8 @@ public interface MessageRepo extends JpaRepository<Message, Long> {
                             MAX(CASE WHEN m.moderation_status IN ('OFFENSIVE', 'HATE') THEN m.created_at ELSE NULL END) AS last_violation_at
                           FROM messages m
                           JOIN group_conversations gc ON gc.conversation_id = m.conversation_id
+                          JOIN conversation_participants cp ON cp.conversation_id = gc.conversation_id AND cp.user_id = m.sender_id
+                          WHERE cp.left_at IS NULL
                           GROUP BY gc.group_id, m.sender_id
                         ) grouped
                         WHERE grouped.offensive_messages + grouped.hate_messages > 0
@@ -170,7 +172,8 @@ public interface MessageRepo extends JpaRepository<Message, Long> {
                             MAX(CASE WHEN m.moderation_status IN ('OFFENSIVE', 'HATE') THEN m.created_at ELSE NULL END) AS last_violation_at
                           FROM messages m
                           JOIN group_conversations gc ON gc.conversation_id = m.conversation_id
-                          WHERE m.sender_id = :senderId
+                          JOIN conversation_participants cp ON cp.conversation_id = gc.conversation_id AND cp.user_id = m.sender_id
+                          WHERE m.sender_id = :senderId AND cp.left_at IS NULL
                           GROUP BY gc.group_id, m.conversation_id
                         ) grouped
                         WHERE grouped.offensive_messages + grouped.hate_messages > 0
