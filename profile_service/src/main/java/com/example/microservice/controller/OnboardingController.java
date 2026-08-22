@@ -27,19 +27,45 @@ public class OnboardingController {
         System.out.println("Received onboarding submission for userId: " + userId);
 
         if (userId == null) {
-            userId = 100L;
-        }
-
-        OnboardingSubmitResponse response = onboardingService.submitOnboarding(userId, request);
-
-        if (response.isSuccess()) {
-            return ResponseEntity.ok(response);
-        } else {
+            OnboardingSubmitResponse response = new OnboardingSubmitResponse();
+            response.setSuccess(false);
+            response.setMessage("User ID không hợp lệ. Vui lòng đăng nhập lại.");
             return ResponseEntity.badRequest().body(response);
         }
 
+        try {
+            OnboardingSubmitResponse response = onboardingService.submitOnboarding(userId, request);
+            if (response.isSuccess()) {
+                return ResponseEntity.ok(response);
+            } else {
+                return ResponseEntity.badRequest().body(response);
+            }
+        } catch (IllegalArgumentException e) {
+            System.err.println("Onboarding validation error: " + e.getMessage());
+            OnboardingSubmitResponse response = new OnboardingSubmitResponse();
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        } catch (Exception e) {
+            System.err.println("Onboarding unexpected error: " + e.getMessage());
+            e.printStackTrace();
+            OnboardingSubmitResponse response = new OnboardingSubmitResponse();
+            response.setSuccess(false);
+            response.setMessage(e.getMessage() != null ? e.getMessage() : "Đã có lỗi xảy ra khi lưu hồ sơ.");
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
 
-
+    @GetMapping("/check-student-code")
+    public ResponseEntity<java.util.Map<String, Object>> checkStudentCode(
+            @RequestParam String studentCode,
+            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
+        boolean exists = onboardingService.isStudentCodeExists(studentCode, userId);
+        return ResponseEntity.ok(java.util.Map.of(
+                "exists", exists,
+                "available", !exists,
+                "message", exists ? "Mã sinh viên '" + (studentCode != null ? studentCode.trim() : "") + "' đã tồn tại trong hệ thống" : "Mã sinh viên hợp lệ"
+        ));
     }
 
     @GetMapping("/profile/{userId}")

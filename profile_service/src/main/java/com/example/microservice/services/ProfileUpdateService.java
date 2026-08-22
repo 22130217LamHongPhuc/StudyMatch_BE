@@ -71,7 +71,11 @@ public class ProfileUpdateService {
         try {
             validateRequest(request);
 
-            System.out.println(request);
+            String studentCode = request.getStudentCode() != null ? request.getStudentCode().trim() : "";
+            java.util.Optional<StudentProfile> existingWithCode = studentProfileRepository.findByStudentCode(studentCode);
+            if (existingWithCode.isPresent() && !existingWithCode.get().getUserId().equals(userId)) {
+                throw new RuntimeException("Mã sinh viên '" + studentCode + "' đã tồn tại trong hệ thống. Vui lòng kiểm tra lại.");
+            }
 
             Cohort cohort = cohortRepository.findById(request.getCohortId())
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy khóa học với ID: " + request.getCohortId()));
@@ -83,7 +87,7 @@ public class ProfileUpdateService {
                     .orElse(new StudentProfile());
 
             studentProfile.setUserId(userId);
-            studentProfile.setStudentCode(request.getStudentCode());
+            studentProfile.setStudentCode(studentCode);
             studentProfile.setFullName(request.getFullName());
             studentProfile.setGender(request.getGender());
             studentProfile.setAgeGroup(request.getAgeGroup());
