@@ -64,16 +64,12 @@ public class OnboardingService {
         Cohort cohort = cohortRepository.findById(request.getCohortId())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy khóa học với ID: " + request.getCohortId()));
 
-        // 3. Kiểm tra học kỳ
-        AcademicTerm term = null;
-        if (request.getTermId() != null) {
-            term = academicTermRepository.findById(request.getTermId()).orElse(null);
-        }
-        if (term == null) {
-            term = academicTermRepository.findFirstByStatus("ACTIVE")
-                    .or(() -> academicTermRepository.findByStatus("active"))
-                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy học kỳ đang hoạt động trong hệ thống."));
-        }
+        // 3. Lấy học kỳ đang hoạt động (ACTIVE) trực tiếp từ database (không phụ thuộc vào frontend)
+        AcademicTerm term = academicTermRepository.findFirstByStatusIgnoreCase("active")
+                .or(() -> academicTermRepository.findFirstByStatus("active"))
+                .or(() -> academicTermRepository.findFirstByStatus("ACTIVE"))
+                .or(() -> academicTermRepository.findByStatusIgnoreCase("active"))
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy học kỳ đang hoạt động trong hệ thống."));
 
         // 4. Lấy họ tên người dùng từ USER-SERVICE
         String fullName = null;

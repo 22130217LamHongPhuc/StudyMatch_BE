@@ -80,8 +80,11 @@ public class ProfileUpdateService {
             Cohort cohort = cohortRepository.findById(request.getCohortId())
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy khóa học với ID: " + request.getCohortId()));
 
-            AcademicTerm term = academicTermRepository.findByStatus("ACTIVE")
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy học kỳ với ID: " + request.getTermId()));
+            AcademicTerm term = academicTermRepository.findFirstByStatusIgnoreCase("active")
+                    .or(() -> academicTermRepository.findFirstByStatus("active"))
+                    .or(() -> academicTermRepository.findFirstByStatus("ACTIVE"))
+                    .or(() -> academicTermRepository.findByStatusIgnoreCase("active"))
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy học kỳ đang hoạt động trong hệ thống."));
 
             StudentProfile studentProfile = studentProfileRepository.findByUserId(userId)
                     .orElse(new StudentProfile());
@@ -232,9 +235,6 @@ public class ProfileUpdateService {
         }
         if (request.getCohortId() == null) {
             throw new RuntimeException("ID khóa học không được để trống");
-        }
-        if (request.getTermId() == null) {
-            throw new RuntimeException("ID học kỳ không được để trống");
         }
         if (request.getStudyYearNo() == null) {
             throw new RuntimeException("Năm học không được để trống");

@@ -121,10 +121,10 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
 
     private String statusLabel(ReportStatus status) {
         return switch (status) {
-            case PENDING -> "Đang chờ (PENDING)";
-            case REVIEWING -> "Đang xem xét (REVIEWING)";
-            case RESOLVED -> "Đã xử lý (RESOLVED)";
-            case REJECTED -> "Từ chối (REJECTED)";
+            case PENDING -> "Đang chờ";
+            case REVIEWING -> "Đang xem xét";
+            case RESOLVED -> "Đã xử lý";
+            case REJECTED -> "Từ chối";
         };
     }
 
@@ -139,10 +139,10 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
 
     private String targetLabel(ReportTargetType type) {
         return switch (type) {
-            case USER -> "User";
-            case GROUP -> "Group";
-            case POST -> "Post";
-            case DOCUMENT -> "Document";
+            case USER -> "Người dùng";
+            case GROUP -> "Nhóm";
+            case POST -> "Bài viết";
+            case DOCUMENT -> "Tài liệu";
         };
     }
 

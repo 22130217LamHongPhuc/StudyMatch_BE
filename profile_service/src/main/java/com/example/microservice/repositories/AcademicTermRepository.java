@@ -12,6 +12,8 @@ import java.util.Optional;
 public interface AcademicTermRepository extends JpaRepository<AcademicTerm, Long> {
     Optional<AcademicTerm> findFirstByStatus(String status);
 
+    Optional<AcademicTerm> findFirstByStatusIgnoreCase(String status);
+
     List<AcademicTerm> findByAcademicYearStartBetweenOrderByAcademicYearStartAscSemesterNoAsc(
             Short startYear,
             Short endYear
@@ -19,6 +21,5 @@ public interface AcademicTermRepository extends JpaRepository<AcademicTerm, Long
 
     Optional<AcademicTerm> findByStatus(String status);
 
-
-
+    Optional<AcademicTerm> findByStatusIgnoreCase(String status);
 }
