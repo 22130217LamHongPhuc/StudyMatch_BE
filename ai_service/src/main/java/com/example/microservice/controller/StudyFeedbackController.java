@@ -30,4 +30,19 @@ public class StudyFeedbackController {
                 response
         ));
     }
+
+    @GetMapping("/session/{sessionId}/user/{userId}")
+    public ResponseEntity<ApiResponse<StudyFeedbackResponse>> getFeedbackBySessionAndUser(
+            @PathVariable Long sessionId,
+            @PathVariable Long userId
+    ) {
+        StudyFeedbackResponse response = studyFeedbackService.getFeedbackBySessionAndUser(sessionId, userId);
+
+        return ResponseEntity.ok(new ApiResponse<>(
+                true,
+                StatusCode.SUCCESS,
+                "Get study feedback successfully",
+                response
+        ));
+    }
 }

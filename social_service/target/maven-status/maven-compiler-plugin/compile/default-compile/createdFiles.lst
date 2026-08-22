@@ -50,7 +50,6 @@ com\example\microservice\services\Dto\PostMediaDto.class
 com\example\microservice\services\config\APIResponse.class
 com\example\microservice\services\repository\DocumentBookmarkRepo.class
 com\example\microservice\services\entity\PostMedia.class
-com\example\microservice\services\service\ContentModerationService$2.class
 com\example\microservice\services\Dto\BasicUserResponse$BasicUserResponseBuilder.class
 com\example\microservice\services\entity\FriendRequest.class
 com\example\microservice\services\entity\PostComment.class

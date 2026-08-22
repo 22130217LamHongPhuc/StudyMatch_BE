@@ -15,4 +15,6 @@ public class GroupKickNotificationRequest {
     private Long userId;
     private Long groupId;
     private String groupName;
+    private String status;
+    private String reason;
 }

@@ -6,6 +6,7 @@ import com.example.microservice.feignAPI.GroupClient;
 import com.example.microservice.feignAPI.PostClient;
 import com.example.microservice.feignAPI.SocialClient;
 import com.example.microservice.repository.UserRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import java.util.Map;
@@ -18,6 +19,7 @@ public class ReportMapper {
     private final PostClient postClient;
     private final GroupClient groupClient;
     private final SocialClient socialClient;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public ReportResponse toResponse(Report report) {
         String reporterName = userRepository.findById(report.getReporterUserId())
@@ -59,12 +61,11 @@ public class ReportMapper {
                         Map<String, Object> postRes = postClient.getPost(report.getTargetId());
                         if (postRes != null && postRes.containsKey("data")) {
                             Map<String, Object> data = (Map<String, Object>) postRes.get("data");
-                            if (data != null && data.containsKey("content")) {
-                                String content = (String) data.get("content");
-                                if (content != null) {
-                                    targetName = content.length() > 50 
-                                        ? content.substring(0, 47) + "..." 
-                                        : content;
+                            if (data != null) {
+                                try {
+                                    targetName = objectMapper.writeValueAsString(data);
+                                } catch (Exception ex) {
+                                    targetName = (String) data.get("content");
                                 }
                             }
                         }

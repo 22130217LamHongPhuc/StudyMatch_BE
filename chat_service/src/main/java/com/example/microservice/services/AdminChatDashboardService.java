@@ -80,7 +80,7 @@ public class AdminChatDashboardService {
     }
 
     public void kickUserFromGroup(Long userId, Long groupId) {
-        groupClient.kickMember(groupId, userId);
+        groupClient.kickMember(groupId, userId, Map.of("status", "remove"));
     }
 
     private AdminChatDashboardResponse.Summary toSummary(Object[] row) {
@@ -221,7 +221,7 @@ public class AdminChatDashboardService {
             return groupDetail.getName();
         }
 
-        return "Nhóm #" + groupId;
+        return "Nh\u00f3m #" + groupId;
     }
 
     private long countJoinedGroups(Long userId, int fallback) {
@@ -312,9 +312,9 @@ public class AdminChatDashboardService {
         boolean shouldMute = !shouldKick && (member.hateMessages() > 0 || member.offensiveMessages() >= 5);
         String priority = shouldKick || member.hateMessages() > 0 ? "HIGH" : "MEDIUM";
         String suggestion = shouldKick
-                ? "Đề xuất kick khỏi nhóm"
-                : shouldMute ? "Đề xuất mute 24 giờ và review" : "Cảnh báo lần 1";
-        String reason = "%d tin HATE và %d tin OFFENSIVE".formatted(
+                ? "\u0110\u1ec1 xu\u1ea5t kick kh\u1ecfi nh\u00f3m"
+                : shouldMute ? "\u0110\u1ec1 xu\u1ea5t mute 24 gi\u1edd v\u00e0 review" : "C\u1ea3nh b\u00e1o l\u1ea7n 1";
+        String reason = "%d tin HATE v\u00e0 %d tin OFFENSIVE".formatted(
                 member.hateMessages(),
                 member.offensiveMessages()
         );

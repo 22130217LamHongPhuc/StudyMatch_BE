@@ -49,6 +49,17 @@ public class StudyFeedbackServiceImpl implements StudyFeedbackService {
         return mapToResponse(saved);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public StudyFeedbackResponse getFeedbackBySessionAndUser(Long sessionId, Long userId) {
+        if (sessionId == null || userId == null) {
+            return null;
+        }
+        return studyFeedbackRepository.findBySessionIdAndReviewerUserId(sessionId, userId)
+                .map(this::mapToResponse)
+                .orElse(null);
+    }
+
     private StudyFeedbackResponse mapToResponse(StudyFeedback feedback) {
         return StudyFeedbackResponse.builder()
                 .id(feedback.getId())

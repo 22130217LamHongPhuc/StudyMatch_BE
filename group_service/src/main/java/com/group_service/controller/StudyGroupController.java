@@ -224,7 +224,7 @@ public class StudyGroupController {
         groupMemberRepository.save(member);
 
         try {
-            chatClient.syncGroupParticipants(groupId);
+            chatClient.syncGroupParticipants(groupId, java.util.Collections.emptyMap());
         } catch (Exception e) {
             System.err.println("Failed to sync group participants on kickMember: " + e.getMessage());
         }

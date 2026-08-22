@@ -67,7 +67,7 @@ public class LearningDocumentService {
 
     @Transactional
     public LearningDocumentResponse uploadDocument(CreateLearningDocumentRequest request, Long uploaderId) {
-        contentModerationService.validateTexts(request.getTitle(), request.getDescription());
+        // contentModerationService.validateTexts(request.getTitle(), request.getDescription());
         fileValidator.validate(
                 request.getFileUrl(),
                 request.getStorageKey(),
@@ -86,9 +86,9 @@ public class LearningDocumentService {
     @Transactional
     public LearningDocumentResponse getDocumentDetails(Long id) {
         LearningDocument document = learningDocumentRepo.findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.DOCUMENT_NOT_FOUND, "Không tìm thấy tài liệu học liệu"));
+                .orElseThrow(() -> new AppException(ErrorCode.DOCUMENT_NOT_FOUND, "KhÃ´ng tÃ¬m tháº¥y tÃ i liá»‡u há»c liá»‡u"));
         if (document.getStatus() != DocumentStatus.PUBLISHED) {
-            throw new AppException(ErrorCode.DOCUMENT_NOT_FOUND, "Không tìm thấy tài liệu học liệu");
+            throw new AppException(ErrorCode.DOCUMENT_NOT_FOUND, "KhÃ´ng tÃ¬m tháº¥y tÃ i liá»‡u há»c liá»‡u");
         }
         document.setViewCount(document.getViewCount() + 1);
         LearningDocument saved = learningDocumentRepo.save(document);
@@ -164,9 +164,9 @@ public class LearningDocumentService {
 
     public String getPreviewUrl(Long id) {
         LearningDocument document = learningDocumentRepo.findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.DOCUMENT_NOT_FOUND, "Không tìm thấy tài liệu học liệu"));
+                .orElseThrow(() -> new AppException(ErrorCode.DOCUMENT_NOT_FOUND, "KhÃ´ng tÃ¬m tháº¥y tÃ i liá»‡u há»c liá»‡u"));
         if (document.getStatus() != DocumentStatus.PUBLISHED) {
-            throw new AppException(ErrorCode.DOCUMENT_NOT_FOUND, "Không tìm thấy tài liệu học liệu");
+            throw new AppException(ErrorCode.DOCUMENT_NOT_FOUND, "KhÃ´ng tÃ¬m tháº¥y tÃ i liá»‡u há»c liá»‡u");
         }
         return document.getFileUrl();
     }
@@ -174,9 +174,9 @@ public class LearningDocumentService {
     @Transactional
     public String getDownloadUrl(Long id) {
         LearningDocument document = learningDocumentRepo.findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.DOCUMENT_NOT_FOUND, "Không tìm thấy tài liệu học liệu"));
+                .orElseThrow(() -> new AppException(ErrorCode.DOCUMENT_NOT_FOUND, "KhÃ´ng tÃ¬m tháº¥y tÃ i liá»‡u há»c liá»‡u"));
         if (document.getStatus() != DocumentStatus.PUBLISHED) {
-            throw new AppException(ErrorCode.DOCUMENT_NOT_FOUND, "Không tìm thấy tài liệu học liệu");
+            throw new AppException(ErrorCode.DOCUMENT_NOT_FOUND, "KhÃ´ng tÃ¬m tháº¥y tÃ i liá»‡u há»c liá»‡u");
         }
         document.setDownloadCount(document.getDownloadCount() + 1);
         learningDocumentRepo.save(document);
@@ -186,12 +186,12 @@ public class LearningDocumentService {
     @Transactional
     public void bookmarkDocument(Long documentId, Long userId) {
         LearningDocument document = learningDocumentRepo.findById(documentId)
-                .orElseThrow(() -> new AppException(ErrorCode.DOCUMENT_NOT_FOUND, "Không tìm thấy tài liệu học liệu"));
+                .orElseThrow(() -> new AppException(ErrorCode.DOCUMENT_NOT_FOUND, "KhÃ´ng tÃ¬m tháº¥y tÃ i liá»‡u há»c liá»‡u"));
         if (document.getStatus() != DocumentStatus.PUBLISHED) {
-            throw new AppException(ErrorCode.DOCUMENT_NOT_FOUND, "Không tìm thấy tài liệu học liệu");
+            throw new AppException(ErrorCode.DOCUMENT_NOT_FOUND, "KhÃ´ng tÃ¬m tháº¥y tÃ i liá»‡u há»c liá»‡u");
         }
         if (documentBookmarkRepo.existsByDocumentIdAndUserId(documentId, userId)) {
-            throw new AppException(ErrorCode.DOCUMENT_ALREADY_BOOKMARKED, "Tài liệu này đã được lưu trước đó");
+            throw new AppException(ErrorCode.DOCUMENT_ALREADY_BOOKMARKED, "TÃ i liá»‡u nÃ y Ä‘Ã£ Ä‘Æ°á»£c lÆ°u trÆ°á»›c Ä‘Ã³");
         }
         DocumentBookmark bookmark = new DocumentBookmark();
         bookmark.setDocument(document);
@@ -202,7 +202,7 @@ public class LearningDocumentService {
     @Transactional
     public void removeBookmark(Long documentId, Long userId) {
         DocumentBookmark bookmark = documentBookmarkRepo.findByDocumentIdAndUserId(documentId, userId)
-                .orElseThrow(() -> new AppException(ErrorCode.DOCUMENT_NOT_FOUND, "Không tìm thấy tài liệu đã lưu"));
+                .orElseThrow(() -> new AppException(ErrorCode.DOCUMENT_NOT_FOUND, "KhÃ´ng tÃ¬m tháº¥y tÃ i liá»‡u Ä‘Ã£ lÆ°u"));
         documentBookmarkRepo.delete(bookmark);
     }
 
@@ -266,12 +266,12 @@ public class LearningDocumentService {
     @Transactional
     public DocumentRatingResponse rateDocument(Long documentId, Long userId, Integer score, String review) {
         LearningDocument document = learningDocumentRepo.findById(documentId)
-                .orElseThrow(() -> new AppException(ErrorCode.DOCUMENT_NOT_FOUND, "Không tìm thấy tài liệu học liệu"));
+                .orElseThrow(() -> new AppException(ErrorCode.DOCUMENT_NOT_FOUND, "KhÃ´ng tÃ¬m tháº¥y tÃ i liá»‡u há»c liá»‡u"));
         if (document.getStatus() != DocumentStatus.PUBLISHED) {
-            throw new AppException(ErrorCode.DOCUMENT_NOT_FOUND, "Không tìm thấy tài liệu học liệu");
+            throw new AppException(ErrorCode.DOCUMENT_NOT_FOUND, "KhÃ´ng tÃ¬m tháº¥y tÃ i liá»‡u há»c liá»‡u");
         }
         if (document.getUploaderId().equals(userId)) {
-            throw new AppException(ErrorCode.DOCUMENT_ACCESS_DENIED, "Người tải lên không thể tự đánh giá tài liệu của mình");
+            throw new AppException(ErrorCode.DOCUMENT_ACCESS_DENIED, "NgÆ°á»i táº£i lÃªn khÃ´ng thá»ƒ tá»± Ä‘Ã¡nh giÃ¡ tÃ i liá»‡u cá»§a mÃ¬nh");
         }
 
         Optional<DocumentRating> existing = documentRatingRepo.findByDocumentIdAndUserId(documentId, userId);
@@ -304,10 +304,10 @@ public class LearningDocumentService {
     @Transactional
     public void deleteRating(Long documentId, Long userId) {
         LearningDocument document = learningDocumentRepo.findById(documentId)
-                .orElseThrow(() -> new AppException(ErrorCode.DOCUMENT_NOT_FOUND, "Không tìm thấy tài liệu học liệu"));
+                .orElseThrow(() -> new AppException(ErrorCode.DOCUMENT_NOT_FOUND, "KhÃ´ng tÃ¬m tháº¥y tÃ i liá»‡u há»c liá»‡u"));
 
         DocumentRating rating = documentRatingRepo.findByDocumentIdAndUserId(documentId, userId)
-                .orElseThrow(() -> new AppException(ErrorCode.DOCUMENT_RATING_NOT_FOUND, "Không tìm thấy đánh giá cho tài liệu này"));
+                .orElseThrow(() -> new AppException(ErrorCode.DOCUMENT_RATING_NOT_FOUND, "KhÃ´ng tÃ¬m tháº¥y Ä‘Ã¡nh giÃ¡ cho tÃ i liá»‡u nÃ y"));
 
         documentRatingRepo.delete(rating);
 
@@ -320,7 +320,7 @@ public class LearningDocumentService {
 
     public DocumentRatingResponse getMyRating(Long documentId, Long userId) {
         DocumentRating rating = documentRatingRepo.findByDocumentIdAndUserId(documentId, userId)
-                .orElseThrow(() -> new AppException(ErrorCode.DOCUMENT_RATING_NOT_FOUND, "Không tìm thấy đánh giá cho tài liệu này"));
+                .orElseThrow(() -> new AppException(ErrorCode.DOCUMENT_RATING_NOT_FOUND, "KhÃ´ng tÃ¬m tháº¥y Ä‘Ã¡nh giÃ¡ cho tÃ i liá»‡u nÃ y"));
         DocumentRatingResponse response = mapper.toRatingResponse(rating);
         enrichRatingResponse(response, userId);
         return response;
@@ -332,9 +332,9 @@ public class LearningDocumentService {
 
     public void reportDocument(Long documentId, Long userId, CreateDocumentReportRequest request) {
         LearningDocument document = learningDocumentRepo.findById(documentId)
-                .orElseThrow(() -> new AppException(ErrorCode.DOCUMENT_NOT_FOUND, "Không tìm thấy tài liệu học liệu"));
+                .orElseThrow(() -> new AppException(ErrorCode.DOCUMENT_NOT_FOUND, "KhÃ´ng tÃ¬m tháº¥y tÃ i liá»‡u há»c liá»‡u"));
         if (document.getStatus() != DocumentStatus.PUBLISHED) {
-            throw new AppException(ErrorCode.DOCUMENT_NOT_FOUND, "Không tìm thấy tài liệu học liệu");
+            throw new AppException(ErrorCode.DOCUMENT_NOT_FOUND, "KhÃ´ng tÃ¬m tháº¥y tÃ i liá»‡u há»c liá»‡u");
         }
 
         UserServiceClientReportRequest clientRequest = new UserServiceClientReportRequest();
@@ -411,7 +411,7 @@ public class LearningDocumentService {
 
     public AdminDocumentResponse getAdminDocumentDetails(Long id) {
         LearningDocument document = learningDocumentRepo.findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.DOCUMENT_NOT_FOUND, "Không tìm thấy tài liệu học liệu"));
+                .orElseThrow(() -> new AppException(ErrorCode.DOCUMENT_NOT_FOUND, "KhÃ´ng tÃ¬m tháº¥y tÃ i liá»‡u há»c liá»‡u"));
 
         Long count = 0L;
         if (document.getStatus() != DocumentStatus.PENDING) {
@@ -433,10 +433,10 @@ public class LearningDocumentService {
     @Transactional
     public AdminDocumentResponse approveDocument(Long documentId, Long adminId) {
         LearningDocument document = learningDocumentRepo.findById(documentId)
-                .orElseThrow(() -> new AppException(ErrorCode.DOCUMENT_NOT_FOUND, "Không tìm thấy tài liệu học liệu"));
+                .orElseThrow(() -> new AppException(ErrorCode.DOCUMENT_NOT_FOUND, "KhÃ´ng tÃ¬m tháº¥y tÃ i liá»‡u há»c liá»‡u"));
 
         if (document.getStatus() != DocumentStatus.PENDING) {
-            throw new AppException(ErrorCode.DOCUMENT_ACCESS_DENIED, "Chỉ có thể duyệt tài liệu ở trạng thái chờ duyệt");
+            throw new AppException(ErrorCode.DOCUMENT_ACCESS_DENIED, "Chá»‰ cÃ³ thá»ƒ duyá»‡t tÃ i liá»‡u á»Ÿ tráº¡ng thÃ¡i chá» duyá»‡t");
         }
 
         document.setStatus(DocumentStatus.PUBLISHED);
@@ -445,7 +445,7 @@ public class LearningDocumentService {
         document.setReviewedAt(LocalDateTime.now());
         LearningDocument saved = learningDocumentRepo.save(document);
 
-        auditLogService.log(adminId, "APPROVE_DOCUMENT", documentId.toString(), "DOCUMENT", "Duyệt tài liệu: " + document.getTitle());
+        auditLogService.log(adminId, "APPROVE_DOCUMENT", documentId.toString(), "DOCUMENT", "Duyá»‡t tÃ i liá»‡u: " + document.getTitle());
 
         AdminDocumentResponse response = mapper.toAdminResponse(saved, 0L);
         response.setUploaderName(getUploaderName(saved.getUploaderId()));
@@ -455,10 +455,10 @@ public class LearningDocumentService {
     @Transactional
     public AdminDocumentResponse rejectDocument(Long documentId, Long adminId, String rejectionReason) {
         LearningDocument document = learningDocumentRepo.findById(documentId)
-                .orElseThrow(() -> new AppException(ErrorCode.DOCUMENT_NOT_FOUND, "Không tìm thấy tài liệu học liệu"));
+                .orElseThrow(() -> new AppException(ErrorCode.DOCUMENT_NOT_FOUND, "KhÃ´ng tÃ¬m tháº¥y tÃ i liá»‡u há»c liá»‡u"));
 
         if (document.getStatus() != DocumentStatus.PENDING) {
-            throw new AppException(ErrorCode.DOCUMENT_ACCESS_DENIED, "Chỉ có thể từ chối tài liệu ở trạng thái chờ duyệt");
+            throw new AppException(ErrorCode.DOCUMENT_ACCESS_DENIED, "Chá»‰ cÃ³ thá»ƒ tá»« chá»‘i tÃ i liá»‡u á»Ÿ tráº¡ng thÃ¡i chá» duyá»‡t");
         }
 
         document.setStatus(DocumentStatus.REJECTED);
@@ -467,7 +467,7 @@ public class LearningDocumentService {
         document.setReviewedAt(LocalDateTime.now());
         LearningDocument saved = learningDocumentRepo.save(document);
 
-        auditLogService.log(adminId, "REJECT_DOCUMENT", documentId.toString(), "DOCUMENT", "Từ chối tài liệu: " + document.getTitle() + ". Lý do: " + rejectionReason);
+        auditLogService.log(adminId, "REJECT_DOCUMENT", documentId.toString(), "DOCUMENT", "Tá»« chá»‘i tÃ i liá»‡u: " + document.getTitle() + ". LÃ½ do: " + rejectionReason);
 
         AdminDocumentResponse response = mapper.toAdminResponse(saved, 0L);
         response.setUploaderName(getUploaderName(saved.getUploaderId()));
@@ -477,17 +477,17 @@ public class LearningDocumentService {
     @Transactional
     public AdminDocumentResponse hideDocument(Long documentId, Long adminId, String hiddenReason) {
         LearningDocument document = learningDocumentRepo.findById(documentId)
-                .orElseThrow(() -> new AppException(ErrorCode.DOCUMENT_NOT_FOUND, "Không tìm thấy tài liệu học liệu"));
+                .orElseThrow(() -> new AppException(ErrorCode.DOCUMENT_NOT_FOUND, "KhÃ´ng tÃ¬m tháº¥y tÃ i liá»‡u há»c liá»‡u"));
 
         if (document.getStatus() != DocumentStatus.PUBLISHED) {
-            throw new AppException(ErrorCode.DOCUMENT_ACCESS_DENIED, "Chỉ có thể ẩn tài liệu đang hiển thị");
+            throw new AppException(ErrorCode.DOCUMENT_ACCESS_DENIED, "Chá»‰ cÃ³ thá»ƒ áº©n tÃ i liá»‡u Ä‘ang hiá»ƒn thá»‹");
         }
 
         document.setStatus(DocumentStatus.HIDDEN);
         document.setHiddenReason(hiddenReason);
         LearningDocument saved = learningDocumentRepo.save(document);
 
-        auditLogService.log(adminId, "HIDE_DOCUMENT", documentId.toString(), "DOCUMENT", "Ẩn tài liệu: " + document.getTitle() + ". Lý do: " + hiddenReason);
+        auditLogService.log(adminId, "HIDE_DOCUMENT", documentId.toString(), "DOCUMENT", "áº¨n tÃ i liá»‡u: " + document.getTitle() + ". LÃ½ do: " + hiddenReason);
 
         AdminDocumentResponse response = mapper.toAdminResponse(saved, 0L);
         response.setUploaderName(getUploaderName(saved.getUploaderId()));
@@ -497,17 +497,17 @@ public class LearningDocumentService {
     @Transactional
     public AdminDocumentResponse restoreDocument(Long documentId, Long adminId) {
         LearningDocument document = learningDocumentRepo.findById(documentId)
-                .orElseThrow(() -> new AppException(ErrorCode.DOCUMENT_NOT_FOUND, "Không tìm thấy tài liệu học liệu"));
+                .orElseThrow(() -> new AppException(ErrorCode.DOCUMENT_NOT_FOUND, "KhÃ´ng tÃ¬m tháº¥y tÃ i liá»‡u há»c liá»‡u"));
 
         if (document.getStatus() != DocumentStatus.HIDDEN) {
-            throw new AppException(ErrorCode.DOCUMENT_ACCESS_DENIED, "Chỉ có thể khôi phục tài liệu đang bị ẩn");
+            throw new AppException(ErrorCode.DOCUMENT_ACCESS_DENIED, "Chá»‰ cÃ³ thá»ƒ khÃ´i phá»¥c tÃ i liá»‡u Ä‘ang bá»‹ áº©n");
         }
 
         document.setStatus(DocumentStatus.PUBLISHED);
         document.setHiddenReason(null);
         LearningDocument saved = learningDocumentRepo.save(document);
 
-        auditLogService.log(adminId, "RESTORE_DOCUMENT", documentId.toString(), "DOCUMENT", "Khôi phục tài liệu: " + document.getTitle());
+        auditLogService.log(adminId, "RESTORE_DOCUMENT", documentId.toString(), "DOCUMENT", "KhÃ´i phá»¥c tÃ i liá»‡u: " + document.getTitle());
 
         AdminDocumentResponse response = mapper.toAdminResponse(saved, 0L);
         response.setUploaderName(getUploaderName(saved.getUploaderId()));

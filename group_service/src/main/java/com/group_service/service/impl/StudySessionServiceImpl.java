@@ -976,15 +976,15 @@ public class StudySessionServiceImpl implements StudySessionService {
             return StudySessionAttendanceStatus.NOT_JOINED;
         }
 
-        // if (total < 1 * 60) {
-        // return StudySessionAttendanceStatus.JOINED_SHORT;
-        // }
+        if (total < 1 * 60) {
+            return StudySessionAttendanceStatus.JOINED_SHORT;
+        }
 
-        // long minRequired = calculateMinRequiredDurationSeconds(session);
+        long minRequired = calculateMinRequiredDurationSeconds(session);
 
-        // if (total < minRequired) {
-        // return StudySessionAttendanceStatus.JOINED_PARTIAL;
-        // }
+        if (total < minRequired) {
+            return StudySessionAttendanceStatus.JOINED_PARTIAL;
+        }
 
         return StudySessionAttendanceStatus.COMPLETED;
     }

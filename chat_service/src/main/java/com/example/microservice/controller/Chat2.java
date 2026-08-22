@@ -114,7 +114,7 @@ public class Chat2 {
     }
 
     @PostMapping("/group/{groupId}/sync-participants")
-    public ResponseEntity<Void> syncGroupParticipants(@PathVariable Long groupId) {
+    public ResponseEntity<Void> syncGroupParticipants(@PathVariable Long groupId, @RequestBody(required = false) Map<String, Object> body) {
         serivce.syncGroupConversationParticipants(groupId);
         return ResponseEntity.ok().build();
     }

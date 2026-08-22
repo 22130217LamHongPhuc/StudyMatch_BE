@@ -48,7 +48,7 @@ public class MessageController {
     @Autowired
     MessageRepo messageRepo;
     @Autowired
-    private  SimpMessagingTemplate messagingTemplate;
+    private SimpMessagingTemplate messagingTemplate;
     @Autowired
     ChatService chatService;
     @Autowired
@@ -81,45 +81,65 @@ public class MessageController {
         return sessionManager.getOnlineUserIds();
     }
 
-
     @PostMapping("/media")
-    public void uploadMedia (@RequestParam("file") MultipartFile file,
-                             @RequestParam("conversationID") Long conversationId,
-                             @RequestParam("type") String type,
-                             @RequestParam("content") String content,
-                             @RequestParam("fileName") String fileName,
-                             @RequestHeader("Authorization") String authorization)  {
-        TokenValidateResponse response= client.validateToken(authorization);
-        if(!response.isValid()){
+    public ResponseEntity<?> uploadMedia(@RequestParam("file") MultipartFile file,
+                                         @RequestParam("conversationID") Long conversationId,
+                                         @RequestParam(value = "type", required = false) String type,
+                                         @RequestParam(value = "content", required = false) String content,
+                                         @RequestParam(value = "fileName", required = false) String fileName,
+                                         @RequestHeader("Authorization") String authorization) {
+        TokenValidateResponse response = client.validateToken(authorization);
+        if (response == null || !response.isValid()) {
             throw new IllegalArgumentException("Invalid token");
         }
         Long userId = response.getUserId();
         if (!chatService.isParticipant(conversationId, userId)) {
             throw new IllegalArgumentException("User is not a participant of this conversation");
         }
+
         Map result = cloudinaryService.uploadFile(file);
-        String fileUrl = result.get("secure_url").toString();
-//        String fileName = result.get("display_name").toString();
-        String resourceType = result.get("resource_type").toString();
-        String format = result.get("format").toString();
-        String fileType = resourceType + "/" + format;
-        Long fileSize = Long.valueOf(result.get("bytes").toString());
-        System.out.println(result + "upload ảnh nè");
+        String fileUrl = "";
+        if (result != null) {
+            if (result.get("secure_url") != null) {
+                fileUrl = result.get("secure_url").toString();
+            } else if (result.get("url") != null) {
+                fileUrl = result.get("url").toString();
+            }
+        }
+
+        String resolvedFileName = (fileName != null && !fileName.isBlank()) ? fileName : file.getOriginalFilename();
+        if (resolvedFileName == null || resolvedFileName.isBlank()) {
+            resolvedFileName = "file";
+        }
+
+        Long fileSize = file.getSize();
+        if (result != null && result.get("bytes") != null) {
+            try {
+                fileSize = Long.valueOf(result.get("bytes").toString());
+            } catch (Exception ignored) {
+            }
+        }
+
+        String resolvedType = (type != null && !type.isBlank()) ? type : file.getContentType();
+        if (resolvedType == null || resolvedType.isBlank()) {
+            resolvedType = "application/octet-stream";
+        }
+
         Conversation conversation = conversationService.findById(conversationId);
-        if(conversation == null){
-            throw new RuntimeException("conversation không tồn tại");
+        if (conversation == null) {
+            throw new RuntimeException("Conversation not found");
         }
 
         Message mess = new Message();
-        mess.setContent(content.trim().length()==0?null:content);
+        mess.setContent((content != null && !content.trim().isEmpty()) ? content.trim() : null);
         mess.setSenderId(userId);
         mess.setConversation(conversation);
-        mess.setType(type);
+        mess.setType(resolvedType);
         mess.setCreatedAt(LocalDateTime.now());
         mess.setMediaUrl(fileUrl);
         mess.setIsDeleted(false);
         mess.setIsEdited(false);
-        mess.setFileName(fileName);
+        mess.setFileName(resolvedFileName);
         mess.setFileSize(fileSize);
         mess.setModerationStatus("NONE");
         Message res = messageRepo.save(mess);
@@ -130,7 +150,7 @@ public class MessageController {
         List<Long> participants = chatService.findConversationParticipants(conversationId);
         if (participants.isEmpty()) {
             messageModerationService.moderateMessageAsync(res.getId());
-            return ;
+            return ResponseEntity.ok(new APIResponse<>(ResponseStatus.SUCCESS, dto));
         }
 
         MessageStatusData statusData = new MessageStatusData(
@@ -145,7 +165,7 @@ public class MessageController {
                 statusData
         );
 
-        messagingTemplate.convertAndSendToUser( String.valueOf(userId), "/queue/chat", responseAck );
+        messagingTemplate.convertAndSendToUser(String.valueOf(userId), "/queue/chat", responseAck);
         SocketEnvelope<NewMessageData> senderMessageAck =
                 new SocketEnvelope<>(EnumEvent.MESSAGE_ACK.toString(), newMess);
         messagingTemplate.convertAndSendToUser(String.valueOf(userId), "/queue/chat", senderMessageAck);
@@ -156,6 +176,7 @@ public class MessageController {
             messagingTemplate.convertAndSendToUser(String.valueOf(participantId), "/queue/chat", re);
         }
         messageModerationService.moderateMessageAsync(res.getId());
+        return ResponseEntity.ok(new APIResponse<>(ResponseStatus.SUCCESS, dto));
     }
 
     @PatchMapping("/{messageId}/pin")
@@ -187,6 +208,4 @@ public class MessageController {
     private boolean isPinnedValue(String pinned) {
         return "Y".equalsIgnoreCase(pinned) || "true".equalsIgnoreCase(pinned);
     }
-
-
 }

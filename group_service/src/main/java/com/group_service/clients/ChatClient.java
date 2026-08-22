@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import org.springframework.web.bind.annotation.PathVariable;
 import java.util.List;
+import java.util.Map;
 
 @FeignClient(name = "CHAT-SERVICE", url = "${CHAT_SERVICE_URL:http://localhost:8089}")
 public interface ChatClient {
@@ -31,6 +32,6 @@ public interface ChatClient {
     @PostMapping("/api/chat/notify-group-kick")
     void sendGroupKickNotification(@RequestBody com.group_service.dto.GroupKickNotificationRequest request);
 
-    @PostMapping("/conversation/group/{groupId}/sync-participants")
-    void syncGroupParticipants(@PathVariable("groupId") Long groupId);
+    @PostMapping(value = "/conversation/group/{groupId}/sync-participants", consumes = "application/json")
+    void syncGroupParticipants(@PathVariable("groupId") Long groupId, @RequestBody(required = false) Map<String, Object> body);
 }

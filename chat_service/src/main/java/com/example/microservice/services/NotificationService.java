@@ -156,18 +156,22 @@ public class NotificationService {
 
     public void sendGroupKickNotification(GroupKickNotificationRequest request) {
         Long userId = request.getUserId();
-        if (userId == null || !sessionManager.isOnline(userId)) {
+        if (userId == null) {
             return;
         }
 
         Map<String, Object> data = new HashMap<>();
         data.put("groupId", request.getGroupId());
         data.put("groupName", request.getGroupName());
+        data.put("status", request.getStatus() != null ? request.getStatus() : "KICKED");
+        data.put("reason", request.getReason());
 
         SocketEnvelope<Map<String, Object>> envelope = new SocketEnvelope<>(
                 EnumEvent.GROUP_MEMBER_KICKED.toString(),
                 data
         );
+
+        System.out.println("[ChatService] Sending GROUP_MEMBER_KICKED socket to user " + userId + " for group " + request.getGroupId());
 
         messagingTemplate.convertAndSendToUser(
                 String.valueOf(userId),

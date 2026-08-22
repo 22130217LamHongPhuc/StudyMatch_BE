@@ -103,65 +103,11 @@ public class ContentModerationService {
     }
 
     public void validateText(String text) {
-        if (text == null || text.trim().isBlank()) {
-            return;
-        }
-
-        String textToCheck = text;
-        if (text.trim().startsWith("{") && text.trim().endsWith("}")) {
-            try {
-                com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
-                com.fasterxml.jackson.databind.JsonNode node = mapper.readTree(text);
-                if (node.has("text")) {
-                    textToCheck = node.get("text").asText();
-                }
-            } catch (Exception e) {
-                // Ignore JSON parsing errors and check original content
-            }
-        }
-
-        try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            
-            ModerationRequest requestItem = new ModerationRequest(1L, textToCheck);
-            HttpEntity<List<ModerationRequest>> entity = new HttpEntity<>(
-                    List.of(requestItem),
-                    headers
-            );
-
-            ResponseEntity<List<ModerationResponse>> response = restTemplate.exchange(
-                    moderationApiUrl,
-                    org.springframework.http.HttpMethod.POST,
-                    entity,
-                    new ParameterizedTypeReference<List<ModerationResponse>>() {}
-            );
-
-            List<ModerationResponse> body = response.getBody();
-            if (body != null && !body.isEmpty()) {
-                String label = body.get(0).getLabel();
-                if (label != null) {
-                    String norm = label.trim().toUpperCase(Locale.ROOT);
-                    if ("OFFENSIVE".equals(norm) || "HATE".equals(norm)) {
-                        throw new AppException(ErrorCode.CONTENT_VIOLATION);
-                    }
-                }
-            }
-        } catch (AppException e) {
-            throw e;
-        } catch (Exception ex) {
-            // Log the exception but do not block operations if the moderation service is offline
-            ex.printStackTrace();
-        }
+        // AI moderation check disabled for post and document creation
     }
 
     public void validateTexts(String... texts) {
-        if (texts == null) {
-            return;
-        }
-        for (String text : texts) {
-            validateText(text);
-        }
+        // AI moderation check disabled for post and document creation
     }
 
     @Getter

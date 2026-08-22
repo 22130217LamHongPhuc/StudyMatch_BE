@@ -309,6 +309,37 @@ public class StudyGroupServiceImpl implements StudyGroupService {
             } catch (Exception e) {
                 System.err.println("Failed to send group lock email: " + e.getMessage());
             }
+
+            try {
+                java.util.Set<Long> targetUserIds = new java.util.HashSet<>();
+                if (studyGroup.getOwnerUserId() != null) {
+                    targetUserIds.add(studyGroup.getOwnerUserId());
+                }
+                List<GroupMember> allGroupMembers = groupMemberRepository.findByGroupId(groupId);
+                if (allGroupMembers != null) {
+                    for (GroupMember member : allGroupMembers) {
+                        if (member.getUserId() != null) {
+                            targetUserIds.add(member.getUserId());
+                        }
+                    }
+                }
+                System.out.println("[GroupService] Broadcasting group status " + newStatus + " to users: " + targetUserIds);
+                for (Long targetUserId : targetUserIds) {
+                    try {
+                        chatClient.sendGroupKickNotification(com.group_service.dto.GroupKickNotificationRequest.builder()
+                                .userId(targetUserId)
+                                .groupId(groupId)
+                                .groupName(studyGroup.getName())
+                                .status(newStatus.name())
+                                .reason(newStatus == GroupStatus.DELETED ? "Nh\u00f3m \u0111\u00e3 b\u1ecb x\u00f3a b\u1edfi qu\u1ea3n tr\u1ecb vi\u00ean" : "Nh\u00f3m \u0111\u00e3 b\u1ecb t\u1ea1m \u1ea9n b\u1edfi qu\u1ea3n tr\u1ecb vi\u00ean")
+                                .build());
+                    } catch (Exception ex) {
+                        System.err.println("[GroupService] Failed to send group status notification to user " + targetUserId + ": " + ex.getMessage());
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("[GroupService] Failed to notify members of group status change: " + e.getMessage());
+            }
         }
 
         return getGroupDetailForAdmin(groupId);
@@ -1016,7 +1047,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
 
     private void trySyncGroupParticipants(Long groupId, String actionName) {
         try {
-            chatClient.syncGroupParticipants(groupId);
+            chatClient.syncGroupParticipants(groupId, java.util.Collections.emptyMap());
         } catch (Exception e) {
             System.err.println("Failed to sync group participants on " + actionName + ": " + e.getMessage());
         }

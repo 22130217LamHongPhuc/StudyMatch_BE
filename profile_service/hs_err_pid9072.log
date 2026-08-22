@@ -1,0 +1,36 @@
+#
+# A fatal error has been detected by the Java Runtime Environment:
+#
+#  EXCEPTION_ACCESS_VIOLATION (0xc0000005) at pc=0x00007ffb9ab6ce13, pid=9072, tid=12100
+#
+# JRE version:  (21.0.1+12) (build )
+# Java VM: Java HotSpot(TM) 64-Bit Server VM (21.0.1+12-LTS-29, mixed mode, sharing, tiered, compressed oops, compressed class ptrs, g1 gc, windows-amd64)
+# Problematic frame:
+# V  [jvm.dll+0x3dce13]
+#
+# No core dump will be written. Minidumps are not enabled by default on client versions of Windows
+#
+#
+
+---------------  S U M M A R Y ------------
+
+Command Line: -Dclassworlds.conf=C:\\Users\\ASUS\\.m2\\wrapper\\dists\\apache-maven-3.9.12\\59fe215c0ad6947fea90184bf7add084544567b927287592651fda3782e0e798\\bin\\m2.conf -Dmaven.home=C:\\Users\\ASUS\\.m2\\wrapper\\dists\\apache-maven-3.9.12\\59fe215c0ad6947fea90184bf7add084544567b927287592651fda3782e0e798 -Dlibrary.jansi.path=C:\\Users\\ASUS\\.m2\\wrapper\\dists\\apache-maven-3.9.12\\59fe215c0ad6947fea90184bf7add084544567b927287592651fda3782e0e798\\lib\\jansi-native -Dmaven.multiModuleProjectDirectory=D:\\studymatch\\backend\\profile_service org.codehaus.plexus.classworlds.launcher.Launcher spring-boot:run
+
+Host: 11th Gen Intel(R) Core(TM) i5-1135G7 @ 2.40GHz, 8 cores, 15G,  Windows 11 , 64 bit Build 22621 (10.0.22621.5415)
+Time: Sat Aug 22 14:56:55 2026 SE Asia Standard Time elapsed time: 0.608018 seconds (0d 0h 0m 0s)
+
+---------------  T H R E A D  ---------------
+
+Current thread (0x0000025d0c88f3d0):  JavaThread "Unknown thread" [_thread_in_vm, id=12100, stack(0x000000e0ad700000,0x000000e0ad800000) (1024K)]
+
+Stack: [0x000000e0ad700000,0x000000e0ad800000],  sp=0x000000e0ad7ff100,  free space=1020k
+Native frames: (J=compiled Java code, j=interpreted, Vv=VM code, C=native code)
+V  [jvm.dll+0x3dce13]
+V  [jvm.dll+0x6c8f42]
+V  [jvm.dll+0x3dcbae]
+V  [jvm.dll+0x3be210]
+V  [jvm.dll+0x3c1ea4]
+V  [jvm.dll+0x3c19c8]
+V  [jvm.dll+0x80680d]
+V  [jvm.dll+0x805dee]
+V  [jvm.dll+0x44effe]
