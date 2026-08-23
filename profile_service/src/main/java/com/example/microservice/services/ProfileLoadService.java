@@ -35,7 +35,6 @@ public class ProfileLoadService {
     @Autowired
     private AcademicTermRepository academicTermRepository;
 
-
     public UserProfileFullResponse loadUserProfile(Long userId) {
         UserProfileFullResponse response = new UserProfileFullResponse();
 
@@ -53,25 +52,39 @@ public class ProfileLoadService {
 
             List<StudentTermProfile> termProfiles = studentTermProfileRepository.findByUserId(userId);
             List<StudentTermProfileDetailResponse> termProfileResponses = termProfiles.stream()
-                    .map(this::convertToTermProfileDetailResponse)
+                    .map(termProfile -> convertToTermProfileDetailResponse(termProfile))
                     .collect(Collectors.toList());
             response.setTermProfiles(termProfileResponses);
 
-            List<StudentSubjectEnrollment> enrollments = studentSubjectEnrollmentRepository.findByUserId(userId);
+            AcademicTerm activeTerm = academicTermRepository.findFirstByStatusIgnoreCase("active")
+                    .or(() -> academicTermRepository.findFirstByStatus("active"))
+                    .or(() -> academicTermRepository.findFirstByStatus("ACTIVE"))
+                    .or(() -> academicTermRepository.findByStatusIgnoreCase("active"))
+                    .orElse(null);
+
+            Long activeTermId = (activeTerm != null) ? activeTerm.getTermId() : null;
+
+            List<StudentSubjectEnrollment> enrollments = (activeTermId != null)
+                    ? studentSubjectEnrollmentRepository.findByUserIdAndTerm_TermId(userId, activeTermId)
+                    : studentSubjectEnrollmentRepository.findByUserId(userId);
             List<StudentSubjectEnrollmentResponse> enrollmentResponses = enrollments.stream()
-                    .map(this::convertToEnrollmentResponse)
+                    .map(enrollment -> convertToEnrollmentResponse(enrollment))
                     .collect(Collectors.toList());
             response.setEnrollments(enrollmentResponses);
 
-            List<StudentFreeTimeSlot> freeTimeSlots = studentFreeTimeSlotRepository.findByUserId(userId);
+            List<StudentFreeTimeSlot> freeTimeSlots = (activeTermId != null)
+                    ? studentFreeTimeSlotRepository.findByUserIdAndTerm_TermId(userId, activeTermId)
+                    : studentFreeTimeSlotRepository.findByUserId(userId);
             List<FreeTimeSlotResponse> freeTimeSlotResponses = freeTimeSlots.stream()
-                    .map(this::convertToFreeTimeSlotResponse)
+                    .map(slot -> convertToFreeTimeSlotResponse(slot))
                     .collect(Collectors.toList());
             response.setFreeTimeSlots(freeTimeSlotResponses);
 
-            List<StudentSubjectScheduleSlot> scheduleSlots = studentSubjectScheduleSlotRepository.findByUserId(userId);
+            List<StudentSubjectScheduleSlot> scheduleSlots = (activeTermId != null)
+                    ? studentSubjectScheduleSlotRepository.findByUserIdAndTerm_TermId(userId, activeTermId)
+                    : studentSubjectScheduleSlotRepository.findByUserId(userId);
             List<ScheduleSlotResponse> scheduleSlotResponses = scheduleSlots.stream()
-                    .map(this::convertToScheduleSlotResponse)
+                    .map(slot -> convertToScheduleSlotResponse(slot))
                     .collect(Collectors.toList());
             response.setScheduleSlots(scheduleSlotResponses);
 
@@ -87,7 +100,6 @@ public class ProfileLoadService {
         return response;
     }
 
-
     private StudentProfileDetailResponse convertToProfileDetailResponse(StudentProfile studentProfile) {
         StudentProfileDetailResponse response = new StudentProfileDetailResponse(
                 studentProfile.getProfileId(),
@@ -97,8 +109,7 @@ public class ProfileLoadService {
                 studentProfile.getGender(),
                 studentProfile.getAgeGroup(),
                 studentProfile.getRegion(),
-                studentProfile.getCreatedAt()
-        );
+                studentProfile.getCreatedAt());
 
         if (studentProfile.getCohort() != null) {
             Cohort cohort = studentProfile.getCohort();
@@ -106,16 +117,14 @@ public class ProfileLoadService {
                     cohort.getCohortId(),
                     cohort.getCohortCode(),
                     cohort.getStartAcademicYear(),
-                    cohort.getTotalStudyYears()
-            );
+                    cohort.getTotalStudyYears());
 
             if (cohort.getCurriculum() != null) {
                 Curriculum curriculum = cohort.getCurriculum();
                 CurriculumInfoResponse curriculumResponse = new CurriculumInfoResponse(
                         curriculum.getCurriculumId(),
                         curriculum.getCurriculumCode(),
-                        curriculum.getCurriculumName()
-                );
+                        curriculum.getCurriculumName());
                 cohortResponse.setCurriculum(curriculumResponse);
             }
 
@@ -124,7 +133,6 @@ public class ProfileLoadService {
 
         return response;
     }
-
 
     private StudentTermProfileDetailResponse convertToTermProfileDetailResponse(StudentTermProfile termProfile) {
         String mainSubjectName = null;
@@ -145,8 +153,7 @@ public class ProfileLoadService {
                 termProfile.getStudyGoal(),
                 termProfile.getStudyMode(),
                 termProfile.getMainSubjectId(),
-                mainSubjectName
-        );
+                mainSubjectName);
 
         if (termProfile.getTerm() != null) {
             AcademicTerm term = termProfile.getTerm();
@@ -156,14 +163,12 @@ public class ProfileLoadService {
                     term.getAcademicYearEnd(),
                     term.getSemesterNo(),
                     term.getFullName(),
-                    term.getStatus()
-            );
+                    term.getStatus());
             response.setTerm(termResponse);
         }
 
         return response;
     }
-
 
     private StudentSubjectEnrollmentResponse convertToEnrollmentResponse(StudentSubjectEnrollment enrollment) {
         StudentSubjectEnrollmentResponse response = new StudentSubjectEnrollmentResponse(enrollment.getId());
@@ -173,8 +178,7 @@ public class ProfileLoadService {
             SubjectInfoResponse subjectResponse = new SubjectInfoResponse(
                     subject.getSubjectId(),
                     subject.getSubjectCode(),
-                    subject.getSubjectName()
-            );
+                    subject.getSubjectName());
             response.setSubject(subjectResponse);
         }
 
@@ -186,24 +190,20 @@ public class ProfileLoadService {
                     term.getAcademicYearEnd(),
                     term.getSemesterNo(),
                     term.getFullName(),
-                    term.getStatus()
-            );
+                    term.getStatus());
             response.setTerm(termResponse);
         }
 
         return response;
     }
 
-
     private FreeTimeSlotResponse convertToFreeTimeSlotResponse(StudentFreeTimeSlot freeTimeSlot) {
         return new FreeTimeSlotResponse(
                 freeTimeSlot.getId(),
                 freeTimeSlot.getDayOfWeek(),
                 freeTimeSlot.getSlotCode(),
-                freeTimeSlot.getIsAvailable()
-        );
+                freeTimeSlot.getIsAvailable());
     }
-
 
     private ScheduleSlotResponse convertToScheduleSlotResponse(StudentSubjectScheduleSlot scheduleSlot) {
         ScheduleSlotResponse response = new ScheduleSlotResponse(
@@ -212,16 +212,14 @@ public class ProfileLoadService {
                 scheduleSlot.getSlotCode(),
                 scheduleSlot.getScheduleType(),
                 scheduleSlot.getLocation(),
-                scheduleSlot.getNote()
-        );
+                scheduleSlot.getNote());
 
         if (scheduleSlot.getSubject() != null) {
             Subject subject = scheduleSlot.getSubject();
             SubjectInfoResponse subjectResponse = new SubjectInfoResponse(
                     subject.getSubjectId(),
                     subject.getSubjectCode(),
-                    subject.getSubjectName()
-            );
+                    subject.getSubjectName());
             response.setSubject(subjectResponse);
         }
 
@@ -261,4 +259,3 @@ public class ProfileLoadService {
         return status;
     }
 }
-
