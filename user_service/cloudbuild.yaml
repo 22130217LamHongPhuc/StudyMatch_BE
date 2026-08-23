@@ -38,7 +38,6 @@ steps:
       - 'DB_PASSWORD=studymatch-db-password:latest,JWT_SECRET_KEY=studymatch-jwt-secret:latest'
       - '--port'
       - '8080'
-      - $11'
       - '--max-instances'
       - '1'
       - '--allow-unauthenticated'

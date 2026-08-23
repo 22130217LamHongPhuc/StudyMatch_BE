@@ -40,7 +40,6 @@ steps:
       - '1Gi'
       - '--cpu'
       - '1'
-      - $11'
       - '--max-instances'
       - '3'
       - '--allow-unauthenticated'

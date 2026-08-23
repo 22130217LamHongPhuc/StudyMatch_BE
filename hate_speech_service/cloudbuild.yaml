@@ -34,7 +34,6 @@ steps:
       - '2'
       - '--memory'
       - '4Gi'
-      - $11'
       - '--max-instances'
       - '2'
       - '--allow-unauthenticated'
